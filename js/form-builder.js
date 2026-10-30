@@ -33,15 +33,17 @@ class FormBuilder {
           </div>
         </div>
 
-        <!-- Section Navigation Pills -->
+        <!-- Section Navigation Pills (Matching questions.docx Tables 1 to 11) -->
         <div class="px-6 py-3 bg-slate-100/70 border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 text-xs font-medium text-slate-600 scrollbar-thin">
-          ${this.renderNavTab('profile', 'Department Profile', 'building')}
-          ${this.renderNavTab('att1', 'Att I: Curriculum', 'book-open')}
-          ${this.renderNavTab('att2', 'Att II: Faculty', 'users')}
-          ${this.renderNavTab('att4_7', 'Att 4 & 7: Grants & IPR', 'indian-rupee')}
-          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs', 'laptop')}
-          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy')}
-          ${this.renderNavTab('att9', 'Att IX: Research & Books', 'award')}
+          ${this.renderNavTab('profile', 'Profile & Scholars (T1)', 'building')}
+          ${this.renderNavTab('activities', 'Status of Activities (T2)', 'check-square')}
+          ${this.renderNavTab('att1', 'Att I: Curriculum & PTM (T3-4)', 'book-open')}
+          ${this.renderNavTab('att2', 'Att II: Faculty (T5)', 'users')}
+          ${this.renderNavTab('att4_7', 'Att 4 & 7: Grants & Seed (T6)', 'indian-rupee')}
+          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs (T7)', 'laptop')}
+          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards (T8-9)', 'trophy')}
+          ${this.renderNavTab('outcomes', 'Students Outcomes 2026 (T10)', 'graduation-cap')}
+          ${this.renderNavTab('att9', 'Att IX: Research & IPR (T11)', 'award')}
           ${this.renderNavTab('qualitative', '30-Min Presentation Flow', 'presentation')}
           ${this.renderNavTab('pillars', 'Crucial Academic Pillars', 'layers')}
           ${this.renderNavTab('panel', '15-Min Review Rubric', 'clipboard-check')}
@@ -87,6 +89,8 @@ class FormBuilder {
     switch (this.activeTab) {
       case 'profile':
         return this.renderProfileTab(data.departmentInfo);
+      case 'activities':
+        return this.renderActivitiesTab(data.qualitativePresentation);
       case 'att1':
         return this.renderAtt1Tab(data.attributeI);
       case 'att2':
@@ -97,6 +101,8 @@ class FormBuilder {
         return this.renderAtt5Tab(data.attributeV);
       case 'att6_8':
         return this.renderAtt6_8Tab(data.attributeVI_VIII);
+      case 'outcomes':
+        return this.renderOutcomesTab(data.studentsOutcomes2026);
       case 'att9':
         return this.renderAtt9Tab(data.attributeIX);
       case 'qualitative':
@@ -110,13 +116,27 @@ class FormBuilder {
     }
   }
 
-  // TAB 1: Department Profile
+  // TAB 1: Department Profile & Table 1 Scholars Matrix
   renderProfileTab(info) {
+    const scholars = info.scholars || { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
+    const ftM = scholars.fullTime?.male || 0;
+    const ftF = scholars.fullTime?.female || 0;
+    const ftTotal = ftM + ftF;
+    const ptM = scholars.partTime?.male || 0;
+    const ptF = scholars.partTime?.female || 0;
+    const ptTotal = ptM + ptF;
+    const maleTotal = ftM + ptM;
+    const femaleTotal = ftF + ptF;
+    const totalScholars = ftTotal + ptTotal || info.researchScholarsCount || 0;
+
     return `
       <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3">
-          <h3 class="text-base font-semibold text-slate-800">Department Profile & Institutional Identity</h3>
-          <p class="text-xs text-slate-500">Official identifiers for the Annual Academic Audit 2026 - 2027.</p>
+        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Department Profile & Institutional Identity</h3>
+            <p class="text-xs text-slate-500">Official identifiers for the Annual Academic Audit 2026 - 2027.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">questions.docx - Table 1</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -164,8 +184,64 @@ class FormBuilder {
             <input type="number" value="${info.studentCountPG || 0}" onchange="formBuilder.updateField('departmentInfo.studentCountPG', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Research Scholars (Ph.D. / M.Phil.)</label>
-            <input type="number" value="${info.researchScholarsCount || 0}" onchange="formBuilder.updateField('departmentInfo.researchScholarsCount', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Total Research Scholars (Table 1)</label>
+            <input type="number" readonly value="${totalScholars}" class="w-full text-xs px-3 py-2 border border-purple-300 rounded-lg bg-purple-50 font-bold text-purple-900 cursor-not-allowed" title="Auto-computed from Table 1 Scholars Matrix below" />
+          </div>
+        </div>
+
+        <!-- Table 1: Research Scholars Matrix (From Word Doc Table 1) -->
+        <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-200 mt-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-purple-950 flex items-center gap-1.5">
+                <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-600"></i>
+                Table 1: Research Scholars Matrix (FT & PT x Male & Female)
+              </h4>
+              <p class="text-[11px] text-slate-500">Official doctoral scholars enrollment distribution as required by IQAC AAA questionnaire.</p>
+            </div>
+            <span class="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded-lg shadow-sm">
+              Total: ${totalScholars} Scholars
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left bg-white rounded-lg border border-purple-200 overflow-hidden">
+              <thead class="bg-purple-100/70 text-purple-950 font-bold border-b border-purple-200">
+                <tr>
+                  <th class="p-2.5">Scholars Type</th>
+                  <th class="p-2.5 text-center">Male</th>
+                  <th class="p-2.5 text-center">Female</th>
+                  <th class="p-2.5 text-center font-black">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-purple-100">
+                <tr>
+                  <td class="p-2.5 font-bold text-slate-700">FT (Full Time)</td>
+                  <td class="p-2.5 text-center">
+                    <input type="number" min="0" value="${scholars.fullTime?.male || 0}" onchange="formBuilder.updateScholarField('fullTime', 'male', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-blue-700" />
+                  </td>
+                  <td class="p-2.5 text-center">
+                    <input type="number" min="0" value="${scholars.fullTime?.female || 0}" onchange="formBuilder.updateScholarField('fullTime', 'female', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-purple-700" />
+                  </td>
+                  <td class="p-2.5 text-center font-black text-slate-800 bg-purple-50/40">${ftTotal}</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-bold text-slate-700">PT (Part Time)</td>
+                  <td class="p-2.5 text-center">
+                    <input type="number" min="0" value="${scholars.partTime?.male || 0}" onchange="formBuilder.updateScholarField('partTime', 'male', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-blue-700" />
+                  </td>
+                  <td class="p-2.5 text-center">
+                    <input type="number" min="0" value="${scholars.partTime?.female || 0}" onchange="formBuilder.updateScholarField('partTime', 'female', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-purple-700" />
+                  </td>
+                  <td class="p-2.5 text-center font-black text-slate-800 bg-purple-50/40">${ptTotal}</td>
+                </tr>
+                <tr class="bg-purple-100/60 font-black text-slate-900 border-t border-purple-200">
+                  <td class="p-2.5">Total</td>
+                  <td class="p-2.5 text-center text-blue-900">${maleTotal}</td>
+                  <td class="p-2.5 text-center text-purple-900">${femaleTotal}</td>
+                  <td class="p-2.5 text-center text-emerald-800 text-sm">${totalScholars}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -174,6 +250,141 @@ class FormBuilder {
           <div class="text-xs text-blue-900 leading-relaxed">
             <span class="font-semibold">60-Minute Presentation Standard:</span>
             First 15 minutes is strictly allocated for the Departmental Dashboard presentation covering numeric and graphical highlights across all Attributes. The subsequent 30 minutes is for deep-dive qualitative impact, followed by 15 minutes of panel interaction with Administrators, IQAC, School Dean, and External Expert.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // TAB: Status of Activities Completed (Table 2 from Word Doc)
+  renderActivitiesTab(qual) {
+    if (!qual) qual = {};
+    if (!qual.statusOfActivities) {
+      qual.statusOfActivities = {
+        basedOnAAA2025_2026: [],
+        basedOnFacultyOrientation2026: []
+      };
+    }
+    const act = qual.statusOfActivities;
+    const listAAA = act.basedOnAAA2025_2026 || [];
+    const listFOP = act.basedOnFacultyOrientation2026 || [];
+
+    const completedAAA = listAAA.filter(x => x.status === 'Completed').length;
+    const completedFOP = listFOP.filter(x => x.status === 'Completed').length;
+
+    return `
+      <div class="space-y-6">
+        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Status of Activities Completed</h3>
+            <p class="text-xs text-slate-500">Compliance and progress tracking based on previous audits and institutional commitments.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 2</span>
+        </div>
+
+        <!-- Section A: Based on AAA 2025 - 2026 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                1. Based on AAA 2025 – 2026
+              </h4>
+              <p class="text-[11px] text-slate-500">Action taken on recommendations and commitments of the previous Academic Audit.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
+                ${completedAAA} / ${listAAA.length} Completed
+              </span>
+              <button type="button" onclick="formBuilder.addActivityRow('basedOnAAA2025_2026')" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            ${listAAA.map((item, idx) => `
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
+                <div class="md:col-span-4">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Event / Activity</label>
+                  <input type="text" placeholder="Event / Activity name" value="${item.eventActivity || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'eventActivity', this.value)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Month & Year</label>
+                  <input type="text" placeholder="e.g. July 2026" value="${item.monthYear || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'monthYear', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Status</label>
+                  <select onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'status', this.value)" class="w-full text-xs p-1.5 border rounded font-bold ${item.status === 'Completed' ? 'text-emerald-700' : 'text-amber-700'}">
+                    <option value="Completed" ${item.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                    <option value="Not Completed" ${item.status === 'Not Completed' ? 'selected' : ''}>Not Completed</option>
+                  </select>
+                </div>
+                <div class="md:col-span-3">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Remarks</label>
+                  <input type="text" placeholder="Remarks & tangible impact" value="${item.remarks || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'remarks', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                </div>
+                <div class="md:col-span-1 text-right">
+                  <button type="button" onclick="formBuilder.removeActivityRow('basedOnAAA2025_2026', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+            ${listAAA.length === 0 ? '<div class="p-3 text-center text-xs text-slate-400 bg-white rounded border border-dashed">No activities listed yet. Click "+ Add Activity" above.</div>' : ''}
+          </div>
+        </div>
+
+        <!-- Section B: Based on Faculty Orientation Programme June 2026 -->
+        <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
+                2. Based on Data provided during Faculty Orientation Programme – June 2026
+              </h4>
+              <p class="text-[11px] text-slate-500">Activities executed against commitments presented during the annual Faculty Orientation.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
+                ${completedFOP} / ${listFOP.length} Completed
+              </span>
+              <button type="button" onclick="formBuilder.addActivityRow('basedOnFacultyOrientation2026')" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            ${listFOP.map((item, idx) => `
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-2 bg-white p-2.5 rounded-lg border border-blue-200 items-center">
+                <div class="md:col-span-4">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Event / Activity</label>
+                  <input type="text" placeholder="Event / Activity name" value="${item.eventActivity || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'eventActivity', this.value)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Month & Year</label>
+                  <input type="text" placeholder="e.g. August 2026" value="${item.monthYear || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'monthYear', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Status</label>
+                  <select onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'status', this.value)" class="w-full text-xs p-1.5 border rounded font-bold ${item.status === 'Completed' ? 'text-emerald-700' : 'text-amber-700'}">
+                    <option value="Completed" ${item.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                    <option value="Not Completed" ${item.status === 'Not Completed' ? 'selected' : ''}>Not Completed</option>
+                  </select>
+                </div>
+                <div class="md:col-span-3">
+                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Remarks</label>
+                  <input type="text" placeholder="Remarks & tangible impact" value="${item.remarks || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'remarks', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                </div>
+                <div class="md:col-span-1 text-right">
+                  <button type="button" onclick="formBuilder.removeActivityRow('basedOnFacultyOrientation2026', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+            ${listFOP.length === 0 ? '<div class="p-3 text-center text-xs text-slate-400 bg-white rounded border border-dashed">No activities listed yet. Click "+ Add Activity" above.</div>' : ''}
           </div>
         </div>
       </div>
@@ -349,11 +560,36 @@ class FormBuilder {
           </div>
         </div>
 
-        <!-- 6. MOOC Registrations and Completions (Table 2 from Word Doc) -->
+        <!-- 6. Parent Teacher Meetings (PTM) (Table 3 Row 7 from Word Doc) -->
+        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+              <i data-lucide="users" class="w-4 h-4 text-amber-600"></i>
+              6. Parent Teacher Meetings (PTM)
+            </h4>
+            <span class="text-[11px] text-amber-800 font-semibold">Table 3 Row 7</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Number of PTMs</label>
+              <input type="number" min="0" value="${att1.ptm?.numberOfPTMs || 0}" onchange="formBuilder.updateField('attributeI.ptm.numberOfPTMs', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Number of Parents Participated</label>
+              <input type="number" min="0" value="${att1.ptm?.parentsParticipated || 0}" onchange="formBuilder.updateField('attributeI.ptm.parentsParticipated', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">PTM Progress / Feedback Highlights</label>
+              <input type="text" value="${att1.ptm?.details || ''}" onchange="formBuilder.updateField('attributeI.ptm.details', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" placeholder="Mention mentoring outcomes, attendance review, parent feedback..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. MOOC Registrations and Completions (Table 4 from Word Doc) -->
         <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
           <h4 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-3 flex items-center gap-1.5">
             <i data-lucide="globe" class="w-4 h-4 text-blue-600"></i>
-            6. Students Registering / Completing MOOC (NPTEL / SWAYAM / Coursera)
+            7. Students Registering / Completing MOOC (NPTEL / SWAYAM / Coursera - Table 4)
           </h4>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left bg-white rounded-lg overflow-hidden border border-slate-200">
@@ -874,6 +1110,139 @@ class FormBuilder {
           <div>
             <label class="text-xs font-medium text-slate-700 block mb-1">Prizes, Championship Trophies & Recognition Details</label>
             <input type="text" value="${att6_8.studentParticipationAwards?.details || ''}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.details', this.value)" class="w-full text-xs p-2 border rounded" placeholder="State/National/Inter-collegiate award details..." />
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // TAB: Students Outcomes – 2026 Passed out (Table 10 from Word Doc)
+  renderOutcomesTab(outcomes) {
+    if (!outcomes) {
+      outcomes = {
+        ug: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        pg: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        phd: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 }
+      };
+    }
+
+    const ug = outcomes.ug || {};
+    const pg = outcomes.pg || {};
+    const phd = outcomes.phd || {};
+
+    const totalStrength = (ug.strength || 0) + (pg.strength || 0) + (phd.strength || 0);
+    const totalOnCampus = (ug.onCampus || 0) + (pg.onCampus || 0) + (phd.onCampus || 0);
+    const totalOffCampus = (ug.offCampus || 0) + (pg.offCampus || 0) + (phd.offCampus || 0);
+    const totalPlaced = totalOnCampus + totalOffCampus;
+    const totalHigherStudies = (ug.higherStudies || 0) + (pg.higherStudies || 0) + (phd.higherStudies || 0);
+    const totalEntrepreneur = (ug.entrepreneur || 0) + (pg.entrepreneur || 0) + (phd.entrepreneur || 0);
+    const totalOthers = (ug.others || 0) + (pg.others || 0) + (phd.others || 0);
+    const totalPositive = totalPlaced + totalHigherStudies + totalEntrepreneur;
+
+    const placementRate = totalStrength > 0 ? ((totalPlaced / totalStrength) * 100).toFixed(1) : '0.0';
+    const progressionRate = totalStrength > 0 ? ((totalPositive / totalStrength) * 100).toFixed(1) : '0.0';
+
+    return `
+      <div class="space-y-6">
+        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Students Outcomes – 2026 Passed out</h3>
+            <p class="text-xs text-slate-500">Graduating batch placement, higher education progression, entrepreneurship, and career pathways.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 10</span>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 block">Graduating Strength</span>
+            <span class="text-2xl font-black text-blue-900 block mt-1">${totalStrength}</span>
+            <span class="text-[11px] text-blue-700">UG (${ug.strength||0}) + PG (${pg.strength||0}) + PhD (${phd.strength||0})</span>
+          </div>
+          <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Total Placements</span>
+            <span class="text-2xl font-black text-emerald-900 block mt-1">${totalPlaced}</span>
+            <span class="text-[11px] text-emerald-700 font-semibold">${placementRate}% Placement Rate</span>
+          </div>
+          <div class="bg-purple-50 p-3.5 rounded-xl border border-purple-200">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-800 block">Higher Studies</span>
+            <span class="text-2xl font-black text-purple-900 block mt-1">${totalHigherStudies}</span>
+            <span class="text-[11px] text-purple-700 font-semibold">${totalStrength > 0 ? ((totalHigherStudies/totalStrength)*100).toFixed(1) : 0}% Progression</span>
+          </div>
+          <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">Startups / Entrepreneurs</span>
+            <span class="text-2xl font-black text-amber-900 block mt-1">${totalEntrepreneur}</span>
+            <span class="text-[11px] text-amber-700 font-semibold">${progressionRate}% Overall Positive</span>
+          </div>
+        </div>
+
+        <!-- Table 10 Input Matrix -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="graduation-cap" class="w-4 h-4 text-blue-600"></i>
+              Table 10: Students Outcomes – 2026 Passed out Breakdown
+            </h4>
+            <span class="text-xs text-slate-500 font-medium">Auto-calculates totals & success rates</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                <tr>
+                  <th class="p-3">Programme</th>
+                  <th class="p-3 text-center">Batch Strength</th>
+                  <th class="p-3 text-center">On Campus</th>
+                  <th class="p-3 text-center">OFF Campus</th>
+                  <th class="p-3 text-center">Higher Studies</th>
+                  <th class="p-3 text-center">Entrepreneur</th>
+                  <th class="p-3 text-center">Others</th>
+                  <th class="p-3 text-center font-bold">Placed %</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${['ug', 'pg', 'phd'].map(prog => {
+                  const pData = outcomes[prog] || {};
+                  const str = pData.strength || 0;
+                  const pl = (pData.onCampus || 0) + (pData.offCampus || 0);
+                  const pRate = str > 0 ? ((pl / str) * 100).toFixed(1) : '0.0';
+                  const label = prog === 'ug' ? 'UG (Undergraduate)' : (prog === 'pg' ? 'PG (Postgraduate)' : 'PhD (Doctoral)');
+                  return `
+                    <tr class="hover:bg-slate-50">
+                      <td class="p-3 font-bold text-slate-800">${label}</td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${str}" onchange="formBuilder.updateOutcomeField('${prog}', 'strength', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-slate-800" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${pData.onCampus || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'onCampus', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-blue-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${pData.offCampus || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'offCampus', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-indigo-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${pData.higherStudies || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'higherStudies', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-purple-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${pData.entrepreneur || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'entrepreneur', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-amber-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${pData.others || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'others', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-slate-600" />
+                      </td>
+                      <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/30">${pRate}%</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr class="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                  <td class="p-3">Total Passed Out</td>
+                  <td class="p-3 text-center">${totalStrength}</td>
+                  <td class="p-3 text-center text-blue-800">${totalOnCampus}</td>
+                  <td class="p-3 text-center text-indigo-800">${totalOffCampus}</td>
+                  <td class="p-3 text-center text-purple-800">${totalHigherStudies}</td>
+                  <td class="p-3 text-center text-amber-800">${totalEntrepreneur}</td>
+                  <td class="p-3 text-center text-slate-700">${totalOthers}</td>
+                  <td class="p-3 text-center text-emerald-800 text-sm bg-emerald-100/50">${placementRate}%</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1546,6 +1915,75 @@ class FormBuilder {
     data.qualitativePresentation.bestPractices.push({ title: '', objectives: '', context: '', practice: '', evidence: '', resourcesRequired: '' });
     window.dataStore.saveCurrentData();
     this.render(data);
+  }
+
+  updateScholarField(type, gender, val) {
+    const data = window.dataStore.data;
+    if (!data.departmentInfo) data.departmentInfo = {};
+    if (!data.departmentInfo.scholars) {
+      data.departmentInfo.scholars = { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
+    }
+    if (!data.departmentInfo.scholars[type]) data.departmentInfo.scholars[type] = { male: 0, female: 0 };
+    data.departmentInfo.scholars[type][gender] = val;
+
+    const ftM = data.departmentInfo.scholars.fullTime?.male || 0;
+    const ftF = data.departmentInfo.scholars.fullTime?.female || 0;
+    const ptM = data.departmentInfo.scholars.partTime?.male || 0;
+    const ptF = data.departmentInfo.scholars.partTime?.female || 0;
+    data.departmentInfo.researchScholarsCount = ftM + ftF + ptM + ptF;
+
+    window.dataStore.saveCurrentData();
+    window.dataStore.notify();
+    this.render(data);
+  }
+
+  updateOutcomeField(prog, metric, val) {
+    const data = window.dataStore.data;
+    if (!data.studentsOutcomes2026) data.studentsOutcomes2026 = {};
+    if (!data.studentsOutcomes2026[prog]) data.studentsOutcomes2026[prog] = {};
+    data.studentsOutcomes2026[prog][metric] = val;
+    window.dataStore.saveCurrentData();
+    window.dataStore.notify();
+    this.render(data);
+  }
+
+  addActivityRow(category) {
+    const data = window.dataStore.data;
+    if (!data.qualitativePresentation) data.qualitativePresentation = {};
+    if (!data.qualitativePresentation.statusOfActivities) {
+      data.qualitativePresentation.statusOfActivities = { basedOnAAA2025_2026: [], basedOnFacultyOrientation2026: [] };
+    }
+    if (!data.qualitativePresentation.statusOfActivities[category]) {
+      data.qualitativePresentation.statusOfActivities[category] = [];
+    }
+    data.qualitativePresentation.statusOfActivities[category].push({
+      eventActivity: '',
+      monthYear: '',
+      status: 'Completed',
+      remarks: ''
+    });
+    window.dataStore.saveCurrentData();
+    window.dataStore.notify();
+    this.render(data);
+  }
+
+  removeActivityRow(category, index) {
+    const data = window.dataStore.data;
+    if (data.qualitativePresentation?.statusOfActivities?.[category]) {
+      data.qualitativePresentation.statusOfActivities[category].splice(index, 1);
+      window.dataStore.saveCurrentData();
+      window.dataStore.notify();
+      this.render(data);
+    }
+  }
+
+  updateActivityItem(category, index, field, val) {
+    const data = window.dataStore.data;
+    if (data.qualitativePresentation?.statusOfActivities?.[category]?.[index]) {
+      data.qualitativePresentation.statusOfActivities[category][index][field] = val;
+      window.dataStore.saveCurrentData();
+      this.showSaveIndicator();
+    }
   }
 
   showSaveIndicator() {

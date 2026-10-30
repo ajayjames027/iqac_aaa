@@ -163,7 +163,7 @@ class PresentationMode {
       "Attribute VI & VIII: Extended Curricular & Student Awards",
       "Signature Achievements & Verifiable Impact (2026-2027)",
       "Uniqueness of the Department (Distinctive Identity)",
-      "Status of Activities Completed (AAA 2025-2026 ATR)",
+      "Status of Activities Completed (AAA 2025-2026 ATR & FOP June 2026)",
       "Institutional Best Practices (NAAC Format)",
       "SWOC Analysis Matrix",
       "Future Strategic Roadmap (1 & 3-5 Year Targets)",
@@ -202,6 +202,11 @@ class PresentationMode {
   // Slide 0: Executive Welcome Title
   slide0Title(data) {
     const dept = data.departmentInfo || {};
+    const sch = data.scholars || { fullTime: { male: 0, female: 0, total: 0 }, partTime: { male: 0, female: 0, total: 0 }, total: { male: 0, female: 0, grandTotal: 0 } };
+    const ftTotal = Number(sch.fullTime?.total) || ((Number(sch.fullTime?.male) || 0) + (Number(sch.fullTime?.female) || 0));
+    const ptTotal = Number(sch.partTime?.total) || ((Number(sch.partTime?.male) || 0) + (Number(sch.partTime?.female) || 0));
+    const grandTotal = Number(sch.total?.grandTotal) || (ftTotal + ptTotal);
+
     return `
       <div class="text-center max-w-4xl mx-auto space-y-6">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold">
@@ -224,20 +229,25 @@ class PresentationMode {
           <p class="text-sm text-slate-300 mt-1">${dept.school || 'School of Computing Sciences'}</p>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto pt-4 text-left">
-          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-3xl mx-auto pt-4 text-left">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Head of Dept</span>
-            <span class="text-xs font-bold text-slate-200">${dept.hodName || 'Dr. HOD'}</span>
+            <span class="text-xs font-bold text-slate-200 truncate block">${dept.hodName || 'Dr. HOD'}</span>
           </div>
-          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Faculty Strength</span>
             <span class="text-xs font-bold text-amber-400">${dept.facultyCount || 0} Members</span>
           </div>
-          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Student Strength</span>
             <span class="text-xs font-bold text-emerald-400">${(dept.studentCountUG || 0) + (dept.studentCountPG || 0)} Enrolled</span>
           </div>
-          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Research Scholars</span>
+            <span class="text-xs font-bold text-cyan-400">${grandTotal} Scholars</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">FT: ${ftTotal} | PT: ${ptTotal}</span>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 col-span-2 sm:col-span-1">
             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Audit Date</span>
             <span class="text-xs font-bold text-slate-200">${dept.auditDate || 'Scheduled'}</span>
           </div>
@@ -397,28 +407,47 @@ class PresentationMode {
           </div>
         </div>
 
-        <!-- MOOC UG/PG Table -->
-        <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
-          <h3 class="text-xs font-bold uppercase text-purple-400 mb-2 flex items-center gap-1.5">
-            <i data-lucide="globe" class="w-4 h-4"></i> SWAYAM / NPTEL MOOC Completion Track Record
-          </h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-center">
-            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-              <span class="text-slate-400 block text-[10px]">UG Cycle I Pass</span>
-              <span class="text-lg font-black text-emerald-400">${att1.moocs?.ug?.cycle1_completed || 0} / ${att1.moocs?.ug?.cycle1_registered || 0}</span>
+        <!-- MOOC UG/PG Table & PTM -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+            <h3 class="text-xs font-bold uppercase text-purple-400 mb-2 flex items-center gap-1.5">
+              <i data-lucide="globe" class="w-4 h-4"></i> SWAYAM / NPTEL MOOC Completion Track Record
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-center">
+              <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">UG Cycle I</span>
+                <span class="text-base font-black text-emerald-400">${att1.moocs?.ug?.cycle1_completed || 0} / ${att1.moocs?.ug?.cycle1_registered || 0}</span>
+              </div>
+              <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">UG Cycle II</span>
+                <span class="text-base font-black text-emerald-400">${att1.moocs?.ug?.cycle2_completed || 0} / ${att1.moocs?.ug?.cycle2_registered || 0}</span>
+              </div>
+              <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">PG Cycle I</span>
+                <span class="text-base font-black text-purple-400">${att1.moocs?.pg?.cycle1_completed || 0} / ${att1.moocs?.pg?.cycle1_registered || 0}</span>
+              </div>
+              <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">PG Cycle II</span>
+                <span class="text-base font-black text-purple-400">${att1.moocs?.pg?.cycle2_completed || 0} / ${att1.moocs?.pg?.cycle2_registered || 0}</span>
+              </div>
             </div>
-            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-              <span class="text-slate-400 block text-[10px]">UG Cycle II Pass</span>
-              <span class="text-lg font-black text-emerald-400">${att1.moocs?.ug?.cycle2_completed || 0} / ${att1.moocs?.ug?.cycle2_registered || 0}</span>
+          </div>
+
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-2">
+            <h3 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+              <i data-lucide="users" class="w-4 h-4"></i> Parent Teacher Meetings (PTM)
+            </h3>
+            <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700/60 flex justify-between items-center text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 block">Meetings</span>
+                <span class="text-lg font-black text-amber-400">${att1.ptm?.meetingsCount || 0}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-400 block">Parents Attended</span>
+                <span class="text-lg font-black text-emerald-400">${att1.ptm?.parentsParticipated || 0}</span>
+              </div>
             </div>
-            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-              <span class="text-slate-400 block text-[10px]">PG Cycle I Pass</span>
-              <span class="text-lg font-black text-purple-400">${att1.moocs?.pg?.cycle1_completed || 0} / ${att1.moocs?.pg?.cycle1_registered || 0}</span>
-            </div>
-            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-              <span class="text-slate-400 block text-[10px]">PG Cycle II Pass</span>
-              <span class="text-lg font-black text-purple-400">${att1.moocs?.pg?.cycle2_completed || 0} / ${att1.moocs?.pg?.cycle2_registered || 0}</span>
-            </div>
+            <p class="text-[10px] text-slate-400 leading-tight">${att1.ptm?.details || 'Regular semester feedback and progress review sessions conducted.'}</p>
           </div>
         </div>
       </div>
@@ -584,58 +613,123 @@ class PresentationMode {
     `;
   }
 
-  // Slide 5: Attribute VI & VIII - Extended Curricular
+  // Slide 5: Attribute VI & VIII - Extended Curricular & Students Outcomes
   slide5StudentEngagements(data) {
     const att6_8 = data.attributeVI_VIII || {};
+    const outcomes = data.studentsOutcomes2026 || { ug: {}, pg: {}, phd: {} };
+    const ug = outcomes.ug || {};
+    const pg = outcomes.pg || {};
+    const phd = outcomes.phd || {};
+
+    const totalStrength = (Number(ug.strength) || 0) + (Number(pg.strength) || 0) + (Number(phd.strength) || 0);
+    const totalPlaced = (Number(ug.onCampus) || 0) + (Number(ug.offCampus) || 0) + (Number(pg.onCampus) || 0) + (Number(pg.offCampus) || 0) + (Number(phd.onCampus) || 0) + (Number(phd.offCampus) || 0);
+    const totalHigher = (Number(ug.higherStudies) || 0) + (Number(pg.higherStudies) || 0) + (Number(phd.higherStudies) || 0);
+
     return `
-      <div class="space-y-6">
+      <div class="space-y-5">
         <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
           <div>
-            <span class="text-xs font-bold text-teal-400 uppercase tracking-widest">Attribute VI & VIII</span>
-            <h2 class="text-2xl font-black text-white">Student Engagements, Clubs & State/National Awards</h2>
+            <span class="text-xs font-bold text-teal-400 uppercase tracking-widest">Attribute VI, VIII & Outcomes</span>
+            <h2 class="text-2xl font-black text-white">Students Outcomes (2026 Batch), Clubs & Competitive Exams</h2>
           </div>
           <span class="text-xs text-slate-400">First 15-Mins Dashboard</span>
         </div>
 
+        <!-- Table 10: Students Outcomes – 2026 Passed out -->
+        <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="graduation-cap" class="w-4 h-4"></i> Students Outcomes – 2026 Passed Out (Placement & Higher Studies)
+            </h3>
+            <span class="text-[11px] text-slate-300 font-semibold">
+              Total Cohort: <strong>${totalStrength}</strong> | Total Placed: <strong>${totalPlaced}</strong> | Higher Studies: <strong>${totalHigher}</strong>
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-900/90 text-slate-300 text-[10px] uppercase font-bold border-b border-slate-700">
+                  <th class="py-2 px-3">Programme</th>
+                  <th class="py-2 px-3 text-center">Batch Strength</th>
+                  <th class="py-2 px-3 text-center text-emerald-400">On Campus</th>
+                  <th class="py-2 px-3 text-center text-teal-400">Off Campus</th>
+                  <th class="py-2 px-3 text-center text-blue-400">Higher Studies</th>
+                  <th class="py-2 px-3 text-center text-amber-400">Entrepreneur</th>
+                  <th class="py-2 px-3 text-center text-slate-400">Others</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-200">
+                <tr class="hover:bg-slate-800/50">
+                  <td class="py-2 px-3 font-bold text-white">UG Programmes</td>
+                  <td class="py-2 px-3 text-center font-bold">${ug.strength || 0}</td>
+                  <td class="py-2 px-3 text-center text-emerald-400 font-bold">${ug.onCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-teal-400 font-bold">${ug.offCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-blue-400 font-bold">${ug.higherStudies || 0}</td>
+                  <td class="py-2 px-3 text-center text-amber-400 font-bold">${ug.entrepreneur || 0}</td>
+                  <td class="py-2 px-3 text-center text-slate-400 font-bold">${ug.others || 0}</td>
+                </tr>
+                <tr class="hover:bg-slate-800/50">
+                  <td class="py-2 px-3 font-bold text-white">PG Programmes</td>
+                  <td class="py-2 px-3 text-center font-bold">${pg.strength || 0}</td>
+                  <td class="py-2 px-3 text-center text-emerald-400 font-bold">${pg.onCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-teal-400 font-bold">${pg.offCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-blue-400 font-bold">${pg.higherStudies || 0}</td>
+                  <td class="py-2 px-3 text-center text-amber-400 font-bold">${pg.entrepreneur || 0}</td>
+                  <td class="py-2 px-3 text-center text-slate-400 font-bold">${pg.others || 0}</td>
+                </tr>
+                <tr class="hover:bg-slate-800/50">
+                  <td class="py-2 px-3 font-bold text-white">Ph.D. Scholars</td>
+                  <td class="py-2 px-3 text-center font-bold">${phd.strength || 0}</td>
+                  <td class="py-2 px-3 text-center text-emerald-400 font-bold">${phd.onCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-teal-400 font-bold">${phd.offCampus || 0}</td>
+                  <td class="py-2 px-3 text-center text-blue-400 font-bold">${phd.higherStudies || 0}</td>
+                  <td class="py-2 px-3 text-center text-amber-400 font-bold">${phd.entrepreneur || 0}</td>
+                  <td class="py-2 px-3 text-center text-slate-400 font-bold">${phd.others || 0}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Active Clubs -->
-          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-2">
             <h3 class="text-xs font-bold uppercase text-teal-400 flex items-center gap-1.5">
               <i data-lucide="users-round" class="w-4 h-4"></i> Departmental Clubs & Professional Chapters
             </h3>
             <div class="space-y-2 text-xs">
               ${(att6_8.clubs || []).map(club => `
-                <div class="p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/60">
+                <div class="p-2 bg-slate-900/80 rounded-lg border border-slate-700/60">
                   <div class="flex justify-between font-bold text-slate-200">
                     <span>${club.clubName}</span>
                     <span class="text-teal-400">${(Number(club.studentsUG)||0) + (Number(club.studentsPG)||0)} Members</span>
                   </div>
-                  <p class="text-slate-400 text-[11px] mt-1">${club.activities}</p>
+                  <p class="text-slate-400 text-[11px] mt-0.5">${club.activities}</p>
                 </div>
               `).join('')}
             </div>
           </div>
 
           <!-- Competitive Exams & Awards -->
-          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+          <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-2">
             <h3 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
               <i data-lucide="trophy" class="w-4 h-4"></i> Competitive Examinations & Student Trophies
             </h3>
-            <div class="grid grid-cols-2 gap-3 text-center text-xs">
-              <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-                <span class="text-slate-400 text-[10px] block">Exams Appeared</span>
-                <span class="text-2xl font-black text-slate-200">${att6_8.competitiveExams?.appeared || 0}</span>
+            <div class="grid grid-cols-2 gap-2 text-center text-xs">
+              <div class="p-2 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 text-[10px] block">Appeared</span>
+                <span class="text-xl font-black text-slate-200">${att6_8.competitiveExams?.appeared || 0}</span>
               </div>
-              <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-                <span class="text-slate-400 text-[10px] block">Exams Qualified</span>
-                <span class="text-2xl font-black text-emerald-400">${att6_8.competitiveExams?.qualified || 0}</span>
+              <div class="p-2 bg-slate-900 rounded-lg border border-slate-700">
+                <span class="text-slate-400 text-[10px] block">Qualified</span>
+                <span class="text-xl font-black text-emerald-400">${att6_8.competitiveExams?.qualified || 0}</span>
               </div>
             </div>
-            <p class="text-slate-400 text-[11px] leading-relaxed bg-slate-900/50 p-2.5 rounded border border-slate-700/50">
+            <p class="text-slate-400 text-[11px] leading-relaxed bg-slate-900/50 p-2 rounded border border-slate-700/50">
               ${att6_8.competitiveExams?.details || 'Students qualified in GATE, NET, TNPSC, and Banking exams.'}
             </p>
-            <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-700/60 text-xs">
-              <span class="font-bold text-amber-300 block mb-1">Prizes & Championship Trophies:</span>
+            <div class="p-2 bg-slate-900/80 rounded-lg border border-slate-700/60 text-xs">
+              <span class="font-bold text-amber-300 block mb-0.5">Prizes & Championship Trophies:</span>
               <p class="text-slate-300 text-[11px] leading-relaxed">${att6_8.studentParticipationAwards?.details || 'Champions in national inter-collegiate symposia.'}</p>
             </div>
           </div>
@@ -730,46 +824,91 @@ class PresentationMode {
     `;
   }
 
-  // Slide 8: Status of Activities Completed (AAA 2025-26 ATR)
+  // Slide 8: Status of Activities Completed (AAA 2025-26 ATR & FOP June 2026)
   slide8Atr2025_26(data) {
-    const atr = data.qualitativePresentation?.statusAAA2025_2026 || [];
+    const act = data.statusOfActivities || {};
+    const cat1 = (act.basedOnAAA2025_2026 && act.basedOnAAA2025_2026.length > 0)
+      ? act.basedOnAAA2025_2026
+      : (data.qualitativePresentation?.statusAAA2025_2026 || []).map(i => ({
+          activity: i.recommendation || i.activity || '',
+          monthYear: i.monthYear || '2025-26',
+          status: i.status || 'Completed',
+          remarks: i.evidence || i.remarks || ''
+        }));
+    const cat2 = act.basedOnFacultyOrientation2026 || [];
+
+    const renderActivityList = (items, emptyLabel) => {
+      if (!items || items.length === 0) {
+        return `<div class="p-3 bg-slate-900/60 rounded-lg text-slate-400 text-xs italic text-center">${emptyLabel}</div>`;
+      }
+      return items.map((item, idx) => {
+        const isComp = (item.status || '').toLowerCase().includes('completed') && !(item.status || '').toLowerCase().includes('not');
+        return `
+          <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+            <div class="flex items-start gap-2.5 sm:w-5/12">
+              <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5 border border-slate-700">
+                ${idx + 1}
+              </span>
+              <div>
+                <span class="font-bold text-slate-200 block text-xs">${item.activity || item.recommendation || 'Activity'}</span>
+                <span class="text-[10px] text-slate-400"><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${item.monthYear || 'Scheduled'}</span>
+              </div>
+            </div>
+
+            <div class="sm:w-2/12">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${isComp ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
+                <span>${isComp ? '✓' : '⏳'}</span>
+                <span>${item.status || 'Completed'}</span>
+              </span>
+            </div>
+
+            <div class="sm:w-5/12 bg-slate-950/60 p-2 rounded border border-slate-800 text-[11px]">
+              <span class="text-[9px] text-emerald-400 font-bold uppercase block">Remarks / Evidence:</span>
+              <span class="text-slate-300">${item.remarks || item.evidence || 'Documented and verified.'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
     return `
-      <div class="space-y-6">
+      <div class="space-y-5">
         <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
           <div>
-            <span class="text-xs font-bold text-blue-400 uppercase tracking-widest">Compliance & Continuity</span>
-            <h2 class="text-2xl font-black text-white">Status of Activities Completed based on AAA 2025 – 2026</h2>
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-widest">Compliance & Strategic Execution</span>
+            <h2 class="text-2xl font-black text-white">Status of Activities Completed (AAA 2025-26 ATR & FOP June 2026)</h2>
           </div>
           <span class="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-lg border border-blue-500/30">
-            Action Taken Report (ATR)
+            Table 2 Compliant
           </span>
         </div>
 
-        <div class="space-y-3">
-          ${atr.map((item, idx) => `
-            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-              <div class="flex items-start gap-3 md:w-5/12">
-                <span class="w-5 h-5 rounded-full bg-slate-700 text-slate-300 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  ${idx + 1}
-                </span>
-                <div>
-                  <span class="font-bold text-slate-200 block text-xs">${item.recommendation}</span>
-                  <span class="text-[10px] text-slate-400">Audit Recommendation 2025-26</span>
-                </div>
-              </div>
-
-              <div class="md:w-2/12">
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${item.status === 'Fully Completed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
-                  ✓ ${item.status}
-                </span>
-              </div>
-
-              <div class="md:w-5/12 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/50">
-                <span class="text-[10px] text-emerald-400 font-bold uppercase block">Action Taken & Evidence:</span>
-                <span class="text-slate-300">${item.evidence}</span>
-              </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Category 1 -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+              <h3 class="text-xs font-bold uppercase text-blue-400 flex items-center gap-1.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i> 1. Based on AAA 2025 – 2026 (ATR)
+              </h3>
+              <span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px] font-bold">${cat1.length} Activities</span>
             </div>
-          `).join('')}
+            <div class="space-y-2 max-h-[48vh] overflow-y-auto pr-1">
+              ${renderActivityList(cat1, 'No AAA 2025-26 ATR activities recorded.')}
+            </div>
+          </div>
+
+          <!-- Category 2 -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+              <h3 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> 2. Faculty Orientation Programme (June 2026)
+              </h3>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-bold">${cat2.length} Activities</span>
+            </div>
+            <div class="space-y-2 max-h-[48vh] overflow-y-auto pr-1">
+              ${renderActivityList(cat2, 'No Faculty Orientation June 2026 activities recorded.')}
+            </div>
+          </div>
         </div>
       </div>
     `;

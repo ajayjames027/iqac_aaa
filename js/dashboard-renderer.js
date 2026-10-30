@@ -6,11 +6,14 @@ class DashboardRenderer {
     this.chartInstances = {};
     this.selectedAttribute = 'all'; // 'all', 'att1', 'att2', 'att4_7', 'att5', 'att6_8', 'att9'
     this.expandedSections = {
+      scholars: false,
+      status_act: false,
       att1: false,
       att2: false,
       att4_7: false,
       att5: false,
       att6_8: false,
+      outcomes: false,
       att9: false
     };
     this.allExpanded = false;
@@ -54,7 +57,7 @@ class DashboardRenderer {
 
   toggleAllDetails() {
     this.allExpanded = !this.allExpanded;
-    const sections = ['att1', 'att2', 'att4_7', 'att5', 'att6_8', 'att9'];
+    const sections = ['scholars', 'status_act', 'att1', 'att2', 'att4_7', 'att5', 'att6_8', 'outcomes', 'att9'];
     sections.forEach(sec => {
       this.expandedSections[sec] = this.allExpanded;
       const container = document.getElementById(`detail-container-${sec}`);
@@ -237,6 +240,18 @@ class DashboardRenderer {
     const currentStatusBadge = statusBadges[activeDeptObj.status] || statusBadges.submitted;
     const currentGrade = activeDeptObj.evaluation?.grade || 'A++';
 
+    // Table 1 Scholars Matrix
+    const scholars = dept.scholars || { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
+    const ftM = scholars.fullTime?.male || 0;
+    const ftF = scholars.fullTime?.female || 0;
+    const ftTotal = ftM + ftF;
+    const ptM = scholars.partTime?.male || 0;
+    const ptF = scholars.partTime?.female || 0;
+    const ptTotal = ptM + ptF;
+    const maleTotal = ftM + ptM;
+    const femaleTotal = ftF + ptF;
+    const totalScholars = ftTotal + ptTotal || dept.researchScholarsCount || 0;
+
     this.container.innerHTML = `
       <div class="space-y-6">
         <!-- Executive Header Banner (Matching Admin Console Style) -->
@@ -258,7 +273,7 @@ class DashboardRenderer {
               <span><strong>Accreditation:</strong> ${dept.accreditation || 'NAAC A++'}</span>
               <span><strong>Faculty:</strong> ${dept.facultyCount || 0}</span>
               <span><strong>Students:</strong> ${(dept.studentCountUG || 0) + (dept.studentCountPG || 0)}</span>
-              <span><strong>Scholars:</strong> ${dept.researchScholarsCount || 0}</span>
+              <span><strong>Scholars:</strong> ${totalScholars} (FT: ${ftTotal} | PT: ${ptTotal})</span>
             </p>
           </div>
 
@@ -470,6 +485,80 @@ class DashboardRenderer {
           </div>
         </div>
 
+        <!-- Table 1: Research Scholars Matrix Card (FT & PT x Male & Female) -->
+        <div class="bg-white rounded-xl p-4 border border-purple-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-purple-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200">Table 1</span>
+                <h4 class="text-sm font-bold text-slate-800">Research Scholars Matrix (Full Time vs Part Time)</h4>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Doctoral researchers enrolled under university-approved research supervisors.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-2 text-center text-xs">
+              <div class="px-3 py-1.5 bg-purple-50 rounded-lg border border-purple-200">
+                <span class="text-[10px] text-slate-500 block uppercase font-bold">FT Scholars</span>
+                <span class="text-base font-black text-purple-700">${ftTotal}</span>
+                <span class="text-[9px] text-slate-400 block">${scholars.fullTime?.male||0}M / ${scholars.fullTime?.female||0}F</span>
+              </div>
+              <div class="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                <span class="text-[10px] text-slate-500 block uppercase font-bold">PT Scholars</span>
+                <span class="text-base font-black text-blue-700">${ptTotal}</span>
+                <span class="text-[9px] text-slate-400 block">${scholars.partTime?.male||0}M / ${scholars.partTime?.female||0}F</span>
+              </div>
+              <div class="px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 font-black">
+                <span class="text-[10px] text-slate-500 block uppercase font-bold">Total Scholars</span>
+                <span class="text-base font-black text-slate-800">${totalScholars}</span>
+                <span class="text-[9px] text-slate-500 block">${maleTotal}M / ${femaleTotal}F</span>
+              </div>
+            </div>
+            <button id="detail-btn-scholars" type="button" onclick="dashboardRenderer.toggleSection('scholars')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${this.isSectionExpanded('scholars') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${this.isSectionExpanded('scholars') ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${this.isSectionExpanded('scholars') ? 'Hide Matrix' : 'View Matrix'}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Expandable Scholars Table -->
+        <div id="detail-container-scholars" class="${this.isSectionExpanded('scholars') ? '' : 'hidden'} bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-purple-50 text-purple-950 font-bold border-b border-purple-200">
+              <tr>
+                <th class="p-2.5">Scholars Category</th>
+                <th class="p-2.5 text-center">Male Scholars</th>
+                <th class="p-2.5 text-center">Female Scholars</th>
+                <th class="p-2.5 text-center font-black">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">FT (Full Time)</td>
+                <td class="p-2.5 text-center font-bold text-blue-700">${scholars.fullTime?.male || 0}</td>
+                <td class="p-2.5 text-center font-bold text-purple-700">${scholars.fullTime?.female || 0}</td>
+                <td class="p-2.5 text-center font-black text-slate-900 bg-purple-50/30">${ftTotal}</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">PT (Part Time)</td>
+                <td class="p-2.5 text-center font-bold text-blue-700">${scholars.partTime?.male || 0}</td>
+                <td class="p-2.5 text-center font-bold text-purple-700">${scholars.partTime?.female || 0}</td>
+                <td class="p-2.5 text-center font-black text-slate-900 bg-purple-50/30">${ptTotal}</td>
+              </tr>
+              <tr class="bg-slate-50 font-black">
+                <td class="p-2.5">Total Doctoral Scholars</td>
+                <td class="p-2.5 text-center text-blue-900">${maleTotal}</td>
+                <td class="p-2.5 text-center text-purple-900">${femaleTotal}</td>
+                <td class="p-2.5 text-center text-emerald-800 text-sm">${totalScholars}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- ATTRIBUTE-WISE DISPLAY BAR (FILTER / JUMP NAVIGATION - Matching Admin Filter Bar) -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 sticky top-16 z-30">
           <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
@@ -477,13 +566,15 @@ class DashboardRenderer {
               <i data-lucide="filter" class="w-3.5 h-3.5 text-blue-600"></i>
               Filter Attribute:
             </span>
-            ${this.renderAttrPill('all', 'All Attributes', 'layers')}
-            ${this.renderAttrPill('att1', 'Att I: Curriculum', 'book-open')}
-            ${this.renderAttrPill('att2', 'Att II: Faculty', 'users')}
-            ${this.renderAttrPill('att4_7', 'Att 4 & 7: Grants & IPR', 'indian-rupee')}
-            ${this.renderAttrPill('att5', 'Att V: Teaching & MoUs', 'laptop')}
-            ${this.renderAttrPill('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy')}
-            ${this.renderAttrPill('att9', 'Att IX: Research & Books', 'award')}
+            ${this.renderAttrPill('all', 'All Sections', 'layers')}
+            ${this.renderAttrPill('status_act', 'Activities (T2)', 'check-square')}
+            ${this.renderAttrPill('att1', 'Att I: Curriculum (T3-4)', 'book-open')}
+            ${this.renderAttrPill('att2', 'Att II: Faculty (T5)', 'users')}
+            ${this.renderAttrPill('att4_7', 'Att 4 & 7: Grants (T6)', 'indian-rupee')}
+            ${this.renderAttrPill('att5', 'Att V: Teaching (T7)', 'laptop')}
+            ${this.renderAttrPill('att6_8', 'Att VI & VIII: Clubs (T8-9)', 'trophy')}
+            ${this.renderAttrPill('outcomes', 'Students Outcomes (T10)', 'graduation-cap')}
+            ${this.renderAttrPill('att9', 'Att IX: Research (T11)', 'award')}
           </div>
 
           <div class="flex items-center gap-2 text-xs text-slate-500">
@@ -571,13 +662,15 @@ class DashboardRenderer {
           </div>
         ` : ''}
 
-        <!-- DETAILED ATTRIBUTE-WISE SECTIONS CONTAINER -->
+        <!-- DETAILED ATTRIBUTE-WISE SECTIONS CONTAINER (Matching questions.docx Tables 2 to 11) -->
         <div class="space-y-8">
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'status_act') ? this.renderStatusOfActivitiesSection(data.qualitativePresentation) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att1') ? this.renderAttributeISection(att1) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att2') ? this.renderAttributeIISection(att2) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att4_7') ? this.renderAttributeIV_VIISection(att4_7) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att5') ? this.renderAttributeVSection(att5) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att6_8') ? this.renderAttributeVI_VIIISection(att6_8) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'outcomes') ? this.renderStudentsOutcomesSection(data.studentsOutcomes2026) : ''}
           ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att9') ? this.renderAttributeIXSection(att9) : ''}
         </div>
 
@@ -622,15 +715,191 @@ class DashboardRenderer {
 
   getAttributeTitle(key) {
     const map = {
-      all: 'All Attributes (I to IX)',
-      att1: 'Attribute I: Curriculum Design',
-      att2: 'Attribute II: Faculty Resources',
-      att4_7: 'Attribute 4 & 7: Grants & Resource Mobilization',
-      att5: 'Attribute V: Learning & Teaching (MoUs)',
-      att6_8: 'Attribute VI & VIII: Clubs, Associations & Awards',
-      att9: 'Attribute IX: Research & Innovation Outcomes'
+      all: 'All Sections (Tables 1 to 11)',
+      status_act: 'Table 2: Status of Activities Completed',
+      att1: 'Table 3 & 4: Attribute I - Curriculum & PTM',
+      att2: 'Table 5: Attribute II - Faculty Resources',
+      att4_7: 'Table 6: Attribute 4 & 7 - Grants & Resource Mobilization',
+      att5: 'Table 7: Attribute V - Learning & Teaching (MoUs)',
+      att6_8: 'Table 8 & 9: Attribute VI & VIII - Clubs & Awards',
+      outcomes: 'Table 10: Students Outcomes – 2026 Passed out',
+      att9: 'Table 11: Attribute IX - Research & Innovation Outcomes'
     };
     return map[key] || 'All Attributes';
+  }
+
+  // ==========================================
+  // TABLE 2: STATUS OF ACTIVITIES COMPLETED
+  // ==========================================
+  renderStatusOfActivitiesSection(qual) {
+    const isExpanded = this.isSectionExpanded('status_act');
+    if (!qual) qual = {};
+    if (!qual.statusOfActivities) {
+      qual.statusOfActivities = { basedOnAAA2025_2026: [], basedOnFacultyOrientation2026: [] };
+    }
+    const act = qual.statusOfActivities;
+    const listAAA = act.basedOnAAA2025_2026 || [];
+    const listFOP = act.basedOnFacultyOrientation2026 || [];
+
+    const compAAA = listAAA.filter(x => x.status === 'Completed').length;
+    const compFOP = listFOP.filter(x => x.status === 'Completed').length;
+    const totalAAA = listAAA.length;
+    const totalFOP = listFOP.length;
+    const totalActs = totalAAA + totalFOP;
+    const totalComp = compAAA + compFOP;
+    const overallPct = totalActs > 0 ? ((totalComp / totalActs) * 100).toFixed(0) : 100;
+    const pctAAA = totalAAA > 0 ? ((compAAA / totalAAA) * 100).toFixed(0) : 100;
+    const pctFOP = totalFOP > 0 ? ((compFOP / totalFOP) * 100).toFixed(0) : 100;
+
+    return `
+      <div id="attr-section-status_act" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="check-square" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200">Table 2</span>
+                <h3 class="text-base font-bold text-slate-800">Status of Activities Completed</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Compliance on AAA 2025-26 Recommendations and June 2026 Faculty Orientation Commitments.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="detail-btn-status_act" type="button" onclick="dashboardRenderer.toggleSection('status_act')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${totalComp} / ${totalActs} Completed
+            </span>
+            <span class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-black shadow-sm">
+              ${overallPct}% Compliance
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (Always Visible) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('status_act')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">AAA 2025-26 ATR</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${compAAA} <span class="text-xs font-normal text-slate-400">/ ${totalAAA}</span></div>
+              <p class="text-[10px] text-emerald-600 font-semibold truncate">${pctAAA}% Recommendations Fulfilled</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('status_act')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Faculty Orientation '26</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${compFOP} <span class="text-xs font-normal text-slate-400">/ ${totalFOP}</span></div>
+              <p class="text-[10px] text-blue-600 font-semibold truncate">${pctFOP}% Commitments Executed</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('status_act')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Total Activities</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalActs}</div>
+              <p class="text-[10px] text-slate-500 truncate">Institutional Milestones</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('status_act')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Overall Compliance</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-emerald-700 mt-1">${overallPct}%</div>
+              <p class="text-[10px] text-emerald-600 font-semibold truncate">Target Met</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-status_act" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+            <!-- Table A: Based on AAA 2025 - 2026 -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase text-slate-800 flex items-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                  Based on AAA 2025 - 2026 Recommendations (Action Taken Report)
+                </h4>
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${compAAA}/${totalAAA} Completed</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                  <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                    <tr>
+                      <th class="p-2.5">Event / Activity</th>
+                      <th class="p-2.5 text-center">Month & Year</th>
+                      <th class="p-2.5 text-center">Status</th>
+                      <th class="p-2.5">Remarks / Measurable Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${listAAA.length > 0 ? listAAA.map(item => `
+                      <tr>
+                        <td class="p-2.5 font-bold text-slate-800">${item.eventActivity || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-600 whitespace-nowrap">${item.monthYear || '-'}</td>
+                        <td class="p-2.5 text-center whitespace-nowrap">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${item.status === 'Completed' ? '✓ Completed' : '⏳ In Progress'}
+                          </span>
+                        </td>
+                        <td class="p-2.5 text-slate-600">${item.remarks || '-'}</td>
+                      </tr>
+                    `).join('') : '<tr><td colspan="4" class="p-3 text-center text-slate-400">No records added</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Table B: Based on Faculty Orientation Programme June 2026 -->
+            <div class="bg-blue-50/40 rounded-xl p-4 border border-blue-200 space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase text-blue-950 flex items-center gap-1.5">
+                  <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
+                  Based on Data provided during Faculty Orientation Programme – June 2026
+                </h4>
+                <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">${compFOP}/${totalFOP} Completed</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left bg-white rounded-lg border border-blue-200">
+                  <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                    <tr>
+                      <th class="p-2.5">Event / Activity</th>
+                      <th class="p-2.5 text-center">Month & Year</th>
+                      <th class="p-2.5 text-center">Status</th>
+                      <th class="p-2.5">Remarks / Measurable Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${listFOP.length > 0 ? listFOP.map(item => `
+                      <tr>
+                        <td class="p-2.5 font-bold text-slate-800">${item.eventActivity || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-600 whitespace-nowrap">${item.monthYear || '-'}</td>
+                        <td class="p-2.5 text-center whitespace-nowrap">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${item.status === 'Completed' ? '✓ Completed' : '⏳ In Progress'}
+                          </span>
+                        </td>
+                        <td class="p-2.5 text-slate-600">${item.remarks || '-'}</td>
+                      </tr>
+                    `).join('') : '<tr><td colspan="4" class="p-3 text-center text-slate-400">No records added</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   // ==========================================
@@ -684,7 +953,7 @@ class DashboardRenderer {
 
         <div class="p-6 space-y-6">
           <!-- Executive Count Summary Grid (View Only The Count) -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
               <div class="flex items-center justify-between">
                 <span class="text-[10px] font-bold uppercase text-slate-500 block">VAC Courses</span>
@@ -728,6 +997,15 @@ class DashboardRenderer {
               </div>
               <div class="text-xl font-black text-slate-800 mt-1">${att1.internships?.studentsInvolved || 0}</div>
               <p class="text-[10px] text-slate-500 truncate">Outside Syllabus</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-amber-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">PTMs</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att1.ptm?.numberOfPTMs || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att1.ptm?.parentsParticipated || 0} Parents</p>
             </div>
 
             <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
@@ -811,8 +1089,8 @@ class DashboardRenderer {
             </div>
           </div>
 
-          <!-- IKS & Visits & Internships -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- IKS & Visits & Internships & PTM -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- IKS -->
             <div class="bg-amber-50/40 rounded-xl p-4 border border-amber-200">
               <h4 class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5 mb-2">
@@ -879,14 +1157,35 @@ class DashboardRenderer {
             <div class="bg-purple-50/40 rounded-xl p-4 border border-purple-200">
               <h4 class="text-xs font-bold uppercase text-purple-950 flex items-center gap-1.5 mb-2">
                 <i data-lucide="briefcase" class="w-4 h-4 text-purple-600"></i>
-                Industrial Internships (Outside Curriculum)
+                Industrial Internships
               </h4>
               <div class="p-3 bg-white rounded-lg border border-purple-200 mb-3 text-center">
                 <span class="text-2xl font-black text-purple-700 block">${att1.internships?.studentsInvolved || 0}</span>
-                <span class="text-[11px] font-semibold text-slate-500 uppercase">Students Placed in Industry Projects</span>
+                <span class="text-[11px] font-semibold text-slate-500 uppercase">Students in Outside Curriculum</span>
               </div>
               <p class="text-xs text-slate-600 leading-relaxed bg-white p-2.5 rounded border border-purple-200/60">
                 ${att1.internships?.details || 'Corporate software projects with leading multinational IT partners.'}
+              </p>
+            </div>
+
+            <!-- Parent Teacher Meetings (PTM - Table 3 Row 7) -->
+            <div class="bg-amber-50/40 rounded-xl p-4 border border-amber-200">
+              <h4 class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5 mb-2">
+                <i data-lucide="users" class="w-4 h-4 text-amber-600"></i>
+                Parent Teacher Meetings (PTM)
+              </h4>
+              <div class="grid grid-cols-2 gap-1.5 text-center text-xs mb-3">
+                <div class="p-2.5 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">PTMs Held</span>
+                  <span class="text-xl font-black text-amber-800">${att1.ptm?.numberOfPTMs || 0}</span>
+                </div>
+                <div class="p-2.5 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Parents Attended</span>
+                  <span class="text-xl font-black text-amber-800">${att1.ptm?.parentsParticipated || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed bg-white p-2.5 rounded border border-amber-200/60">
+                ${att1.ptm?.details || 'Semester-wise academic mentoring, student attendance progress, and parent feedback consultations.'}
               </p>
             </div>
           </div>
@@ -1715,6 +2014,185 @@ class DashboardRenderer {
               <p class="text-slate-600 leading-relaxed">${awards.details || 'Overall championship winners across inter-collegiate symposia.'}</p>
             </div>
           </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // TABLE 10: STUDENTS OUTCOMES – 2026 PASSED OUT
+  // ==========================================
+  renderStudentsOutcomesSection(outcomes) {
+    const isExpanded = this.isSectionExpanded('outcomes');
+    if (!outcomes) {
+      outcomes = {
+        ug: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        pg: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        phd: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 }
+      };
+    }
+    const ug = outcomes.ug || {};
+    const pg = outcomes.pg || {};
+    const phd = outcomes.phd || {};
+
+    const totalStrength = (ug.strength || 0) + (pg.strength || 0) + (phd.strength || 0);
+    const totalOnCampus = (ug.onCampus || 0) + (pg.onCampus || 0) + (phd.onCampus || 0);
+    const totalOffCampus = (ug.offCampus || 0) + (pg.offCampus || 0) + (phd.offCampus || 0);
+    const totalPlaced = totalOnCampus + totalOffCampus;
+    const totalHigherStudies = (ug.higherStudies || 0) + (pg.higherStudies || 0) + (phd.higherStudies || 0);
+    const totalEntrepreneur = (ug.entrepreneur || 0) + (pg.entrepreneur || 0) + (phd.entrepreneur || 0);
+    const totalOthers = (ug.others || 0) + (pg.others || 0) + (phd.others || 0);
+    const totalPositive = totalPlaced + totalHigherStudies + totalEntrepreneur;
+
+    const placementRate = totalStrength > 0 ? ((totalPlaced / totalStrength) * 100).toFixed(1) : '0.0';
+    const progressionRate = totalStrength > 0 ? ((totalPositive / totalStrength) * 100).toFixed(1) : '0.0';
+
+    return `
+      <div id="attr-section-outcomes" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">Table 10</span>
+                <h3 class="text-base font-bold text-slate-800">Students Outcomes – 2026 Passed out</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Final-Year Batch Placement Records, Higher Studies Progression, and Entrepreneurship Ventures.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="detail-btn-outcomes" type="button" onclick="dashboardRenderer.toggleSection('outcomes')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${totalPlaced} / ${totalStrength} Placed
+            </span>
+            <span class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-black shadow-sm">
+              ${placementRate}% Placement Rate
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (Always Visible) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Graduating Batch</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalStrength}</div>
+              <p class="text-[10px] text-slate-500 truncate">${ug.strength||0} UG / ${pg.strength||0} PG / ${phd.strength||0} PhD</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">On Campus</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-blue-700 mt-1">${totalOnCampus}</div>
+              <p class="text-[10px] text-slate-500 truncate">Tier-1 Corporates</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-blue-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">OFF Campus</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-indigo-700 mt-1">${totalOffCampus}</div>
+              <p class="text-[10px] text-slate-500 truncate">Direct Drives</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-purple-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Higher Studies</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-purple-700 mt-1">${totalHigherStudies}</div>
+              <p class="text-[10px] text-slate-500 truncate">PG & Doctoral Progression</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-amber-200 hover:border-amber-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Entrepreneurs</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600"></i>
+              </div>
+              <div class="text-xl font-black text-amber-700 mt-1">${totalEntrepreneur}</div>
+              <p class="text-[10px] text-slate-500 truncate">Startups & Ventures</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('outcomes')" class="bg-slate-50 p-3 rounded-xl border border-emerald-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-emerald-800 block">Total Positive</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-emerald-700 mt-1">${progressionRate}%</div>
+              <p class="text-[10px] text-emerald-600 font-semibold truncate">${totalPositive} Successful</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-outcomes" class="${isExpanded ? '' : 'hidden'} space-y-4 pt-4 border-t border-slate-200">
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                  <tr>
+                    <th class="p-3">Programme</th>
+                    <th class="p-3 text-center">Batch Strength</th>
+                    <th class="p-3 text-center">On Campus</th>
+                    <th class="p-3 text-center">OFF Campus</th>
+                    <th class="p-3 text-center font-bold">Total Placed</th>
+                    <th class="p-3 text-center">Higher Studies</th>
+                    <th class="p-3 text-center">Entrepreneur</th>
+                    <th class="p-3 text-center">Others</th>
+                    <th class="p-3 text-center font-black">Placed %</th>
+                    <th class="p-3 text-center font-black">Progression %</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${['ug', 'pg', 'phd'].map(prog => {
+                    const p = outcomes[prog] || {};
+                    const s = p.strength || 0;
+                    const pl = (p.onCampus || 0) + (p.offCampus || 0);
+                    const pos = pl + (p.higherStudies || 0) + (p.entrepreneur || 0);
+                    const plPct = s > 0 ? ((pl / s) * 100).toFixed(1) : '0.0';
+                    const posPct = s > 0 ? ((pos / s) * 100).toFixed(1) : '0.0';
+                    const label = prog === 'ug' ? 'UG (Undergraduate)' : (prog === 'pg' ? 'PG (Postgraduate)' : 'PhD (Doctoral)');
+                    return `
+                      <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-bold text-slate-800">${label}</td>
+                        <td class="p-3 text-center font-semibold text-slate-700">${s}</td>
+                        <td class="p-3 text-center text-blue-700 font-semibold">${p.onCampus || 0}</td>
+                        <td class="p-3 text-center text-indigo-700 font-semibold">${p.offCampus || 0}</td>
+                        <td class="p-3 text-center font-black text-slate-800 bg-slate-50/60">${pl}</td>
+                        <td class="p-3 text-center text-purple-700 font-semibold">${p.higherStudies || 0}</td>
+                        <td class="p-3 text-center text-amber-700 font-semibold">${p.entrepreneur || 0}</td>
+                        <td class="p-3 text-center text-slate-500">${p.others || 0}</td>
+                        <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/40">${plPct}%</td>
+                        <td class="p-3 text-center font-black text-blue-700 bg-blue-50/40">${posPct}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                  <tr class="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                    <td class="p-3">Total Graduating Cohort</td>
+                    <td class="p-3 text-center">${totalStrength}</td>
+                    <td class="p-3 text-center text-blue-800">${totalOnCampus}</td>
+                    <td class="p-3 text-center text-indigo-800">${totalOffCampus}</td>
+                    <td class="p-3 text-center font-black text-slate-900 bg-slate-200/50">${totalPlaced}</td>
+                    <td class="p-3 text-center text-purple-800">${totalHigherStudies}</td>
+                    <td class="p-3 text-center text-amber-800">${totalEntrepreneur}</td>
+                    <td class="p-3 text-center text-slate-700">${totalOthers}</td>
+                    <td class="p-3 text-center text-emerald-800 text-sm bg-emerald-100/60">${placementRate}%</td>
+                    <td class="p-3 text-center text-blue-900 text-sm bg-blue-100/60">${progressionRate}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

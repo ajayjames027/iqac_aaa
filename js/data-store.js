@@ -35,7 +35,7 @@ class DataStore {
 
     if (stored) {
       try {
-        this.data = JSON.parse(stored);
+        this.data = this.ensureSchema(JSON.parse(stored));
         this.activeDepartment = activeDeptName;
         this.notify();
         return;
@@ -46,7 +46,7 @@ class DataStore {
 
     // First check embedded sample data (guarantees 100% offline file:// support with zero CORS issues)
     if (window.CS_SAMPLE_DATA) {
-      this.data = JSON.parse(JSON.stringify(window.CS_SAMPLE_DATA));
+      this.data = this.ensureSchema(JSON.parse(JSON.stringify(window.CS_SAMPLE_DATA)));
       this.activeDepartment = this.data.departmentInfo.departmentName;
       this.saveCurrentData();
       this.notify();
@@ -57,7 +57,7 @@ class DataStore {
     try {
       const resp = await fetch('sample-data/cs_sample.json');
       if (resp.ok) {
-        this.data = await resp.json();
+        this.data = this.ensureSchema(await resp.json());
         this.activeDepartment = this.data.departmentInfo.departmentName;
         this.saveCurrentData();
         this.notify();
@@ -68,10 +68,59 @@ class DataStore {
     }
 
     // Fallback inline template if fetch fails
-    this.data = this.createDefaultData('PG & Research Department of Computer Science');
+    this.data = this.ensureSchema(this.createDefaultData('PG & Research Department of Computer Science'));
     this.activeDepartment = this.data.departmentInfo.departmentName;
     this.saveCurrentData();
     this.notify();
+  }
+
+  ensureSchema(data) {
+    if (!data) return data;
+    if (!data.departmentInfo) data.departmentInfo = {};
+    if (!data.departmentInfo.scholars) {
+      const total = data.departmentInfo.researchScholarsCount || 24;
+      data.departmentInfo.scholars = {
+        fullTime: { male: Math.floor(total * 0.4), female: Math.floor(total * 0.3) },
+        partTime: { male: Math.floor(total * 0.15), female: Math.ceil(total * 0.15) }
+      };
+    }
+    if (!data.attributeI) data.attributeI = {};
+    if (!data.attributeI.ptm) {
+      data.attributeI.ptm = {
+        numberOfPTMs: 2,
+        parentsParticipated: 340,
+        details: "Conducted semester-wise parent-teacher meetings for UG & PG with academic progress review and digital feedback capture."
+      };
+    }
+    if (!data.studentsOutcomes2026) {
+      data.studentsOutcomes2026 = {
+        ug: { strength: 120, onCampus: 68, offCampus: 18, higherStudies: 22, entrepreneur: 5, others: 7 },
+        pg: { strength: 58, onCampus: 36, offCampus: 10, higherStudies: 6, entrepreneur: 3, others: 3 },
+        phd: { strength: 6, onCampus: 0, offCampus: 4, higherStudies: 1, entrepreneur: 1, others: 0 }
+      };
+    }
+    if (!data.qualitativePresentation) data.qualitativePresentation = {};
+    if (!data.qualitativePresentation.statusOfActivities) {
+      const oldAtr = data.qualitativePresentation.statusAAA2025_2026 || [];
+      data.qualitativePresentation.statusOfActivities = {
+        basedOnAAA2025_2026: oldAtr.length > 0 ? oldAtr.map(atr => ({
+          eventActivity: atr.recommendation || '',
+          monthYear: 'July 2026',
+          status: atr.status === 'In Progress' ? 'Not Completed' : 'Completed',
+          remarks: atr.evidence || ''
+        })) : [
+          { eventActivity: "Enhance Scopus/WoS publication output per faculty member", monthYear: "July 2026", status: "Completed", remarks: "Publications increased in Scopus and WoS" },
+          { eventActivity: "Establish active student chapters of international professional societies", monthYear: "September 2026", status: "Completed", remarks: "Inaugurated ACM & CSI branches" },
+          { eventActivity: "File for IPR and patents from PG student projects", monthYear: "October 2026", status: "Completed", remarks: "Patents and copyrights registered" }
+        ],
+        basedOnFacultyOrientation2026: [
+          { eventActivity: "Implement Four-Quadrant E-Content Creation (SWAYAM model)", monthYear: "August 2026", status: "Completed", remarks: "6 complete CC-BY e-content packages uploaded" },
+          { eventActivity: "Launch Outcome-Based Remedial Coaching for Slow Learners", monthYear: "July 2026", status: "Completed", remarks: "Conducted 30-hour peer-assisted learning clinics" },
+          { eventActivity: "Mandatory MOOC registration for final year UG and PG students", monthYear: "September 2026", status: "Completed", remarks: "Final year students registered in Cycle I" }
+        ]
+      };
+    }
+    return data;
   }
 
   getDepartmentList() {
@@ -96,7 +145,7 @@ class DataStore {
     const stored = localStorage.getItem(STORAGE_KEY_PREFIX + deptName);
     if (stored) {
       try {
-        this.data = JSON.parse(stored);
+        this.data = this.ensureSchema(JSON.parse(stored));
         this.activeDepartment = deptName;
         localStorage.setItem(ACTIVE_DEPT_KEY, deptName);
         this.notify();
@@ -107,7 +156,7 @@ class DataStore {
     }
 
     // Create new blank if not found
-    this.data = this.createDefaultData(deptName);
+    this.data = this.ensureSchema(this.createDefaultData(deptName));
     this.activeDepartment = deptName;
     localStorage.setItem(ACTIVE_DEPT_KEY, deptName);
     this.saveCurrentData();
@@ -234,7 +283,11 @@ class DataStore {
         facultyCount: 15,
         studentCountUG: 300,
         studentCountPG: 80,
-        researchScholarsCount: 12
+        researchScholarsCount: 12,
+        scholars: {
+          fullTime: { male: 5, female: 4 },
+          partTime: { male: 2, female: 1 }
+        }
       },
       attributeI: {
         vac: [{ name: "Advanced Web Technologies", count: 1, studentsEnrolled: 60, feeCollected: 30000, agenciesInvolved: "Industry Partner" }],
@@ -242,6 +295,7 @@ class DataStore {
         iks: { seminarCount: 1, workshopCount: 1, fieldVisitCount: 1, studentsBenefitted: 120, details: "Vedic mathematics and traditional knowledge systems workshop." },
         visits: { industrial: 1, educational: 1, fieldWork: 1, fieldVisit: 1, studentsParticipated: 150, classSec: "III UG & II PG", details: "Industrial visit to IT tech park and research facility." },
         internships: { studentsInvolved: 80, details: "Internships across premier software and corporate institutions." },
+        ptm: { numberOfPTMs: 2, parentsParticipated: 240, details: "Conducted semester-wise parent-teacher meetings for UG & PG with academic progress review." },
         moocs: {
           ug: { totalStudents: 300, cycle1_registered: 180, cycle2_registered: 160, cycle1_completed: 165, cycle2_completed: 145 },
           pg: { totalStudents: 80, cycle1_registered: 75, cycle2_registered: 70, cycle1_completed: 72, cycle2_completed: 68 }
@@ -299,6 +353,11 @@ class DataStore {
         copyrights: { count: 3, details: "Software copyrights registered." },
         oer: { count: 4, details: "Open Educational Resources produced." }
       },
+      studentsOutcomes2026: {
+        ug: { strength: 120, onCampus: 68, offCampus: 18, higherStudies: 22, entrepreneur: 5, others: 7 },
+        pg: { strength: 58, onCampus: 36, offCampus: 10, higherStudies: 6, entrepreneur: 3, others: 3 },
+        phd: { strength: 6, onCampus: 0, offCampus: 4, higherStudies: 1, entrepreneur: 1, others: 0 }
+      },
       qualitativePresentation: {
         signatureAchievements: [
           { title: "Significant Research Grants Mobilized", impact: "Upgraded advanced departmental research laboratory." },
@@ -306,6 +365,16 @@ class DataStore {
           { title: "High Placement Conversion Rate", impact: "Over 80% eligible students placed in top organizations." }
         ],
         uniqueness: "Holistic student formation blending rigorous academic standards with industry-focused practical exposure and Jesuit values.",
+        statusOfActivities: {
+          basedOnAAA2025_2026: [
+            { eventActivity: "Increase publication count in indexed journals", monthYear: "July 2026", status: "Completed", remarks: "Indexed publications grew by 40%." },
+            { eventActivity: "Strengthen industry MoUs and student internships", monthYear: "September 2026", status: "Completed", remarks: "Signed 2 new industry MoUs and placed 80+ interns." }
+          ],
+          basedOnFacultyOrientation2026: [
+            { eventActivity: "Implement Four-Quadrant E-Content Creation", monthYear: "August 2026", status: "Completed", remarks: "E-content modules uploaded on institutional LMS." },
+            { eventActivity: "Mandatory MOOC enrollment for outgoing batch", monthYear: "September 2026", status: "Completed", remarks: "Cycle I enrollment achieved 90%+." }
+          ]
+        },
         statusAAA2025_2026: [
           { recommendation: "Increase publication count in indexed journals", status: "Fully Completed", evidence: "Indexed publications grew by 40%." },
           { recommendation: "Strengthen industry MoUs and student internships", status: "Fully Completed", evidence: "Signed 2 new industry MoUs and placed 80+ interns." }

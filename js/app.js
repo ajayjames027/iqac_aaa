@@ -31,11 +31,11 @@ class App {
     // Setup Department Dropdown
     this.refreshDeptDropdown();
 
-    // Default view: if admin, open Admin Dashboard; else open Department Form / Dashboard
+    // Default view: if admin, open Admin Dashboard; else open Department Attributes Hub
     if (window.authManager && window.authManager.isAdmin()) {
       this.switchView('admin');
     } else {
-      this.switchView('dashboard');
+      this.switchView('form');
     }
   }
 

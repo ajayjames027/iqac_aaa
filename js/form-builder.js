@@ -3,7 +3,46 @@
 class FormBuilder {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
-    this.activeTab = 'profile';
+    this.activeTab = 'hub'; // Landing view: Attributes Directory Hub
+    this.viewMode = 'edit'; // 'edit' or 'view'
+  }
+
+  setViewMode(mode) {
+    this.viewMode = mode;
+    this.render(window.dataStore.data);
+  }
+
+  openAttribute(attrKey, mode = 'edit') {
+    this.activeTab = attrKey;
+    this.viewMode = mode;
+    this.render(window.dataStore.data);
+  }
+
+  saveCurrentData() {
+    window.dataStore.saveCurrentData();
+    this.showSaveIndicator();
+    alert('Changes saved successfully!');
+  }
+
+  exportCurrentAttributeExcel() {
+    if (!window.ExcelExporter) return;
+    const data = window.dataStore.data;
+    const deptName = data.departmentInfo?.departmentName || 'Department';
+    window.ExcelExporter.exportAttributeToExcel(this.activeTab, data, deptName);
+  }
+
+  printCurrentAttributePdf() {
+    window.print();
+  }
+
+  submitDepartmentToIQAC() {
+    const data = window.dataStore.data;
+    const deptName = data.departmentInfo?.departmentName || 'Department';
+    if (confirm(`Submit final AAA 2026-2027 data for "${deptName}" to the IQAC Committee?`)) {
+      window.dataStore.setDepartmentSubmissionStatus(deptName, { status: 'submitted' });
+      alert('Department Audit Data successfully submitted to IQAC!\nStatus: SUBMITTED TO IQAC');
+      this.render(data);
+    }
   }
 
   render(data) {
@@ -33,22 +72,30 @@ class FormBuilder {
           </div>
         </div>
 
-        <!-- Section Navigation Pills (Matching 10 Attributes and Tables) -->
+        <!-- Section Navigation Pills (Attributes Hub, 10 Attributes, and Complete Dossier) -->
         <div class="px-6 py-3 bg-slate-100/70 border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 text-xs font-medium text-slate-600 scrollbar-thin">
+          <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition font-bold ${this.activeTab === 'hub' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'}">
+            <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+            <span>Attributes Hub</span>
+          </button>
           ${this.renderNavTab('profile', 'Profile & Scholars (T1)', 'building', 't1_scholars')}
           ${this.renderNavTab('activities', 'Status of Activities (T2)', 'check-square', 't2_activities')}
-          ${this.renderNavTab('att1', 'Att I: Curriculum & PTM', 'book-open', 'attr1')}
-          ${this.renderNavTab('att2', 'Att II: Faculty', 'users', 'attr2')}
-          ${this.renderNavTab('att3', 'Att III: Infrastructure & Library', 'hard-drive', 'attr3')}
-          ${this.renderNavTab('att4_7', 'Att IV & VII: Grants & Seed', 'indian-rupee', 'attr4')}
-          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs', 'laptop', 'attr5')}
-          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy', 'attr6')}
-          ${this.renderNavTab('outcomes', 'Students Outcomes 2026', 'graduation-cap', 't10_outcomes')}
-          ${this.renderNavTab('att9', 'Att IX: Research & IPR', 'award', 'attr9')}
-          ${this.renderNavTab('att10', 'Att X: Values, Green & CSR', 'leaf', 'attr10')}
-          ${this.renderNavTab('qualitative', '30-Min Presentation Flow', 'presentation')}
-          ${this.renderNavTab('pillars', 'Crucial Academic Pillars', 'layers')}
-          ${this.renderNavTab('panel', '15-Min Review Rubric', 'clipboard-check')}
+          ${this.renderNavTab('att1', 'Att I: Curriculum', 'book-open', 'att1')}
+          ${this.renderNavTab('att2', 'Att II: Faculty', 'users', 'att2')}
+          ${this.renderNavTab('att3', 'Att III: Infrastructure', 'hard-drive', 'att3')}
+          ${this.renderNavTab('att4_7', 'Att IV & VII: Grants', 'indian-rupee', 'att4_7')}
+          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs', 'laptop', 'att5')}
+          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy', 'att6_8')}
+          ${this.renderNavTab('outcomes', 'Outcomes 2026 (T10)', 'graduation-cap', 't10_outcomes')}
+          ${this.renderNavTab('att9', 'Att IX: Research & IPR', 'award', 'att9')}
+          ${this.renderNavTab('att10', 'Att X: Values, Green & CSR', 'leaf', 'att10')}
+          ${this.renderNavTab('qualitative', '30m Presentation Flow', 'presentation')}
+          ${this.renderNavTab('pillars', 'Crucial Pillars', 'layers')}
+          ${this.renderNavTab('panel', '15m Review Rubric', 'clipboard-check')}
+          <button type="button" onclick="formBuilder.switchTab('complete_dossier')" class="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition font-bold ${this.activeTab === 'complete_dossier' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'}">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+            <span>Complete Dossier</span>
+          </button>
         </div>
 
         <!-- Form Tab Body -->
@@ -59,6 +106,16 @@ class FormBuilder {
         </form>
       </div>
     `;
+
+    // If viewMode is 'view' or submission is locked, disable form fields
+    const isLocked = window.dataStore ? window.dataStore.isDepartmentLocked() : false;
+    if (this.viewMode === 'view' || isLocked) {
+      const inputs = this.container.querySelectorAll('#form-tab-content input, #form-tab-content select, #form-tab-content textarea');
+      inputs.forEach(el => {
+        el.setAttribute('disabled', 'disabled');
+        el.classList.add('bg-slate-50', 'cursor-not-allowed');
+      });
+    }
 
     // Initialize lucide icons if available
     if (window.lucide) {
@@ -133,9 +190,17 @@ class FormBuilder {
   }
 
   renderActiveTabContent(data) {
-    switch (this.activeTab) {
-      case 'profile':
-        return this.renderProfileTab(data.departmentInfo);
+    if (this.activeTab === 'hub') {
+      return this.renderAttributeHub(data);
+    }
+    if (this.activeTab === 'complete_dossier') {
+      return this.renderCompleteDossierTab(data);
+    }
+
+    const contentHtml = (() => {
+      switch (this.activeTab) {
+        case 'profile':
+          return this.renderProfileTab(data.departmentInfo);
       case 'activities':
         return this.renderActivitiesTab(data.qualitativePresentation);
       case 'att1':
@@ -164,10 +229,486 @@ class FormBuilder {
         return this.renderPanelTab(data.panelReview);
       default:
         return this.renderProfileTab(data.departmentInfo);
-    }
+      }
+    })();
+
+    return this.renderAttributeActionBar(data) + contentHtml;
   }
 
-  // TAB 1: Department Profile & Table 1 Scholars Matrix
+
+  renderAttributeActionBar(data) {
+    const isLocked = window.dataStore ? window.dataStore.isDepartmentLocked() : false;
+    const deptName = data.departmentInfo?.departmentName || 'Department';
+
+    return `
+      <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm no-print">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1.5 transition">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+            <span>All Attributes Hub</span>
+          </button>
+          
+          <div class="flex items-center bg-white border border-slate-300 rounded-lg p-0.5 text-xs font-semibold">
+            <button type="button" onclick="formBuilder.setViewMode('edit')" class="px-2.5 py-1 rounded transition ${this.viewMode === 'edit' ? 'bg-blue-600 text-white font-bold' : 'text-slate-600 hover:text-slate-900'}">
+              Edit Mode
+            </button>
+            <button type="button" onclick="formBuilder.setViewMode('view')" class="px-2.5 py-1 rounded transition ${this.viewMode === 'view' ? 'bg-blue-600 text-white font-bold' : 'text-slate-600 hover:text-slate-900'}">
+              View Preview
+            </button>
+          </div>
+
+          ${isLocked ? `
+            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
+              <i data-lucide="lock" class="w-3 h-3"></i> Submission Locked
+            </span>
+          ` : `
+            <span class="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Editing Active
+            </span>
+          `}
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="formBuilder.saveCurrentData()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save</span>
+          </button>
+          <button type="button" onclick="formBuilder.exportCurrentAttributeExcel()" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+            <span>Excel</span>
+          </button>
+          <button type="button" onclick="formBuilder.printCurrentAttributePdf()" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>PDF</span>
+          </button>
+          <button type="button" onclick="app.switchView('dashboard')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+            <span>Show Dashboard</span>
+          </button>
+        </div>
+      </div>
+
+      ${isLocked ? `
+        <div class="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2 font-medium">
+          <i data-lucide="lock" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
+          <span><strong>Submission Locked by IQAC Admin:</strong> This department has been locked for official evaluation. All fields are in read-only view. Contact IQAC to request editing unlock.</span>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  renderAttributeHub(data) {
+    const dept = data.departmentInfo || {};
+    const deptName = dept.departmentName || 'Department';
+    const status = window.dataStore ? window.dataStore.getDepartmentSubmissionStatus(deptName) : { status: 'draft', is_locked: false };
+    const sch = dept.scholars || {};
+    const ftM = sch.fullTime?.male || 0;
+    const ftF = sch.fullTime?.female || 0;
+    const ptM = sch.partTime?.male || 0;
+    const ptF = sch.partTime?.female || 0;
+    const totalScholars = ftM + ftF + ptM + ptF;
+
+    const cards = [
+      {
+        key: 'profile',
+        attrId: 't1_scholars',
+        code: 'Table 1',
+        title: 'Department Profile & Research Scholars',
+        icon: 'building',
+        color: 'blue',
+        summary: `${totalScholars} Scholars (${ftM + ftF} FT, ${ptM + ptF} PT) • Estd ${dept.establishedYear || 'N/A'}`
+      },
+      {
+        key: 'att1',
+        attrId: 'att1',
+        code: 'Attribute I',
+        title: 'Curriculum Design & PTM',
+        icon: 'book-open',
+        color: 'emerald',
+        summary: `${(data.attributeI?.vac || []).length} VACs, ${(data.attributeI?.cc || []).length} CCs, ${data.attributeI?.ptm?.ptmCount || 0} PTMs`
+      },
+      {
+        key: 'att2',
+        attrId: 'att2',
+        code: 'Attribute II',
+        title: 'Faculty Resources & Excellence',
+        icon: 'users',
+        color: 'purple',
+        summary: `${data.attributeII?.newDegrees?.count || 0} New Degrees, ${data.attributeII?.netSet?.count || 0} NET/SET, ${data.attributeII?.abroadVisits?.count || 0} Abroad Visits`
+      },
+      {
+        key: 'att3',
+        attrId: 'att3',
+        code: 'Attribute III',
+        title: 'Infrastructure & Learning Resources',
+        icon: 'hard-drive',
+        color: 'indigo',
+        summary: `${(data.attributeIII?.purchasedEquipments || []).length} Procured Equipments, ${data.attributeIII?.departmentLibrary?.totalBooks || 0} Library Books`
+      },
+      {
+        key: 'att4_7',
+        attrId: 'att4_7',
+        code: 'Attribute IV & VII',
+        title: 'Grants, Seed Money & Endowments',
+        icon: 'indian-rupee',
+        color: 'emerald',
+        summary: `${(data.attributeIV_VII?.externalFunds || []).length} External Grants, ${(data.attributeIV_VII?.managementFunds || []).length} Management Grants`
+      },
+      {
+        key: 'att5',
+        attrId: 'att5',
+        code: 'Attribute V',
+        title: 'Teaching-Learning, MoUs & Linkages',
+        icon: 'laptop',
+        color: 'blue',
+        summary: `${data.attributeV?.mouCreated?.count || 0} New MoUs, ${data.attributeV?.linkages?.count || 0} Linkages, ${data.attributeV?.eContent?.count || 0} E-Contents`
+      },
+      {
+        key: 'att6_8',
+        attrId: 'att6_8',
+        code: 'Attribute VI & VIII',
+        title: 'Clubs, Exams & Student Awards',
+        icon: 'trophy',
+        color: 'amber',
+        summary: `${(data.attributeVI_VIII?.clubs || []).length} Clubs, ${(data.attributeVI_VIII?.studentAwards || []).length} Student Awards Won`
+      },
+      {
+        key: 'outcomes',
+        attrId: 't10_outcomes',
+        code: 'Table 10',
+        title: 'Student Outcomes (Batch 2026)',
+        icon: 'graduation-cap',
+        color: 'teal',
+        summary: `${data.studentsOutcomes2026?.ug?.strength || 0} UG, ${data.studentsOutcomes2026?.pg?.strength || 0} PG (${data.studentsOutcomes2026?.ug?.onCampus || 0} Placed On-Campus)`
+      },
+      {
+        key: 'att9',
+        attrId: 'att9',
+        code: 'Attribute IX',
+        title: 'Research, Publications & IPR',
+        icon: 'award',
+        color: 'rose',
+        summary: `${(data.attributeIX?.papersPublished?.scopus || 0) + (data.attributeIX?.papersPublished?.wos || 0)} Scopus/WoS Papers, ${(data.attributeIX?.patents?.applied || 0) + (data.attributeIX?.patents?.granted || 0)} Patents`
+      },
+      {
+        key: 'att10',
+        attrId: 'att10',
+        code: 'Attribute X',
+        title: 'Values, Green Campus & CSR',
+        icon: 'leaf',
+        color: 'emerald',
+        summary: `${(data.attributeX?.csrActivities || []).length} CSR Projects, 4 Green Pillars (Paperless, Solar, Water)`
+      },
+      {
+        key: 'activities',
+        attrId: 't2_activities',
+        code: 'Table 2',
+        title: 'Status of Activities Completed',
+        icon: 'check-square',
+        color: 'blue',
+        summary: `${(data.qualitativePresentation?.statusOfActivities?.basedOnAAA2025_2026 || []).length} ATR Action Items Completed`
+      },
+      {
+        key: 'qualitative',
+        attrId: null,
+        code: '30m Flow',
+        title: '30-Min Qualitative Presentation Flow',
+        icon: 'presentation',
+        color: 'purple',
+        summary: 'Signature Achievements, Uniqueness, 2 Flagship Best Practices, SWOC Matrix & Roadmap'
+      },
+      {
+        key: 'pillars',
+        attrId: null,
+        code: 'Pillars',
+        title: 'Crucial Academic Pillars',
+        icon: 'layers',
+        color: 'teal',
+        summary: 'PTM & Feedback, Teaching Innovations, Remedial Coaching & Competitive Exams'
+      },
+      {
+        key: 'panel',
+        attrId: null,
+        code: '15m Rubric',
+        title: '15-Min Panel Review & Evaluation',
+        icon: 'clipboard-check',
+        color: 'amber',
+        summary: `Assigned Grade: ${data.panelReview?.overallGrade || 'A++'} • 10 NAAC Criteria`
+      }
+    ];
+
+    return `
+      <div class="space-y-6">
+        <!-- Department Portal Banner -->
+        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                Department Data Hub
+              </span>
+              <span class="text-xs text-blue-200 font-semibold">St. Joseph's College (Autonomous)</span>
+            </div>
+            <h2 class="text-2xl font-black">${deptName}</h2>
+            <p class="text-xs text-blue-200 mt-1">
+              Select any attribute below to view, edit metrics, and download formatted Excel and PDF reports.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="formBuilder.switchTab('complete_dossier')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>Complete Department Dossier</span>
+            </button>
+            <button type="button" onclick="app.switchView('dashboard')" class="px-4 py-2 bg-white text-blue-950 hover:bg-blue-50 font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2">
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+              <span>Show Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Status & Action Strip -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-4">
+            <div>
+              <span class="text-slate-400 text-[10px] font-bold uppercase block">Submission Status</span>
+              <span class="font-bold text-slate-800 uppercase ${status.status === 'submitted' ? 'text-emerald-700' : 'text-amber-700'}">
+                ● ${status.status || 'Draft'}
+              </span>
+            </div>
+            <div class="border-l pl-4">
+              <span class="text-slate-400 text-[10px] font-bold uppercase block">Data Editing</span>
+              <span class="font-bold ${status.is_locked ? 'text-rose-600' : 'text-emerald-600'}">
+                ${status.is_locked ? '🔒 Locked for Review' : '🔓 Open for Editing'}
+              </span>
+            </div>
+            <div class="border-l pl-4 hidden sm:block">
+              <span class="text-slate-400 text-[10px] font-bold uppercase block">Last Synchronized</span>
+              <span class="font-medium text-slate-600 font-mono text-[11px]">
+                ${status.last_updated ? new Date(status.last_updated).toLocaleString() : 'Just now'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="formBuilder.submitDepartmentToIQAC()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>Submit to IQAC</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Attributes Directory Cards Grid -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center border-b pb-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Standardized 10 Attributes Directory</h3>
+              <p class="text-[11px] text-slate-500">Click <strong>"Fill / Edit"</strong> to modify data, <strong>"View"</strong> to inspect, or download individual <strong>Excel</strong> and <strong>PDF</strong> files.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${cards.map(card => {
+              const isAgendaOn = card.attrId && window.dataStore ? window.dataStore.isAttributeEnabled(card.attrId) : true;
+              return `
+                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:border-blue-400 transition space-y-3 flex flex-col justify-between">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">${card.code}</span>
+                      ${card.attrId ? (isAgendaOn 
+                        ? '<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider">★ In Agenda</span>' 
+                        : '<span class="px-2 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-500 uppercase tracking-wider">Archival</span>'
+                      ) : ''}
+                    </div>
+
+                    <div class="flex items-start gap-2.5">
+                      <span class="p-2 rounded-lg bg-${card.color}-50 text-${card.color}-600 mt-0.5">
+                        <i data-lucide="${card.icon}" class="w-4 h-4"></i>
+                      </span>
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-900 leading-tight">${card.title}</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">${card.summary}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 4 Action Buttons on Each Attribute Card -->
+                  <div class="grid grid-cols-4 gap-1.5 pt-3 border-t border-slate-100 text-[11px]">
+                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'edit')" class="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-center transition flex items-center justify-center gap-1 shadow-sm" title="Edit Form">
+                      <i data-lucide="edit" class="w-3 h-3"></i>
+                      <span>Fill</span>
+                    </button>
+                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'view')" class="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded text-center transition flex items-center justify-center gap-1" title="View Preview">
+                      <i data-lucide="eye" class="w-3 h-3"></i>
+                      <span>View</span>
+                    </button>
+                    <button type="button" onclick="ExcelExporter.exportAttributeToExcel('${card.key}', window.dataStore.data, '${deptName}')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded text-center border border-emerald-200 transition flex items-center justify-center gap-1" title="Download Excel">
+                      <i data-lucide="file-spreadsheet" class="w-3 h-3"></i>
+                      <span>XLS</span>
+                    </button>
+                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'view'); window.print();" class="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded text-center border border-purple-200 transition flex items-center justify-center gap-1" title="Download PDF / Print">
+                      <i data-lucide="printer" class="w-3 h-3"></i>
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderCompleteDossierTab(data) {
+    const dept = data.departmentInfo || {};
+    const deptName = dept.departmentName || 'Department';
+    const sch = dept.scholars || {};
+    const ftM = sch.fullTime?.male || 0;
+    const ftF = sch.fullTime?.female || 0;
+    const ptM = sch.partTime?.male || 0;
+    const ptF = sch.partTime?.female || 0;
+    const totalScholars = ftM + ftF + ptM + ptF;
+
+    return `
+      <div class="space-y-6 max-w-5xl mx-auto">
+        <!-- Top Dossier Action Header -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 no-print">
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1.5 transition">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+              <span>Attributes Hub</span>
+            </button>
+            <span class="px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
+              Complete Department Audit Dossier
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="ExcelExporter.exportCompleteDepartmentToExcel(window.dataStore.data, '${deptName}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>Download Complete Excel (.xls)</span>
+            </button>
+            <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>Print Complete Dossier (PDF)</span>
+            </button>
+            <button type="button" onclick="formBuilder.submitDepartmentToIQAC()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Submit to IQAC</span>
+            </button>
+            <button type="button" onclick="app.switchView('dashboard')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+              <span>Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Official Institutional Header for Print & Dossier -->
+        <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-2 border-t-8 border-t-blue-900">
+          <span class="text-xs uppercase tracking-widest font-black text-blue-950">Internal Quality Assurance Cell (IQAC)</span>
+          <h1 class="text-2xl font-black text-slate-900">St. Joseph's College (Autonomous), Tiruchirappalli</h1>
+          <h2 class="text-lg font-bold text-blue-700">Annual Academic and Administrative Audit (AAA) 2026 - 2027</h2>
+          <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-600">
+            <span><strong>Department:</strong> ${deptName}</span>
+            <span><strong>Head of Department:</strong> ${dept.hodName || 'Dr. HOD'}</span>
+            <span><strong>Established:</strong> ${dept.establishedYear || 'N/A'}</span>
+            <span><strong>Audit Grade:</strong> <strong class="text-purple-700 font-bold">${data.panelReview?.overallGrade || 'A++'}</strong></span>
+          </div>
+        </div>
+
+        <!-- Section 1: Research Scholars Matrix -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">1. Table 1: Research Scholars Matrix</h3>
+          <div class="grid grid-cols-4 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded border">Full-Time Male: <strong>${ftM}</strong></div>
+            <div class="p-3 bg-slate-50 rounded border">Full-Time Female: <strong>${ftF}</strong></div>
+            <div class="p-3 bg-slate-50 rounded border">Part-Time Male: <strong>${ptM}</strong></div>
+            <div class="p-3 bg-slate-50 rounded border">Part-Time Female: <strong>${ptF}</strong></div>
+            <div class="col-span-4 p-3 bg-blue-50 border border-blue-200 rounded font-bold text-blue-900 flex justify-between">
+              <span>Total Research Scholars:</span>
+              <span class="text-sm font-black font-mono">${totalScholars} Scholars</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: 10 Attributes High-Level Summary Matrix -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">2. Consolidated 10-Attribute Audit Matrix</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att I: Value Added & Certificate Courses:</span>
+              <strong class="text-slate-900">${(data.attributeI?.vac || []).length} VACs, ${(data.attributeI?.cc || []).length} CCs</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att II: Faculty Ph.D. / NET / SET:</span>
+              <strong class="text-slate-900">${data.attributeII?.netSet?.count || 0} Qualified</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att III: Lab Equipments Procured:</span>
+              <strong class="text-indigo-700 font-bold">${(data.attributeIII?.purchasedEquipments || []).length} items</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att III: Department Library Books:</span>
+              <strong class="text-purple-700 font-bold">${data.attributeIII?.departmentLibrary?.totalBooks || 0} books</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att IV & VII: External Grants Mobilized:</span>
+              <strong class="text-emerald-700 font-bold">${(data.attributeIV_VII?.externalFunds || []).length} Grants</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att V: Active MoUs & Linkages:</span>
+              <strong class="text-blue-700 font-bold">${data.attributeV?.mouCreated?.count || 0} new, ${data.attributeV?.linkages?.count || 0} linkages</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att VI & VIII: Clubs & Student Awards:</span>
+              <strong class="text-amber-700 font-bold">${(data.attributeVI_VIII?.clubs || []).length} clubs, ${(data.attributeVI_VIII?.studentAwards || []).length} awards</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Table 10: Student Placements (Batch 2026):</span>
+              <strong class="text-teal-700 font-bold">${data.studentsOutcomes2026?.ug?.onCampus || 0} UG On-Campus</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att IX: Scopus & WoS Research Papers:</span>
+              <strong class="text-purple-700 font-bold">${(data.attributeIX?.papersPublished?.scopus || 0) + (data.attributeIX?.papersPublished?.wos || 0)} papers</strong>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border flex justify-between">
+              <span>Att X: CSR Projects & Green Campus:</span>
+              <strong class="text-emerald-700 font-bold">${(data.attributeX?.csrActivities || []).length} CSR drives</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Committee Evaluation & Signatures -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">3. Audit Committee Endorsement & Sign-Off</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-2">
+            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
+              <span class="text-[10px] text-slate-500 uppercase block font-semibold">External Expert</span>
+              <span class="font-bold text-slate-800 block">${data.panelReview?.expertName || 'Prof. External Expert'}</span>
+              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
+              <span class="text-[10px] text-slate-500 uppercase block font-semibold">School Dean</span>
+              <span class="font-bold text-slate-800 block">${data.panelReview?.deanName || 'School Dean'}</span>
+              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
+              <span class="text-[10px] text-slate-500 uppercase block font-semibold">IQAC Coordinator</span>
+              <span class="font-bold text-slate-800 block">${data.panelReview?.iqacCoordinator || 'Dr. IQAC Coordinator'}</span>
+              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
+              <span class="text-[10px] text-slate-500 uppercase block font-semibold">Principal</span>
+              <span class="font-bold text-slate-800 block">${data.panelReview?.administratorName || 'Rev. Dr. Principal'}</span>
+              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+    // TAB 1: Department Profile & Table 1 Scholars Matrix
   renderProfileTab(info) {
     const scholars = info.scholars || { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
     const ftM = scholars.fullTime?.male || 0;

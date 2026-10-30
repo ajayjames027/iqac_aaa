@@ -166,6 +166,35 @@ class DataStore {
     localStorage.setItem(DEPT_LIST_KEY, JSON.stringify(list));
   }
 
+  getDepartmentSubmissionStatus(deptName) {
+    const name = deptName || this.activeDepartment || 'Default';
+    const key = 'IQAC_AAA_STATUS_' + name;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      status: 'draft',
+      is_locked: false,
+      last_updated: new Date().toISOString()
+    };
+  }
+
+  setDepartmentSubmissionStatus(deptName, statusObj) {
+    const name = deptName || this.activeDepartment || 'Default';
+    const key = 'IQAC_AAA_STATUS_' + name;
+    const current = this.getDepartmentSubmissionStatus(name);
+    const updated = { ...current, ...statusObj, last_updated: new Date().toISOString() };
+    localStorage.setItem(key, JSON.stringify(updated));
+    this.notify();
+    return updated;
+  }
+
+  isDepartmentLocked(deptName) {
+    const status = this.getDepartmentSubmissionStatus(deptName || this.activeDepartment);
+    return Boolean(status.is_locked);
+  }
+
   switchDepartment(deptName) {
     // Save current before switching
     if (this.data && this.activeDepartment) {

@@ -1,0 +1,2158 @@
+// IQAC AAA 2026-2027 - Departmental Dashboard Renderer (Executive & Attribute-Wise)
+
+class DashboardRenderer {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.chartInstances = {};
+    this.selectedAttribute = 'all'; // 'all', 'att1', 'att2', 'att4_7', 'att5', 'att6_8', 'att9'
+    this.expandedSections = {
+      att1: false,
+      att2: false,
+      att4_7: false,
+      att5: false,
+      att6_8: false,
+      att9: false
+    };
+    this.allExpanded = false;
+  }
+
+  isSectionExpanded(secKey) {
+    return !!this.expandedSections[secKey];
+  }
+
+  toggleSection(secKey) {
+    this.expandedSections[secKey] = !this.expandedSections[secKey];
+    const isExpanded = this.expandedSections[secKey];
+    const container = document.getElementById(`detail-container-${secKey}`);
+    const btn = document.getElementById(`detail-btn-${secKey}`);
+    
+    if (container) {
+      if (isExpanded) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+    
+    if (btn) {
+      btn.innerHTML = `
+        <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+        <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+      `;
+      if (isExpanded) {
+        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+        btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+      } else {
+        btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+        btn.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+      }
+    }
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  }
+
+  toggleAllDetails() {
+    this.allExpanded = !this.allExpanded;
+    const sections = ['att1', 'att2', 'att4_7', 'att5', 'att6_8', 'att9'];
+    sections.forEach(sec => {
+      this.expandedSections[sec] = this.allExpanded;
+      const container = document.getElementById(`detail-container-${sec}`);
+      const btn = document.getElementById(`detail-btn-${sec}`);
+      if (container) {
+        if (this.allExpanded) {
+          container.classList.remove('hidden');
+        } else {
+          container.classList.add('hidden');
+        }
+      }
+      if (btn) {
+        btn.innerHTML = `
+          <i data-lucide="${this.allExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+          <span>${this.allExpanded ? 'Hide Details' : 'View Details'}</span>
+        `;
+        if (this.allExpanded) {
+          btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+          btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+        } else {
+          btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+          btn.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+        }
+      }
+    });
+
+    const masterBtn = document.getElementById('btn-toggle-all-details');
+    if (masterBtn) {
+      masterBtn.innerHTML = `
+        <i data-lucide="${this.allExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5 text-blue-600"></i>
+        <span>${this.allExpanded ? 'View Counts Only' : 'Expand All Details'}</span>
+      `;
+    }
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  }
+
+  expandAndScrollTo(secKey) {
+    this.expandedSections[secKey] = true;
+    const container = document.getElementById(`detail-container-${secKey}`);
+    const btn = document.getElementById(`detail-btn-${secKey}`);
+    if (container) {
+      container.classList.remove('hidden');
+    }
+    if (btn) {
+      btn.innerHTML = `
+        <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+        <span>Hide Details</span>
+      `;
+      btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+      btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+    }
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+    
+    if (this.selectedAttribute !== 'all' && this.selectedAttribute !== secKey) {
+      this.selectedAttribute = 'all';
+      this.render(window.dataStore.data);
+      setTimeout(() => {
+        this.expandAndScrollTo(secKey);
+      }, 50);
+      return;
+    }
+
+    const el = document.getElementById(`attr-section-${secKey}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  destroyCharts() {
+    Object.keys(this.chartInstances).forEach(key => {
+      if (this.chartInstances[key]) {
+        try {
+          this.chartInstances[key].destroy();
+        } catch (e) {
+          console.warn('Chart destroy error:', e);
+        }
+      }
+    });
+    this.chartInstances = {};
+  }
+
+  setAttributeFilter(attrKey) {
+    this.selectedAttribute = attrKey;
+    this.render(window.dataStore.data);
+    
+    // Smooth scroll to attribute if specific one selected
+    if (attrKey !== 'all') {
+      setTimeout(() => {
+        const el = document.getElementById(`attr-section-${attrKey}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  }
+
+  render(data) {
+    if (!this.container || !data) return;
+
+    this.destroyCharts();
+
+    // Compute Key Metrics
+    const dept = data.departmentInfo || {};
+    const att1 = data.attributeI || {};
+    const att2 = data.attributeII || {};
+    const att4_7 = data.attributeIV_VII || {};
+    const att5 = data.attributeV || {};
+    const att6_8 = data.attributeVI_VIII || {};
+    const att9 = data.attributeIX || {};
+
+    // Total publications
+    const scopus = att9.papersPublished?.scopus || 0;
+    const wos = att9.papersPublished?.wos || 0;
+    const ugc = att9.papersPublished?.ugcCare || 0;
+    const conf = (att9.conferencesPresented?.indexed || 0) + (att9.conferencesPresented?.nonIndexed || 0);
+    const books = (att9.books?.published || 0) + (att9.books?.edited || 0) + (att9.books?.chaptersContributed || 0);
+    const totalPubs = scopus + wos + ugc;
+
+    // Total Grants
+    const extGrants = (att4_7.externalFunds || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const mgmtGrants = (att4_7.managementFunds || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const seedMoney = Number(att4_7.seedMoney?.totalSanctioned) || 
+                      (Number(att4_7.seedMoney?.projectsAmount || 0) + Number(att4_7.seedMoney?.patentsAmount || 0) + Number(att4_7.seedMoney?.copyrightAmount || 0));
+    const totalFunds = extGrants + mgmtGrants + seedMoney;
+    const fundsLakhs = (totalFunds / 100000).toFixed(2);
+
+    // VAC / CC counts & students
+    const vacCount = (att1.vac || []).length;
+    const ccCount = (att1.cc || []).length;
+    const vacEnrolled = (att1.vac || []).reduce((sum, item) => sum + (Number(item.studentsEnrolled) || 0), 0);
+    const ccEnrolled = (att1.cc || []).reduce((sum, item) => sum + (Number(item.studentsEnrolled) || 0), 0);
+
+    // MOOC Completion Calculation
+    const ugReg = (att1.moocs?.ug?.cycle1_registered || 0) + (att1.moocs?.ug?.cycle2_registered || 0);
+    const ugComp = (att1.moocs?.ug?.cycle1_completed || 0) + (att1.moocs?.ug?.cycle2_completed || 0);
+    const pgReg = (att1.moocs?.pg?.cycle1_registered || 0) + (att1.moocs?.pg?.cycle2_registered || 0);
+    const pgComp = (att1.moocs?.pg?.cycle1_completed || 0) + (att1.moocs?.pg?.cycle2_completed || 0);
+    const totalMoocReg = ugReg + pgReg;
+    const totalMoocComp = ugComp + pgComp;
+    const moocPct = totalMoocReg > 0 ? ((totalMoocComp / totalMoocReg) * 100).toFixed(1) : '0';
+
+    // MoUs & Linkages
+    const newMous = att5.mouCreated?.count || 0;
+    const prevMous = att5.previousMous?.count || 0;
+    const linkages = att5.linkages?.count || 0;
+    const totalMoUs = newMous + prevMous;
+
+    // Patents & IPR
+    const patApplied = att9.patents?.applied || 0;
+    const patGranted = att9.patents?.granted || 0;
+    const copyrights = att9.copyrights?.count || 0;
+    const totalIPR = patApplied + patGranted + copyrights;
+
+    // Faculty FDPs & Honors
+    const fdpCount = (att2.fdp?.mmttc_aicte_ugc || 0) + (att2.fdp?.otherInstitutions || 0) + (att2.fdp?.throughFdc || 0) + (att2.fdp?.institutionalLevel || 0);
+    const facultyAwards = att2.awards?.count || 0;
+
+    // Student Awards
+    const studentAwards = (att6_8.studentParticipationAwards?.sports || 0) +
+                          (att6_8.studentParticipationAwards?.cultural || 0) +
+                          (att6_8.studentParticipationAwards?.externalAcademicEvents || 0) +
+                          (att6_8.studentParticipationAwards?.extraCurricularEvents || 0) +
+                          (att6_8.studentParticipationAwards?.coCurricularEvents || 0);
+
+    // Lookup department metadata from Admin dashboard if available
+    const activeDeptObj = (window.adminDashboard?.departments?.find(d => 
+      d.name === dept.departmentName || d.code === dept.departmentCode || (dept.departmentName && d.name?.includes(dept.departmentName.slice(0, 15)))
+    )) || { status: 'submitted', is_locked: false, audit_date: '2026-11-15', evaluation: { grade: 'A++', score: 97.5 } };
+
+    const statusBadges = {
+      submitted: '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">✓ Submitted to IQAC</span>',
+      in_progress: '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏳ In Progress</span>',
+      draft: '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">📝 Draft</span>',
+      audited: '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">🎓 Audited</span>'
+    };
+    const currentStatusBadge = statusBadges[activeDeptObj.status] || statusBadges.submitted;
+    const currentGrade = activeDeptObj.evaluation?.grade || 'A++';
+
+    this.container.innerHTML = `
+      <div class="space-y-6">
+        <!-- Executive Header Banner (Matching Admin Console Style) -->
+        <div class="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wide">
+                First 15 Minutes • Executive Departmental Dashboard
+              </span>
+              <span class="text-xs text-blue-200">${dept.collegeName || "St. Joseph's College (Autonomous)"}</span>
+              <span class="text-xs text-blue-300">• ${dept.academicYear || '2026 - 2027'}</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight">
+              ${dept.departmentName || 'Departmental Dashboard'}
+            </h1>
+            <p class="text-xs text-blue-200 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span><strong>School:</strong> ${dept.school || 'Autonomous Stream'}</span>
+              <span><strong>HOD:</strong> ${dept.hodName || 'Department Head'}</span>
+              <span><strong>Accreditation:</strong> ${dept.accreditation || 'NAAC A++'}</span>
+              <span><strong>Faculty:</strong> ${dept.facultyCount || 0}</span>
+              <span><strong>Students:</strong> ${(dept.studentCountUG || 0) + (dept.studentCountPG || 0)}</span>
+              <span><strong>Scholars:</strong> ${dept.researchScholarsCount || 0}</span>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="app.switchView('presentation')" class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="play-circle" class="w-4 h-4"></i>
+              <span>Launch Meeting (60m)</span>
+            </button>
+            <button type="button" onclick="app.switchView('form')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+              <span>Edit Data Form</span>
+            </button>
+            <button type="button" onclick="app.switchView('panel')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              <span>Score & Grade</span>
+            </button>
+            <button type="button" onclick="window.print()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition flex items-center gap-1.5 whitespace-nowrap border border-slate-700">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+              <span>Print Dossier</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 8 High-Impact KPI Stat Cards (Matching Admin Dashboard Card System with Eye View Details) -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- KPI 1 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att9')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-blue-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Publications & Research</span>
+              <button type="button" title="View Detailed Papers" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att9')" class="p-1 hover:bg-blue-50 text-slate-400 group-hover:text-blue-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${totalPubs} <span class="text-xs font-semibold text-slate-400">Indexed Papers</span>
+            </div>
+            <p class="text-[10px] text-blue-600 font-semibold mt-1">Scopus: ${scopus} | WoS: ${wos} | Books: ${books}</p>
+          </div>
+
+          <!-- KPI 2 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att4_7')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-emerald-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Grants Mobilized</span>
+              <button type="button" title="View Detailed Grants" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att4_7')" class="p-1 hover:bg-emerald-50 text-slate-400 group-hover:text-emerald-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ₹ ${fundsLakhs} <span class="text-xs font-semibold text-slate-400">Lakhs</span>
+            </div>
+            <p class="text-[10px] text-emerald-600 font-semibold mt-1">External: ₹ ${(extGrants/100000).toFixed(1)}L | Mgmt + Seed</p>
+          </div>
+
+          <!-- KPI 3 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att1')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-purple-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">MOOC & Skill Pass</span>
+              <button type="button" title="View MOOC Matrix" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att1')" class="p-1 hover:bg-purple-50 text-slate-400 group-hover:text-purple-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-purple-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${moocPct}% <span class="text-xs font-semibold text-slate-400">Pass Rate</span>
+            </div>
+            <p class="text-[10px] text-purple-600 font-semibold mt-1">${totalMoocComp} Passed / ${totalMoocReg} Registered SWAYAM</p>
+          </div>
+
+          <!-- KPI 4 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att9')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-amber-500 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">IPR & Patents</span>
+              <button type="button" title="View Patents & Copyrights" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att9')" class="p-1 hover:bg-amber-50 text-slate-400 group-hover:text-amber-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${totalIPR} <span class="text-xs font-semibold text-slate-400">Total IPR</span>
+            </div>
+            <p class="text-[10px] text-amber-600 font-semibold mt-1">${patGranted} Granted | ${patApplied} Applied | ${copyrights} Copyrights</p>
+          </div>
+
+          <!-- KPI 5 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att5')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-indigo-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Active MoUs & Linkages</span>
+              <button type="button" title="View MoUs & Linkages" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att5')" class="p-1 hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${totalMoUs + linkages} <span class="text-xs font-semibold text-slate-400">Total</span>
+            </div>
+            <p class="text-[10px] text-indigo-600 font-semibold mt-1">${newMous} New in 2026-27 | ${prevMous} Active MoUs</p>
+          </div>
+
+          <!-- KPI 6 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att1')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-cyan-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Skill Courses (VAC & CC)</span>
+              <button type="button" title="View Skill Courses" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att1')" class="p-1 hover:bg-cyan-50 text-slate-400 group-hover:text-cyan-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${vacCount + ccCount} <span class="text-xs font-semibold text-slate-400">Courses</span>
+            </div>
+            <p class="text-[10px] text-cyan-600 font-semibold mt-1">${vacEnrolled + ccEnrolled} Students Enrolled in VAC & CC</p>
+          </div>
+
+          <!-- KPI 7 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att2')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-rose-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Faculty FDP & Honors</span>
+              <button type="button" title="View Faculty Development" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att2')" class="p-1 hover:bg-rose-50 text-slate-400 group-hover:text-rose-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-rose-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${fdpCount} <span class="text-xs font-semibold text-slate-400">Completed</span>
+            </div>
+            <p class="text-[10px] text-rose-600 font-semibold mt-1">${facultyAwards} Honors | FDPs | BoS Roles</p>
+          </div>
+
+          <!-- KPI 8 -->
+          <div onclick="dashboardRenderer.expandAndScrollTo('att6_8')" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 border-l-4 border-l-teal-600 hover:shadow-md transition cursor-pointer group">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Student Awards & Exams</span>
+              <button type="button" title="View Student Awards" onclick="event.stopPropagation(); dashboardRenderer.expandAndScrollTo('att6_8')" class="p-1 hover:bg-teal-50 text-slate-400 group-hover:text-teal-600 rounded-lg transition flex items-center gap-1 text-[10px] font-bold">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-teal-600"></i>
+                <span class="hidden sm:inline">Details</span>
+              </button>
+            </div>
+            <div class="text-2xl font-black text-slate-800 mt-1">
+              ${studentAwards} <span class="text-xs font-semibold text-slate-400">Awards</span>
+            </div>
+            <p class="text-[10px] text-teal-600 font-semibold mt-1">${att6_8.competitiveExams?.qualified || 0} Cleared NET / GATE / Govt Exams</p>
+          </div>
+        </div>
+
+        <!-- Department Meeting Control Hub Card (Matching Admin Presentation Card) -->
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:border-blue-400 transition space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-base font-bold text-slate-900">${dept.departmentName || 'Departmental Review'}</h3>
+                ${currentStatusBadge}
+                ${currentGrade ? `<span class="px-2 py-0.5 bg-purple-100 text-purple-900 font-black text-xs rounded border border-purple-200">Grade: ${currentGrade}</span>` : ''}
+                ${activeDeptObj.is_locked ? '<span class="text-[10px] text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">Locked</span>' : ''}
+              </div>
+              <p class="text-xs text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span><strong>School:</strong> ${dept.school || 'School of Computing Sciences'}</span>
+                <span><strong>HOD:</strong> ${dept.hodName || 'Department Head'}</span>
+                <span><strong>Scheduled Audit:</strong> ${activeDeptObj.audit_date || 'AAA 2026-2027 Review Session'}</span>
+              </p>
+            </div>
+
+            <!-- Quick Metrics Badges -->
+            <div class="flex items-center gap-2 text-center text-xs">
+              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[70px]">
+                <span class="text-[10px] text-slate-400 block font-semibold">Pubs</span>
+                <span class="font-black text-blue-700">${totalPubs}</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[70px]">
+                <span class="text-[10px] text-slate-400 block font-semibold">Grants</span>
+                <span class="font-black text-emerald-700">₹ ${fundsLakhs}L</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[70px]">
+                <span class="text-[10px] text-slate-400 block font-semibold">MOOC %</span>
+                <span class="font-black text-purple-700">${moocPct}%</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[70px]">
+                <span class="text-[10px] text-slate-400 block font-semibold">Patents</span>
+                <span class="font-black text-amber-700">${patGranted}</span>
+              </div>
+              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[70px]">
+                <span class="text-[10px] text-slate-400 block font-semibold">MoUs</span>
+                <span class="font-black text-indigo-700">${totalMoUs}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons for the Meeting -->
+          <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="app.switchView('presentation')" class="px-3.5 py-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5">
+                <i data-lucide="play-circle" class="w-4 h-4"></i>
+                <span>Launch Meeting (60m Presentation)</span>
+              </button>
+              <button type="button" onclick="app.switchView('form')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-lg transition flex items-center gap-1">
+                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                <span>Review Form</span>
+              </button>
+              <button type="button" onclick="app.switchView('panel')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-lg transition flex items-center gap-1">
+                <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
+                <span>Score & Grade</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] text-slate-400">Department Code: <code class="text-blue-600 font-bold">${dept.departmentCode || dept.code || 'cs'}</code></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ATTRIBUTE-WISE DISPLAY BAR (FILTER / JUMP NAVIGATION - Matching Admin Filter Bar) -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 sticky top-16 z-30">
+          <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
+            <span class="text-slate-400 font-bold uppercase text-[10px] mr-2 flex items-center gap-1">
+              <i data-lucide="filter" class="w-3.5 h-3.5 text-blue-600"></i>
+              Filter Attribute:
+            </span>
+            ${this.renderAttrPill('all', 'All Attributes', 'layers')}
+            ${this.renderAttrPill('att1', 'Att I: Curriculum', 'book-open')}
+            ${this.renderAttrPill('att2', 'Att II: Faculty', 'users')}
+            ${this.renderAttrPill('att4_7', 'Att 4 & 7: Grants & IPR', 'indian-rupee')}
+            ${this.renderAttrPill('att5', 'Att V: Teaching & MoUs', 'laptop')}
+            ${this.renderAttrPill('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy')}
+            ${this.renderAttrPill('att9', 'Att IX: Research & Books', 'award')}
+          </div>
+
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <!-- Global Eye Toggle: View Counts Only / Expand All Details -->
+            <button id="btn-toggle-all-details" type="button" onclick="dashboardRenderer.toggleAllDetails()" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition shadow-sm whitespace-nowrap">
+              <i data-lucide="${this.allExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span>${this.allExpanded ? 'View Counts Only' : 'Expand All Details'}</span>
+            </button>
+            <button type="button" onclick="app.switchView('form')" class="text-xs px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition flex items-center gap-1 whitespace-nowrap">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Form
+            </button>
+          </div>
+        </div>
+
+        <!-- Visual Analytics Row (Charts) -->
+        ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att9' || this.selectedAttribute === 'att4_7') ? `
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-600"></i>
+                    Research & Scholarly Publications Distribution
+                  </h3>
+                  <p class="text-[11px] text-slate-500">Breakdown of indexed papers, conference proceedings, and books.</p>
+                </div>
+                <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded">Att IX</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="researchChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i>
+                    Financial Grants & Resource Mobilization (₹ in Lakhs)
+                  </h3>
+                  <p class="text-[11px] text-slate-500">External agency projects vs management funding vs seed money.</p>
+                </div>
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">Att 4 & 7</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="fundsChart"></canvas>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att1' || this.selectedAttribute === 'att2') ? `
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-purple-600"></i>
+                    MOOC Progression: Registered vs Completed (Cycles I & II)
+                  </h3>
+                  <p class="text-[11px] text-slate-500">Comparison of UG and PG completion rates in SWAYAM/NPTEL.</p>
+                </div>
+                <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded">Att I</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="moocChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="radar" class="w-4 h-4 text-indigo-600"></i>
+                    Faculty Resource Person & Outreach Levels
+                  </h3>
+                  <p class="text-[11px] text-slate-500">National, International, State, Regional & Institutional representation.</p>
+                </div>
+                <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">Att II</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="facultyOutreachChart"></canvas>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- DETAILED ATTRIBUTE-WISE SECTIONS CONTAINER -->
+        <div class="space-y-8">
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att1') ? this.renderAttributeISection(att1) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att2') ? this.renderAttributeIISection(att2) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att4_7') ? this.renderAttributeIV_VIISection(att4_7) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att5') ? this.renderAttributeVSection(att5) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att6_8') ? this.renderAttributeVI_VIIISection(att6_8) : ''}
+          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att9') ? this.renderAttributeIXSection(att9) : ''}
+        </div>
+
+        <!-- Transition to 30-Min Presentation Banner -->
+        <div class="bg-gradient-to-r from-purple-800 to-indigo-900 rounded-xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="p-3 bg-white/10 rounded-lg">
+              <i data-lucide="play-circle" class="w-6 h-6 text-purple-200"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold">Ready for the 30-Minute Qualitative Impact Presentation?</h4>
+              <p class="text-xs text-purple-200">Covers Signature Achievements, Uniqueness, 2025-26 ATR, Best Practices, SWOC & Key Academic Pillars.</p>
+            </div>
+          </div>
+          <button type="button" onclick="app.showPresentationTab(6)" class="px-4 py-2 bg-white text-purple-900 font-bold rounded-lg text-xs hover:bg-purple-50 transition shadow-sm whitespace-nowrap flex items-center gap-1.5">
+            <span>Proceed to 30-Min Deck</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Render Charts after DOM updates
+    setTimeout(() => {
+      this.initCharts(data);
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }, 50);
+  }
+
+  renderAttrPill(key, label, icon) {
+    const isSelected = this.selectedAttribute === key;
+    const activeClass = isSelected ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium';
+    return `
+      <button type="button" onclick="dashboardRenderer.setAttributeFilter('${key}')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition whitespace-nowrap text-xs ${activeClass}">
+        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+        <span>${label}</span>
+      </button>
+    `;
+  }
+
+  getAttributeTitle(key) {
+    const map = {
+      all: 'All Attributes (I to IX)',
+      att1: 'Attribute I: Curriculum Design',
+      att2: 'Attribute II: Faculty Resources',
+      att4_7: 'Attribute 4 & 7: Grants & Resource Mobilization',
+      att5: 'Attribute V: Learning & Teaching (MoUs)',
+      att6_8: 'Attribute VI & VIII: Clubs, Associations & Awards',
+      att9: 'Attribute IX: Research & Innovation Outcomes'
+    };
+    return map[key] || 'All Attributes';
+  }
+
+  // ==========================================
+  // ATTRIBUTE I: CURRICULUM DESIGN
+  // ==========================================
+  renderAttributeISection(att1) {
+    const vacList = att1.vac || [];
+    const ccList = att1.cc || [];
+    const totalVacEnrolled = vacList.reduce((s, i) => s + (Number(i.studentsEnrolled) || 0), 0);
+    const totalCcEnrolled = ccList.reduce((s, i) => s + (Number(i.studentsEnrolled) || 0), 0);
+    const totalFee = vacList.reduce((s, i) => s + (Number(i.feeCollected) || 0), 0) + ccList.reduce((s, i) => s + (Number(i.feeCollected) || 0), 0);
+
+    const ugReg = (att1.moocs?.ug?.cycle1_registered || 0) + (att1.moocs?.ug?.cycle2_registered || 0);
+    const ugComp = (att1.moocs?.ug?.cycle1_completed || 0) + (att1.moocs?.ug?.cycle2_completed || 0);
+    const pgReg = (att1.moocs?.pg?.cycle1_registered || 0) + (att1.moocs?.pg?.cycle2_registered || 0);
+    const pgComp = (att1.moocs?.pg?.cycle1_completed || 0) + (att1.moocs?.pg?.cycle2_completed || 0);
+    const totalMoocReg = ugReg + pgReg;
+    const totalMoocComp = ugComp + pgComp;
+    const moocPct = totalMoocReg > 0 ? ((totalMoocComp / totalMoocReg) * 100).toFixed(1) : '0';
+    const isExpanded = this.isSectionExpanded('att1');
+
+    return `
+      <div id="attr-section-att1" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="book-open" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">Attribute I</span>
+                <h3 class="text-base font-bold text-slate-800">Curriculum Design</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Value Added Courses (VAC), Certificate Courses (CC), Indian Knowledge Systems (IKS), Visits, Internships & MOOCs.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${vacList.length + ccList.length} Skill Courses Offered
+            </span>
+            <span class="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-800">
+              ${totalVacEnrolled + totalCcEnrolled} Students Trained
+            </span>
+            <button id="detail-btn-att1" type="button" onclick="dashboardRenderer.toggleSection('att1')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (View Only The Count) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">VAC Courses</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${vacList.length}</div>
+              <p class="text-[10px] text-slate-500 truncate">${totalVacEnrolled} Enrolled</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Cert Courses</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${ccList.length}</div>
+              <p class="text-[10px] text-slate-500 truncate">${totalCcEnrolled} Enrolled</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">IKS Events</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att1.iks?.seminarCount||0)+(att1.iks?.workshopCount||0)+(att1.iks?.fieldVisitCount||0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att1.iks?.studentsBenefitted || 0} Benefitted</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Visits & Field</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att1.visits?.industrial||0)+(att1.visits?.educational||0)+(att1.visits?.fieldWork||0)+(att1.visits?.fieldVisit||0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att1.visits?.studentsParticipated || 0} Students</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Internships</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att1.internships?.studentsInvolved || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Outside Syllabus</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att1')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">MOOC Pass</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${moocPct}%</div>
+              <p class="text-[10px] text-slate-500 truncate">${totalMoocComp} / ${totalMoocReg} Pass</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att1" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+          <!-- VAC & CC Detailed Tables -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- VAC Table -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
+                  Value Added Courses (VAC)
+                </h4>
+                <span class="text-xs font-semibold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded">Count: ${vacList.length}</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                  <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                    <tr>
+                      <th class="p-2">Course Title</th>
+                      <th class="p-2 text-center">Enrolled</th>
+                      <th class="p-2 text-right">Fee ₹</th>
+                      <th class="p-2">Agencies Involved</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${vacList.length > 0 ? vacList.map(v => `
+                      <tr>
+                        <td class="p-2 font-medium text-slate-800">${v.name || 'Untitled Course'}</td>
+                        <td class="p-2 text-center font-bold text-blue-600">${v.studentsEnrolled || 0}</td>
+                        <td class="p-2 text-right text-slate-700">₹ ${(Number(v.feeCollected)||0).toLocaleString()}</td>
+                        <td class="p-2 text-slate-500">${v.agenciesInvolved || '-'}</td>
+                      </tr>
+                    `).join('') : `<tr><td colspan="4" class="p-3 text-center text-slate-400">No VAC records added</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- CC Table -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="file-badge" class="w-4 h-4 text-blue-600"></i>
+                  Certificate Courses (CC)
+                </h4>
+                <span class="text-xs font-semibold text-blue-700 bg-blue-100/60 px-2 py-0.5 rounded">Count: ${ccList.length}</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                  <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                    <tr>
+                      <th class="p-2">Course Title</th>
+                      <th class="p-2 text-center">Enrolled</th>
+                      <th class="p-2 text-right">Fee ₹</th>
+                      <th class="p-2">Agencies Involved</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${ccList.length > 0 ? ccList.map(c => `
+                      <tr>
+                        <td class="p-2 font-medium text-slate-800">${c.name || 'Untitled Course'}</td>
+                        <td class="p-2 text-center font-bold text-blue-600">${c.studentsEnrolled || 0}</td>
+                        <td class="p-2 text-right text-slate-700">₹ ${(Number(c.feeCollected)||0).toLocaleString()}</td>
+                        <td class="p-2 text-slate-500">${c.agenciesInvolved || '-'}</td>
+                      </tr>
+                    `).join('') : `<tr><td colspan="4" class="p-3 text-center text-slate-400">No Certificate Course records added</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- IKS & Visits & Internships -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- IKS -->
+            <div class="bg-amber-50/40 rounded-xl p-4 border border-amber-200">
+              <h4 class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5 mb-2">
+                <i data-lucide="compass" class="w-4 h-4 text-amber-600"></i>
+                Indian Knowledge Systems (IKS)
+              </h4>
+              <div class="grid grid-cols-4 gap-1.5 text-center text-xs mb-3">
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Seminar</span>
+                  <span class="font-bold text-amber-800">${att1.iks?.seminarCount || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Workshop</span>
+                  <span class="font-bold text-amber-800">${att1.iks?.workshopCount || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Field Visit</span>
+                  <span class="font-bold text-amber-800">${att1.iks?.fieldVisitCount || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Benefitted</span>
+                  <span class="font-bold text-emerald-700">${att1.iks?.studentsBenefitted || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed bg-white p-2.5 rounded border border-amber-200/60">
+                ${att1.iks?.details || 'IKS initiatives integrating indigenous computing, algorithms, and heritage studies.'}
+              </p>
+            </div>
+
+            <!-- Visits -->
+            <div class="bg-indigo-50/40 rounded-xl p-4 border border-indigo-200">
+              <h4 class="text-xs font-bold uppercase text-indigo-950 flex items-center gap-1.5 mb-2">
+                <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600"></i>
+                Industrial & Educational Visits
+              </h4>
+              <div class="grid grid-cols-4 gap-1.5 text-center text-xs mb-3">
+                <div class="p-2 bg-white rounded border border-indigo-200">
+                  <span class="text-[10px] text-slate-500 block">Industrial</span>
+                  <span class="font-bold text-indigo-800">${att1.visits?.industrial || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-indigo-200">
+                  <span class="text-[10px] text-slate-500 block">Educational</span>
+                  <span class="font-bold text-indigo-800">${att1.visits?.educational || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-indigo-200">
+                  <span class="text-[10px] text-slate-500 block">Field Work</span>
+                  <span class="font-bold text-indigo-800">${att1.visits?.fieldWork || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-indigo-200">
+                  <span class="text-[10px] text-slate-500 block">Field Visit</span>
+                  <span class="font-bold text-indigo-800">${att1.visits?.fieldVisit || 0}</span>
+                </div>
+              </div>
+              <div class="bg-white p-2.5 rounded border border-indigo-200/60 text-xs space-y-1">
+                <div class="flex justify-between text-slate-700 font-medium">
+                  <span>Students: <strong>${att1.visits?.studentsParticipated || 0}</strong></span>
+                  <span>Class: <strong>${att1.visits?.classSec || 'All batches'}</strong></span>
+                </div>
+                <p class="text-slate-500 text-[11px]">${att1.visits?.details || 'Industry tech parks and research laboratories.'}</p>
+              </div>
+            </div>
+
+            <!-- Internships -->
+            <div class="bg-purple-50/40 rounded-xl p-4 border border-purple-200">
+              <h4 class="text-xs font-bold uppercase text-purple-950 flex items-center gap-1.5 mb-2">
+                <i data-lucide="briefcase" class="w-4 h-4 text-purple-600"></i>
+                Industrial Internships (Outside Curriculum)
+              </h4>
+              <div class="p-3 bg-white rounded-lg border border-purple-200 mb-3 text-center">
+                <span class="text-2xl font-black text-purple-700 block">${att1.internships?.studentsInvolved || 0}</span>
+                <span class="text-[11px] font-semibold text-slate-500 uppercase">Students Placed in Industry Projects</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed bg-white p-2.5 rounded border border-purple-200/60">
+                ${att1.internships?.details || 'Corporate software projects with leading multinational IT partners.'}
+              </p>
+            </div>
+          </div>
+
+          <!-- MOOC Cycle Matrix (Table 2 from docx) -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <h4 class="text-xs font-bold uppercase text-slate-700 mb-2 flex items-center gap-1.5">
+              <i data-lucide="globe" class="w-4 h-4 text-blue-600"></i>
+              SWAYAM / NPTEL MOOC Progression Matrix (Cycle I & Cycle II)
+            </h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                  <tr>
+                    <th class="p-2.5">Programme</th>
+                    <th class="p-2.5 text-center">Total Students</th>
+                    <th class="p-2.5 text-center">Cycle I Registered</th>
+                    <th class="p-2.5 text-center">Cycle I Completed</th>
+                    <th class="p-2.5 text-center">Cycle II Registered</th>
+                    <th class="p-2.5 text-center">Cycle II Completed</th>
+                    <th class="p-2.5 text-center">Completion Rate</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr>
+                    <td class="p-2.5 font-bold text-slate-800">UG Programme</td>
+                    <td class="p-2.5 text-center">${att1.moocs?.ug?.totalStudents || 0}</td>
+                    <td class="p-2.5 text-center font-medium">${att1.moocs?.ug?.cycle1_registered || 0}</td>
+                    <td class="p-2.5 text-center font-bold text-emerald-600">${att1.moocs?.ug?.cycle1_completed || 0}</td>
+                    <td class="p-2.5 text-center font-medium">${att1.moocs?.ug?.cycle2_registered || 0}</td>
+                    <td class="p-2.5 text-center font-bold text-emerald-600">${att1.moocs?.ug?.cycle2_completed || 0}</td>
+                    <td class="p-2.5 text-center">
+                      <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded">
+                        ${(((att1.moocs?.ug?.cycle1_completed || 0) + (att1.moocs?.ug?.cycle2_completed || 0)) / Math.max(1, ((att1.moocs?.ug?.cycle1_registered || 0) + (att1.moocs?.ug?.cycle2_registered || 0))) * 100).toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 font-bold text-slate-800">PG Programme</td>
+                    <td class="p-2.5 text-center">${att1.moocs?.pg?.totalStudents || 0}</td>
+                    <td class="p-2.5 text-center font-medium">${att1.moocs?.pg?.cycle1_registered || 0}</td>
+                    <td class="p-2.5 text-center font-bold text-purple-600">${att1.moocs?.pg?.cycle1_completed || 0}</td>
+                    <td class="p-2.5 text-center font-medium">${att1.moocs?.pg?.cycle2_registered || 0}</td>
+                    <td class="p-2.5 text-center font-bold text-purple-600">${att1.moocs?.pg?.cycle2_completed || 0}</td>
+                    <td class="p-2.5 text-center">
+                      <span class="px-2 py-0.5 bg-purple-50 text-purple-700 font-bold rounded">
+                        ${(((att1.moocs?.pg?.cycle1_completed || 0) + (att1.moocs?.pg?.cycle2_completed || 0)) / Math.max(1, ((att1.moocs?.pg?.cycle1_registered || 0) + (att1.moocs?.pg?.cycle2_registered || 0))) * 100).toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE II: FACULTY RESOURCES
+  // ==========================================
+  renderAttributeIISection(att2) {
+    const fdpTotal = (att2.fdp?.mmttc_aicte_ugc || 0) + (att2.fdp?.otherInstitutions || 0) + (att2.fdp?.throughFdc || 0) + (att2.fdp?.institutionalLevel || 0);
+    const isExpanded = this.isSectionExpanded('att2');
+    const resourceTalksTotal = (att2.resourcePerson?.international||0) + (att2.resourcePerson?.national||0) + (att2.resourcePerson?.state||0) + (att2.resourcePerson?.regional||0) + (att2.resourcePerson?.institutional||0);
+
+    return `
+      <div id="attr-section-att2" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-cyan-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-cyan-100 text-cyan-900 border border-cyan-200">Attribute II</span>
+                <h3 class="text-base font-bold text-slate-800">Faculty Resources & Development</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Qualifications, BoS, Editorial, Resource Person Roles, FDPs, Fellowships, and Abroad Visits.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${att2.newDegrees?.count || 0} Ph.D./PDF Degrees
+            </span>
+            <span class="px-3 py-1 bg-cyan-50 border border-cyan-200 rounded-lg text-xs font-bold text-cyan-800">
+              ${fdpTotal} FDPs Completed
+            </span>
+            <button id="detail-btn-att2" type="button" onclick="dashboardRenderer.toggleSection('att2')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (View Only The Count) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Degrees & NET</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att2.newDegrees?.count || 0) + (att2.netSetJrf?.count || 0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att2.newDegrees?.count || 0} Ph.D. | ${att2.netSetJrf?.count || 0} NET</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">BoS & Auditors</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att2.recognizedBodies?.bosCount || 0) + (att2.recognizedBodies?.externalAuditCount || 0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att2.recognizedBodies?.bosCount || 0} BoS | ${att2.recognizedBodies?.externalAuditCount || 0} Audit</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Journals & Rev</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att2.researchJournals?.reviewersCount || 0) + (att2.researchJournals?.editorsCount || 0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att2.researchJournals?.reviewersCount || 0} Rev | ${att2.researchJournals?.editorsCount || 0} Edit</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Resource Person</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${resourceTalksTotal}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att2.resourcePerson?.international || 0} Intl | ${att2.resourcePerson?.national || 0} Natl</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">FDP Training</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${fdpTotal}</div>
+              <p class="text-[10px] text-slate-500 truncate">MMTTC & College FDC</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att2')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-cyan-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Awards & Abroad</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${(att2.awards?.count || 0) + (att2.abroadVisits?.count || 0)}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att2.awards?.count || 0} Awards | ${att2.abroadVisits?.count || 0} Visits</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att2" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+          <!-- Row 1: Qualifications & Professional Bodies -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">1. Higher Qualifications</span>
+              <div class="flex justify-between items-center bg-white p-2.5 rounded border border-slate-200">
+                <span class="text-xs text-slate-600">New Degrees Conferred:</span>
+                <span class="text-sm font-black text-cyan-700">${att2.newDegrees?.count || 0}</span>
+              </div>
+              <p class="text-xs text-slate-500">${att2.newDegrees?.details || '-'}</p>
+              <div class="flex justify-between items-center bg-white p-2.5 rounded border border-slate-200 mt-2">
+                <span class="text-xs text-slate-600">NET / SET / JRF:</span>
+                <span class="text-sm font-black text-blue-700">${att2.netSetJrf?.count || 0}</span>
+              </div>
+              <p class="text-xs text-slate-500">${att2.netSetJrf?.details || '-'}</p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">2. Recognized Bodies & Audit Roles</span>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2.5 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">BoS Members</span>
+                  <span class="text-lg font-black text-indigo-700">${att2.recognizedBodies?.bosCount || 0}</span>
+                </div>
+                <div class="p-2.5 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Academic Auditors</span>
+                  <span class="text-lg font-black text-indigo-700">${att2.recognizedBodies?.externalAuditCount || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200">
+                ${att2.recognizedBodies?.details || 'BoS members at universities and autonomous colleges.'}
+              </p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">3. Journal Editorial & Reviewers</span>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2.5 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Journal Reviewers</span>
+                  <span class="text-lg font-black text-blue-700">${att2.researchJournals?.reviewersCount || 0}</span>
+                </div>
+                <div class="p-2.5 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Journal Editors</span>
+                  <span class="text-lg font-black text-blue-700">${att2.researchJournals?.editorsCount || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200">
+                ${att2.researchJournals?.details || 'Reviewers for IEEE, Elsevier, Springer journals.'}
+              </p>
+            </div>
+          </div>
+
+          <!-- Row 2: Resource Person Roles & FDP Breakdown -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Resource Person -->
+            <div class="bg-amber-50/40 rounded-xl p-4 border border-amber-200 space-y-3">
+              <h4 class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5">
+                <i data-lucide="mic" class="w-4 h-4 text-amber-600"></i>
+                Resource Person Engagements (Keynote Addresses & Talks)
+              </h4>
+              <div class="grid grid-cols-5 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">International</span>
+                  <span class="text-base font-black text-amber-800">${att2.resourcePerson?.international || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">National</span>
+                  <span class="text-base font-black text-amber-800">${att2.resourcePerson?.national || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">State</span>
+                  <span class="text-base font-black text-amber-800">${att2.resourcePerson?.state || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Regional</span>
+                  <span class="text-base font-black text-amber-800">${att2.resourcePerson?.regional || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Institutional</span>
+                  <span class="text-base font-black text-amber-800">${att2.resourcePerson?.institutional || 0}</span>
+                </div>
+              </div>
+              <div class="p-3 bg-white rounded border border-amber-200 text-xs">
+                <span class="font-bold text-amber-900 block mb-1">Faculty Served at International & National Forums:</span>
+                <p class="text-slate-600 leading-relaxed">${att2.resourcePerson?.servedFacultyNames || 'Faculty invited as guest speakers.'}</p>
+              </div>
+            </div>
+
+            <!-- FDP Breakdown -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+              <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-600"></i>
+                Faculty Development / Training Programmes Attended
+              </h4>
+              <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">MMTTC / UGC</span>
+                  <span class="text-base font-black text-purple-700">${att2.fdp?.mmttc_aicte_ugc || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Other Inst.</span>
+                  <span class="text-base font-black text-purple-700">${att2.fdp?.otherInstitutions || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">College FDC</span>
+                  <span class="text-base font-black text-purple-700">${att2.fdp?.throughFdc || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Institutional</span>
+                  <span class="text-base font-black text-purple-700">${att2.fdp?.institutionalLevel || 0}</span>
+                </div>
+              </div>
+              <div class="p-3 bg-white rounded border border-slate-200 text-xs">
+                <span class="font-bold text-slate-700 block mb-1">Key Training Themes:</span>
+                <p class="text-slate-600 leading-relaxed">${att2.fdp?.details || 'Refresher courses on AI, NEP 2020 pedagogical models.'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Industrial Training, Fellowships, Awards, Abroad Visits -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700 uppercase text-[11px] block">Industrial Immersion</span>
+              <span class="text-base font-black text-slate-800">${att2.industrialTraining?.count || 0} Faculty</span>
+              <p class="text-slate-500 text-[11px] mt-1">${att2.industrialTraining?.details || '-'}</p>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700 uppercase text-[11px] block">Fellowships (Nat/Int)</span>
+              <span class="text-base font-black text-slate-800">${(att2.fellowships?.national || 0) + (att2.fellowships?.international || 0)} Awarded</span>
+              <p class="text-slate-500 text-[11px] mt-1">${att2.fellowships?.details || '-'}</p>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700 uppercase text-[11px] block">Recognized Awards</span>
+              <span class="text-base font-black text-amber-700">${att2.awards?.count || 0} Honors</span>
+              <p class="text-slate-500 text-[11px] mt-1">${att2.awards?.details || '-'}</p>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="font-bold text-slate-700 uppercase text-[11px] block">Academic Abroad Visits</span>
+              <span class="text-base font-black text-blue-700">${att2.abroadVisits?.count || 0} Visits</span>
+              <p class="text-slate-500 text-[11px] mt-1">${att2.abroadVisits?.facultyNames || '-'}</p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE 4 & 7: INFRASTRUCTURE & GRANTS
+  // ==========================================
+  renderAttributeIV_VIISection(att4_7) {
+    const extFunds = att4_7.externalFunds || [];
+    const mgmtFunds = att4_7.managementFunds || [];
+    const totalExt = extFunds.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalMgmt = mgmtFunds.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const seedMoney = Number(att4_7.seedMoney?.totalSanctioned) || 
+                      (Number(att4_7.seedMoney?.projectsAmount || 0) + Number(att4_7.seedMoney?.patentsAmount || 0) + Number(att4_7.seedMoney?.copyrightAmount || 0));
+    const totalAllFunds = totalExt + totalMgmt + seedMoney;
+    const isExpanded = this.isSectionExpanded('att4_7');
+
+    return `
+      <div id="attr-section-att4_7" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="indian-rupee" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200">Attribute 4 & 7</span>
+                <h3 class="text-base font-bold text-slate-800">Infrastructure & Resource Mobilization</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">External Agency Grants, Management Research Funding, Seed Money, and Endowments.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ₹ ${(totalExt / 100000).toFixed(2)}L External
+            </span>
+            <span class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-black shadow-sm">
+              Total: ₹ ${(totalAllFunds / 100000).toFixed(2)} Lakhs
+            </span>
+            <button id="detail-btn-att4_7" type="button" onclick="dashboardRenderer.toggleSection('att4_7')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (View Only The Count) -->
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att4_7')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">External Grants</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">₹ ${(totalExt / 100000).toFixed(2)}L</div>
+              <p class="text-[10px] text-slate-500 truncate">${extFunds.length} Project Proposals</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att4_7')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Management Funds</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">₹ ${(totalMgmt / 100000).toFixed(2)}L</div>
+              <p class="text-[10px] text-slate-500 truncate">${mgmtFunds.length} College Schemes</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att4_7')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Seed Money</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">₹ ${(seedMoney / 100000).toFixed(2)}L</div>
+              <p class="text-[10px] text-slate-500 truncate">Projects, Patents, Copyrights</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att4_7')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-emerald-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Endowments</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att4_7.endowments?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Instituted in 2026-2027</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att4_7" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+          <!-- External Funds Table -->
+          <div class="bg-emerald-50/30 rounded-xl p-4 border border-emerald-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-bold uppercase text-emerald-950 flex items-center gap-1.5">
+                <i data-lucide="external-link" class="w-4 h-4 text-emerald-600"></i>
+                1. Funds Received from External Agencies (DST, AICTE, SERB, ICSSR, etc.)
+              </h4>
+              <span class="text-xs font-bold text-emerald-800">Total: ₹ ${(totalExt / 100000).toFixed(2)} Lakhs</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                  <tr>
+                    <th class="p-2.5">Category</th>
+                    <th class="p-2.5">Funding Agency</th>
+                    <th class="p-2.5 text-right">Amount Received</th>
+                    <th class="p-2.5">Faculty Involved / PI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${extFunds.length > 0 ? extFunds.map(f => `
+                    <tr>
+                      <td class="p-2.5 font-medium text-slate-800">${f.category}</td>
+                      <td class="p-2.5 font-bold text-blue-700">${f.agency}</td>
+                      <td class="p-2.5 text-right font-black text-emerald-700">₹ ${(Number(f.amount) || 0).toLocaleString()}</td>
+                      <td class="p-2.5 text-slate-600">${f.facultyInvolved || '-'}</td>
+                    </tr>
+                  `).join('') : `<tr><td colspan="4" class="p-3 text-center text-slate-400">No external grant records added</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Management Funds Table -->
+          <div class="bg-blue-50/30 rounded-xl p-4 border border-blue-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-bold uppercase text-blue-950 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+                2. Funds Received from College Management
+              </h4>
+              <span class="text-xs font-bold text-blue-800">Total: ₹ ${(totalMgmt / 100000).toFixed(2)} Lakhs</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                  <tr>
+                    <th class="p-2.5">Purpose / Scheme</th>
+                    <th class="p-2.5 text-right">Amount Received</th>
+                    <th class="p-2.5">Faculty Benefitted / Association</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${mgmtFunds.length > 0 ? mgmtFunds.map(f => `
+                    <tr>
+                      <td class="p-2.5 font-medium text-slate-800">${f.category}</td>
+                      <td class="p-2.5 text-right font-black text-blue-700">₹ ${(Number(f.amount) || 0).toLocaleString()}</td>
+                      <td class="p-2.5 text-slate-600">${f.facultyInvolved || '-'}</td>
+                    </tr>
+                  `).join('') : `<tr><td colspan="3" class="p-3 text-center text-slate-400">No management funding records added</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Seed Money & Endowments -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-amber-50/40 rounded-xl border border-amber-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5">
+                <i data-lucide="sprout" class="w-4 h-4 text-amber-600"></i>
+                3. Seed Money Disbursed
+              </span>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Projects ₹</span>
+                  <span class="font-bold text-amber-800">₹ ${(Number(att4_7.seedMoney?.projectsAmount) || 0).toLocaleString()}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Patents ₹</span>
+                  <span class="font-bold text-amber-800">₹ ${(Number(att4_7.seedMoney?.patentsAmount) || 0).toLocaleString()}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-amber-200">
+                  <span class="text-[10px] text-slate-500 block">Copyrights ₹</span>
+                  <span class="font-bold text-amber-800">₹ ${(Number(att4_7.seedMoney?.copyrightAmount) || 0).toLocaleString()}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2.5 rounded border border-amber-200">
+                ${att4_7.seedMoney?.details || 'Seed grant for innovative student prototypes.'}
+              </p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="landmark" class="w-4 h-4 text-slate-600"></i>
+                4. Endowments Established in 2026-2027
+              </span>
+              <div class="p-2.5 bg-white rounded border border-slate-200 flex justify-between items-center text-xs">
+                <span class="text-slate-600">Endowments Count:</span>
+                <span class="text-base font-black text-slate-800">${att4_7.endowments?.count || 0}</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2.5 rounded border border-slate-200">
+                ${att4_7.endowments?.details || 'Academic memorial lectures and endowments instituted.'}
+              </p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE V: LEARNING & TEACHING
+  // ==========================================
+  renderAttributeVSection(att5) {
+    const isExpanded = this.isSectionExpanded('att5');
+    return `
+      <div id="attr-section-att5" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-indigo-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="laptop" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-900 border border-indigo-200">Attribute V</span>
+                <h3 class="text-base font-bold text-slate-800">Learning and Teaching</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">MoUs Signed, Linkages, and Four-Quadrant E-Contents Created.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${(att5.mouCreated?.count || 0) + (att5.previousMous?.count || 0)} Total MoUs
+            </span>
+            <span class="px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-bold text-indigo-800">
+              ${att5.eContent?.count || 0} E-Content Modules
+            </span>
+            <button id="detail-btn-att5" type="button" onclick="dashboardRenderer.toggleSection('att5')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (View Only The Count) -->
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att5')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">New MoUs (2026-27)</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att5.mouCreated?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Industry Certifications</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att5')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Previous MoUs</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att5.previousMous?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Active Collaborations</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att5')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Linkages</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att5.linkages?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Consultations & Syllabus</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att5')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">E-Contents</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att5.eContent?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">4-Quadrant SWAYAM Model</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att5" class="${isExpanded ? '' : 'hidden'} space-y-4 pt-4 border-t border-slate-200">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- New MoUs -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-bold uppercase text-slate-700">1. MoUs Created in A.Y. 2026-2027</span>
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-black rounded">${att5.mouCreated?.count || 0} Signed</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed">
+                ${att5.mouCreated?.activitiesConducted || 'Active collaborative industry certifications.'}
+              </p>
+            </div>
+
+            <!-- Previous MoUs -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-bold uppercase text-slate-700">2. Previous Active MoUs</span>
+                <span class="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-black rounded">${att5.previousMous?.count || 0} Active</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed">
+                ${att5.previousMous?.activitiesConducted || 'Continuous engagements and student placements.'}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Linkages -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-bold uppercase text-slate-700">3. Industry / Academic Linkages</span>
+                <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-black rounded">${att5.linkages?.count || 0} Linkages</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed">
+                ${att5.linkages?.activitiesConducted || 'Consultations, syllabus updates, and student projects.'}
+              </p>
+            </div>
+
+            <!-- E-Content -->
+            <div class="p-4 bg-blue-50/40 rounded-xl border border-blue-200 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-bold uppercase text-blue-950">4. Four-Quadrant E-Contents (SWAYAM Model)</span>
+                <span class="px-2 py-0.5 bg-blue-600 text-white text-xs font-black rounded">${att5.eContent?.count || 0} Modules</span>
+              </div>
+              <p class="text-xs text-slate-700 bg-white p-3 rounded-lg border border-blue-200 leading-relaxed">
+                ${att5.eContent?.details || 'Video, e-text, self-assessment quizzes, and online discussion forums.'}
+              </p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE VI & VIII: EXTENDED CURRICULAR
+  // ==========================================
+  renderAttributeVI_VIIISection(att6_8) {
+    const clubs = att6_8.clubs || [];
+    const awards = att6_8.studentParticipationAwards || {};
+    const totalAwards = (awards.sports || 0) + (awards.cultural || 0) + (awards.externalAcademicEvents || 0) + (awards.extraCurricularEvents || 0) + (awards.coCurricularEvents || 0);
+    const isExpanded = this.isSectionExpanded('att6_8');
+
+    return `
+      <div id="attr-section-att6_8" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-teal-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="trophy" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-teal-100 text-teal-900 border border-teal-200">Attribute VI & VIII</span>
+                <h3 class="text-base font-bold text-slate-800">Extended Curricular Engagements & Student Awards</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Clubs & Associations, Competitive Exams, Dual Degrees, and Sports/Cultural Prizes.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${att6_8.competitiveExams?.qualified || 0} Cleared Exams
+            </span>
+            <span class="px-3 py-1 bg-teal-600 text-white rounded-lg text-xs font-black shadow-sm">
+              ${totalAwards} Student Awards
+            </span>
+            <button id="detail-btn-att6_8" type="button" onclick="dashboardRenderer.toggleSection('att6_8')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (View Only The Count) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att6_8')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-teal-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Dept Clubs</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${clubs.length}</div>
+              <p class="text-[10px] text-slate-500 truncate">Active Associations</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att6_8')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-teal-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Other Degrees</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att6_8.pursuingOtherDegrees?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">Dual Diplomas</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att6_8')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-teal-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Chapters</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att6_8.studentChapters?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">ACM / CSI / IEEE</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att6_8')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-teal-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Comp Exams</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att6_8.competitiveExams?.qualified || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">of ${att6_8.competitiveExams?.appeared || 0} Appeared</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att6_8')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-teal-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Student Awards</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalAwards}</div>
+              <p class="text-[10px] text-slate-500 truncate">Trophies & Prizes</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att6_8" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+          <!-- Clubs Table -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="users-round" class="w-4 h-4 text-indigo-600"></i>
+                1. Department Clubs & Associations
+              </h4>
+              <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${clubs.length} Active Clubs</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left bg-white rounded-lg border border-slate-200">
+                <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
+                  <tr>
+                    <th class="p-2.5">Club / Association Name</th>
+                    <th class="p-2.5 text-center">UG Students</th>
+                    <th class="p-2.5 text-center">PG Students</th>
+                    <th class="p-2.5">Key Activities Conducted in 2026-2027</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${clubs.length > 0 ? clubs.map(c => `
+                    <tr>
+                      <td class="p-2.5 font-bold text-slate-800">${c.clubName}</td>
+                      <td class="p-2.5 text-center text-blue-700 font-semibold">${c.studentsUG || 0}</td>
+                      <td class="p-2.5 text-center text-purple-700 font-semibold">${c.studentsPG || 0}</td>
+                      <td class="p-2.5 text-slate-600">${c.activities}</td>
+                    </tr>
+                  `).join('') : `<tr><td colspan="4" class="p-3 text-center text-slate-400">No club records added</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Dual Degrees & Chapters & Exams -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">2. Pursuing Other Degrees</span>
+              <div class="p-2.5 bg-white rounded border border-slate-200 flex justify-between items-center text-xs">
+                <span class="text-slate-600">Total Enrolled:</span>
+                <span class="text-base font-black text-indigo-700">${att6_8.pursuingOtherDegrees?.count || 0}</span>
+              </div>
+              <p class="text-xs text-slate-500 bg-white p-2 rounded border border-slate-200">
+                ${att6_8.pursuingOtherDegrees?.details || 'Dual diplomas, language certifications.'}
+              </p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">3. Student Chapters Established</span>
+              <div class="p-2.5 bg-white rounded border border-slate-200 flex justify-between items-center text-xs">
+                <span class="text-slate-600">Chapters:</span>
+                <span class="text-base font-black text-blue-700">${att6_8.studentChapters?.count || 0}</span>
+              </div>
+              <p class="text-xs text-slate-500 bg-white p-2 rounded border border-slate-200">
+                ${att6_8.studentChapters?.details || 'ACM, CSI, IEEE Student Branches.'}
+              </p>
+            </div>
+
+            <div class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-emerald-950 block">4. Competitive Examinations</span>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-emerald-200">
+                  <span class="text-[10px] text-slate-500 block">Appeared</span>
+                  <span class="text-base font-bold text-slate-700">${att6_8.competitiveExams?.appeared || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-emerald-200">
+                  <span class="text-[10px] text-slate-500 block">Qualified</span>
+                  <span class="text-base font-black text-emerald-700">${att6_8.competitiveExams?.qualified || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-emerald-200">
+                ${att6_8.competitiveExams?.details || 'GATE, NET, TNPSC, Banking.'}
+              </p>
+            </div>
+          </div>
+
+          <!-- Awards Breakdown -->
+          <div class="bg-amber-50/40 rounded-xl p-4 border border-amber-200 space-y-3">
+            <h4 class="text-xs font-bold uppercase text-amber-950 flex items-center gap-1.5">
+              <i data-lucide="award" class="w-4 h-4 text-amber-600"></i>
+              5. Students' Participation and Awards Breakdown
+            </h4>
+            <div class="grid grid-cols-5 gap-2 text-center text-xs">
+              <div class="p-2.5 bg-white rounded-lg border border-amber-200">
+                <span class="text-[10px] text-slate-500 block">Sports</span>
+                <span class="text-lg font-black text-amber-800">${awards.sports || 0}</span>
+              </div>
+              <div class="p-2.5 bg-white rounded-lg border border-amber-200">
+                <span class="text-[10px] text-slate-500 block">Cultural</span>
+                <span class="text-lg font-black text-amber-800">${awards.cultural || 0}</span>
+              </div>
+              <div class="p-2.5 bg-white rounded-lg border border-amber-200">
+                <span class="text-[10px] text-slate-500 block">Academic Events</span>
+                <span class="text-lg font-black text-amber-800">${awards.externalAcademicEvents || 0}</span>
+              </div>
+              <div class="p-2.5 bg-white rounded-lg border border-amber-200">
+                <span class="text-[10px] text-slate-500 block">Extra-Curricular</span>
+                <span class="text-lg font-black text-amber-800">${awards.extraCurricularEvents || 0}</span>
+              </div>
+              <div class="p-2.5 bg-white rounded-lg border border-amber-200">
+                <span class="text-[10px] text-slate-500 block">Co-Curricular</span>
+                <span class="text-lg font-black text-amber-800">${awards.coCurricularEvents || 0}</span>
+              </div>
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-amber-200 text-xs">
+              <span class="font-bold text-amber-950 block mb-1">Championship Trophies & Awards Highlights:</span>
+              <p class="text-slate-600 leading-relaxed">${awards.details || 'Overall championship winners across inter-collegiate symposia.'}</p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE IX: RESEARCH & INNOVATION
+  // ==========================================
+  renderAttributeIXSection(att9) {
+    const isExpanded = this.isSectionExpanded('att9');
+    const scopus = att9.papersPublished?.scopus || 0;
+    const wos = att9.papersPublished?.wos || 0;
+    const ugc = att9.papersPublished?.ugcCare || 0;
+    const totalPubs = scopus + wos + ugc;
+    const totalBooks = (att9.books?.published || 0) + (att9.books?.edited || 0) + (att9.books?.chaptersContributed || 0);
+    const totalConfs = (att9.conferencesPresented?.indexed || 0) + (att9.conferencesPresented?.nonIndexed || 0);
+    const totalDigitalAssets = (att9.copyrights?.count || 0) + (att9.oer?.count || 0);
+
+    return `
+      <div id="attr-section-att9" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-purple-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="award" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200">Attribute IX</span>
+                <h3 class="text-base font-bold text-slate-800">Research and Innovation Outcomes</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Doctoral Supervision, Scopus/WoS Publications, Books, Patents Granted, and Software Copyrights.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="detail-btn-att9" type="button" onclick="dashboardRenderer.toggleSection('att9')" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}">
+              <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+              <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+            </button>
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+              ${totalPubs} Journal Papers
+            </span>
+            <span class="px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-black shadow-sm">
+              ${att9.patents?.granted || 0} Patents Granted
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Executive Count Summary Grid (Always Visible) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Ph.D. Conferred</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att9.phdConferred?.count || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att9.newScholars?.count || 0} Enrolled</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Indexed Papers</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalPubs}</div>
+              <p class="text-[10px] text-slate-500 truncate">${scopus} Scopus / ${wos} WoS</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Conferences</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalConfs}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att9.conferencesPresented?.indexed || 0} Indexed</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Books & Ch.</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalBooks}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att9.books?.published || 0} Books Published</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Indian Patents</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${att9.patents?.granted || 0}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att9.patents?.applied || 0} Applied</p>
+            </div>
+
+            <div onclick="dashboardRenderer.toggleSection('att9')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-purple-400 transition cursor-pointer group">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Copyright & OER</span>
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600"></i>
+              </div>
+              <div class="text-xl font-black text-slate-800 mt-1">${totalDigitalAssets}</div>
+              <p class="text-[10px] text-slate-500 truncate">${att9.copyrights?.count || 0} SW / ${att9.oer?.count || 0} OER</p>
+            </div>
+          </div>
+
+          <!-- Expandable Detailed Container (Toggled via Eye Icon) -->
+          <div id="detail-container-att9" class="${isExpanded ? '' : 'hidden'} space-y-6 pt-4 border-t border-slate-200">
+          <!-- Row 1: Doctoral Studies -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-xs font-bold uppercase text-slate-700 block">1. Ph.D. Conferred</span>
+              <span class="text-2xl font-black text-purple-700 block">${att9.phdConferred?.count || 0}</span>
+              <p class="text-xs text-slate-500">${att9.phdConferred?.details || 'Doctoral scholars defended thesis.'}</p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-xs font-bold uppercase text-slate-700 block">2. New Research Guides</span>
+              <span class="text-2xl font-black text-blue-700 block">${att9.newGuides?.count || 0}</span>
+              <p class="text-xs text-slate-500">${att9.newGuides?.details || 'Faculty approved as supervisors.'}</p>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <span class="text-xs font-bold uppercase text-slate-700 block">3. New Scholars Enrolled</span>
+              <span class="text-2xl font-black text-indigo-700 block">${att9.newScholars?.count || 0}</span>
+              <p class="text-xs text-slate-500">${att9.newScholars?.details || 'Full-time & part-time scholars.'}</p>
+            </div>
+          </div>
+
+          <!-- Row 2: Publications & Conferences & Books -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Journal Papers -->
+            <div class="p-4 bg-blue-50/40 rounded-xl border border-blue-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-blue-950 block">4. Research Papers in Journals</span>
+              <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-blue-200">
+                  <span class="text-[10px] text-slate-500 block">Scopus</span>
+                  <span class="font-black text-blue-700">${scopus}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-blue-200">
+                  <span class="text-[10px] text-slate-500 block">WoS</span>
+                  <span class="font-black text-indigo-700">${wos}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-blue-200">
+                  <span class="text-[10px] text-slate-500 block">UGC-CARE</span>
+                  <span class="font-black text-slate-700">${ugc}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-blue-200">
+                ${att9.papersPublished?.details || 'Publications in high-impact indexed journals.'}
+              </p>
+            </div>
+
+            <!-- Conferences -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">5. Conference Presentations</span>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Indexed</span>
+                  <span class="font-black text-purple-700">${att9.conferencesPresented?.indexed || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Non-Indexed</span>
+                  <span class="font-black text-slate-700">${att9.conferencesPresented?.nonIndexed || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200">
+                ${att9.conferencesPresented?.details || 'IEEE and Springer international proceedings.'}
+              </p>
+            </div>
+
+            <!-- Books -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-700 block">6. Books & Book Chapters</span>
+              <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Published</span>
+                  <span class="font-black text-amber-700">${att9.books?.published || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Edited</span>
+                  <span class="font-black text-amber-700">${att9.books?.edited || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-slate-200">
+                  <span class="text-[10px] text-slate-500 block">Chapters</span>
+                  <span class="font-black text-amber-700">${att9.books?.chaptersContributed || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200">
+                ${att9.books?.details || 'Authored books with standard ISBN.'}
+              </p>
+            </div>
+          </div>
+
+          <!-- Row 3: Patents, Copyrights & OER -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Patents -->
+            <div class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-emerald-950 flex items-center gap-1.5">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-emerald-600"></i>
+                7. Indian Patents
+              </span>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2 bg-white rounded border border-emerald-200">
+                  <span class="text-[10px] text-slate-500 block">Applied</span>
+                  <span class="text-base font-bold text-slate-700">${att9.patents?.applied || 0}</span>
+                </div>
+                <div class="p-2 bg-white rounded border border-emerald-200">
+                  <span class="text-[10px] text-slate-500 block">Granted</span>
+                  <span class="text-base font-black text-emerald-700">${att9.patents?.granted || 0}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-emerald-200">
+                ${att9.patents?.details || 'Patents in IoT, agriculture, and healthcare systems.'}
+              </p>
+            </div>
+
+            <!-- Copyrights -->
+            <div class="p-4 bg-blue-50/40 rounded-xl border border-blue-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-blue-950 flex items-center gap-1.5">
+                <i data-lucide="code" class="w-4 h-4 text-blue-600"></i>
+                8. Software Copyrights
+              </span>
+              <div class="p-2.5 bg-white rounded border border-blue-200 text-center text-xs">
+                <span class="text-2xl font-black text-blue-700 block">${att9.copyrights?.count || 0}</span>
+                <span class="text-[10px] text-slate-500 uppercase font-semibold">Registered Software Copyrights</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-blue-200">
+                ${att9.copyrights?.details || 'Software evaluation tools and campus applications.'}
+              </p>
+            </div>
+
+            <!-- OER -->
+            <div class="p-4 bg-purple-50/40 rounded-xl border border-purple-200 space-y-2">
+              <span class="text-xs font-bold uppercase text-purple-950 flex items-center gap-1.5">
+                <i data-lucide="share-2" class="w-4 h-4 text-purple-600"></i>
+                9. Open Educational Resources (OER)
+              </span>
+              <div class="p-2.5 bg-white rounded border border-purple-200 text-center text-xs">
+                <span class="text-2xl font-black text-purple-700 block">${att9.oer?.count || 0}</span>
+                <span class="text-[10px] text-slate-500 uppercase font-semibold">CC-BY Repositories Published</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-white p-2 rounded border border-purple-200">
+                ${att9.oer?.details || 'Open-access learning modules and course packs.'}
+              </p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  initCharts(data) {
+    if (!window.Chart) {
+      console.warn('Chart.js not loaded yet');
+      return;
+    }
+
+    const att1 = data.attributeI || {};
+    const att2 = data.attributeII || {};
+    const att4_7 = data.attributeIV_VII || {};
+    const att9 = data.attributeIX || {};
+
+    // 1. Research Chart
+    const ctxResearch = document.getElementById('researchChart');
+    if (ctxResearch) {
+      const scopus = att9.papersPublished?.scopus || 0;
+      const wos = att9.papersPublished?.wos || 0;
+      const ugc = att9.papersPublished?.ugcCare || 0;
+      const confIndexed = att9.conferencesPresented?.indexed || 0;
+      const confNon = att9.conferencesPresented?.nonIndexed || 0;
+      const books = (att9.books?.published || 0) + (att9.books?.edited || 0) + (att9.books?.chaptersContributed || 0);
+
+      this.chartInstances['research'] = new Chart(ctxResearch, {
+        type: 'bar',
+        data: {
+          labels: ['Scopus', 'WoS', 'UGC-CARE', 'Conf (Indexed)', 'Conf (Other)', 'Books & Chapters'],
+          datasets: [{
+            label: 'Publications Count',
+            data: [scopus, wos, ugc, confIndexed, confNon, books],
+            backgroundColor: [
+              'rgba(37, 99, 235, 0.85)',
+              'rgba(79, 70, 229, 0.85)',
+              'rgba(59, 130, 246, 0.85)',
+              'rgba(147, 51, 234, 0.85)',
+              'rgba(192, 132, 252, 0.85)',
+              'rgba(245, 158, 11, 0.85)'
+            ],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` Output: ${ctx.parsed.y} papers/works`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Funds Chart (in Lakhs)
+    const ctxFunds = document.getElementById('fundsChart');
+    if (ctxFunds) {
+      const extGrants = (att4_7.externalFunds || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0) / 100000;
+      const mgmtGrants = (att4_7.managementFunds || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0) / 100000;
+      const seedMoney = ((Number(att4_7.seedMoney?.totalSanctioned) || 
+                         (Number(att4_7.seedMoney?.projectsAmount || 0) + Number(att4_7.seedMoney?.patentsAmount || 0) + Number(att4_7.seedMoney?.copyrightAmount || 0))) / 100000);
+
+      this.chartInstances['funds'] = new Chart(ctxFunds, {
+        type: 'doughnut',
+        data: {
+          labels: ['External Agencies (DST/AICTE/SERB)', 'Management Grants', 'Seed Money (Projects/IPR)'],
+          datasets: [{
+            data: [parseFloat(extGrants.toFixed(2)), parseFloat(mgmtGrants.toFixed(2)), parseFloat(seedMoney.toFixed(2))],
+            backgroundColor: [
+              'rgba(5, 150, 105, 0.85)',
+              'rgba(37, 99, 235, 0.85)',
+              'rgba(245, 158, 11, 0.85)'
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.label}: ₹ ${ctx.parsed} Lakhs`
+              }
+            }
+          },
+          cutout: '60%'
+        }
+      });
+    }
+
+    // 3. MOOC Chart
+    const ctxMooc = document.getElementById('moocChart');
+    if (ctxMooc) {
+      const ugC1Reg = att1.moocs?.ug?.cycle1_registered || 0;
+      const ugC1Comp = att1.moocs?.ug?.cycle1_completed || 0;
+      const ugC2Reg = att1.moocs?.ug?.cycle2_registered || 0;
+      const ugC2Comp = att1.moocs?.ug?.cycle2_completed || 0;
+
+      const pgC1Reg = att1.moocs?.pg?.cycle1_registered || 0;
+      const pgC1Comp = att1.moocs?.pg?.cycle1_completed || 0;
+      const pgC2Reg = att1.moocs?.pg?.cycle2_registered || 0;
+      const pgC2Comp = att1.moocs?.pg?.cycle2_completed || 0;
+
+      this.chartInstances['mooc'] = new Chart(ctxMooc, {
+        type: 'bar',
+        data: {
+          labels: ['UG Cycle I', 'UG Cycle II', 'PG Cycle I', 'PG Cycle II'],
+          datasets: [
+            {
+              label: 'Registered',
+              data: [ugC1Reg, ugC2Reg, pgC1Reg, pgC2Reg],
+              backgroundColor: 'rgba(148, 163, 184, 0.7)',
+              borderRadius: 5
+            },
+            {
+              label: 'Completed',
+              data: [ugC1Comp, ugC2Comp, pgC1Comp, pgC2Comp],
+              backgroundColor: 'rgba(16, 185, 129, 0.85)',
+              borderRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // 4. Faculty Outreach Radar
+    const ctxFaculty = document.getElementById('facultyOutreachChart');
+    if (ctxFaculty) {
+      const rpInt = att2.resourcePerson?.international || 0;
+      const rpNat = att2.resourcePerson?.national || 0;
+      const rpState = att2.resourcePerson?.state || 0;
+      const rpReg = att2.resourcePerson?.regional || 0;
+      const rpInst = att2.resourcePerson?.institutional || 0;
+
+      this.chartInstances['faculty'] = new Chart(ctxFaculty, {
+        type: 'radar',
+        data: {
+          labels: ['International', 'National', 'State', 'Regional', 'Institutional'],
+          datasets: [{
+            label: 'Resource Person Engagements',
+            data: [rpInt, rpNat, rpState, rpReg, rpInst],
+            backgroundColor: 'rgba(99, 102, 241, 0.25)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(79, 70, 229, 1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            r: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+  }
+}
+
+window.DashboardRenderer = DashboardRenderer;

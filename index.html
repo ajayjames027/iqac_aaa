@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IQAC Annual Academic Audit (AAA) 2026-2027 | St. Joseph's College (Autonomous)</title>
+  
+  <!-- Tailwind CSS: Local vendor script with fallback -->
+  <script src="vendor/tailwind.js"></script>
+  
+  <!-- Chart.js: Local vendor script -->
+  <script src="vendor/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons: Local vendor script -->
+  <script src="vendor/lucide.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>" />
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- Main Institutional Header -->
+  <header id="header-nav" class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <!-- Left: Logo & College Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-900 text-amber-400 flex items-center justify-center font-black shadow-md border border-amber-400/40">
+            <span class="text-sm">SJC</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-sm sm:text-base font-extrabold text-blue-950 tracking-tight">
+                St. Joseph's College (Autonomous)
+              </h1>
+              <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                AAA 2026 - 2027
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium">
+              Internal Quality Assurance Cell (IQAC) • Annual Academic Audit Platform
+            </p>
+          </div>
+        </div>
+
+        <!-- Middle: Primary View Navigation Switcher -->
+        <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+          <button id="nav-btn-admin" type="button" onclick="app.switchView('admin')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition text-purple-900 bg-purple-100/70 hover:bg-purple-200">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-purple-700"></i>
+            <span>Admin Console</span>
+          </button>
+          <button id="nav-btn-dashboard" type="button" onclick="app.switchView('dashboard')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+            <span>15m Dashboard</span>
+          </button>
+          <button id="nav-btn-attributes" type="button" onclick="app.showAttributeWiseView('all')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition text-slate-600 hover:bg-slate-200">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>Attribute-Wise</span>
+          </button>
+          <button id="nav-btn-presentation" type="button" onclick="app.switchView('presentation')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+            <span>30m Presentation</span>
+          </button>
+          <button id="nav-btn-form" type="button" onclick="app.switchView('form')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>Data Form</span>
+          </button>
+          <button id="nav-btn-panel" type="button" onclick="app.switchView('panel')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
+            <span>15m Panel Rubric</span>
+          </button>
+          <button id="nav-btn-manage" type="button" onclick="app.switchView('manage')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+            <span>Hub</span>
+          </button>
+        </nav>
+
+        <!-- Right: Department Selector, Auth Profile & Actions -->
+        <div class="flex items-center gap-2">
+          <div id="dept-switcher-container" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
+            <i data-lucide="building" class="w-3.5 h-3.5 text-blue-600"></i>
+            <select id="dept-switcher-select" onchange="app.onDeptChanged(this.value)" class="bg-transparent text-xs font-semibold text-slate-800 outline-none max-w-[130px] sm:max-w-[180px] truncate">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <span id="user-role-badge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200 hidden sm:inline-block">IQAC Admin</span>
+            <button type="button" onclick="authManager.showLoginModal()" title="Switch Account / Login" class="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition flex items-center gap-1">
+              <i data-lucide="user" class="w-3.5 h-3.5"></i>
+              <span id="user-name-label" class="hidden md:inline">Admin</span>
+            </button>
+            <button type="button" onclick="authManager.logout()" title="Logout" class="p-1.5 text-slate-400 hover:text-red-600 transition">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <button type="button" onclick="window.print()" title="Print Audit Dossier" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition border border-slate-200 hidden sm:inline-flex">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Bar -->
+  <div class="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-around text-xs font-semibold overflow-x-auto gap-2">
+    <button type="button" onclick="app.switchView('dashboard')" class="px-2.5 py-1 text-slate-700 hover:bg-slate-100 rounded">Dashboard</button>
+    <button type="button" onclick="app.showAttributeWiseView('all')" class="px-2.5 py-1 text-blue-700 font-bold hover:bg-blue-50 rounded">Attributes</button>
+    <button type="button" onclick="app.switchView('presentation')" class="px-2.5 py-1 text-slate-700 hover:bg-slate-100 rounded">Presentation</button>
+    <button type="button" onclick="app.switchView('form')" class="px-2.5 py-1 text-slate-700 hover:bg-slate-100 rounded">Form</button>
+    <button type="button" onclick="app.switchView('panel')" class="px-2.5 py-1 text-slate-700 hover:bg-slate-100 rounded">Panel</button>
+    <button type="button" onclick="app.switchView('manage')" class="px-2.5 py-1 text-slate-700 hover:bg-slate-100 rounded">Hub</button>
+  </div>
+
+  <!-- Main View Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    
+    <!-- VIEW 0: Central Admin Dashboard & Meeting Controller -->
+    <section id="view-admin" class="hidden">
+      <div id="admin-container"></div>
+    </section>
+
+    <!-- VIEW 1: Form View -->
+    <section id="view-form" class="hidden">
+      <div id="form-container"></div>
+    </section>
+
+    <!-- VIEW 2: 15-Minute Dashboard View -->
+    <section id="view-dashboard">
+      <div id="dashboard-container"></div>
+    </section>
+
+    <!-- VIEW 3: 30-Minute Presentation Slide Deck -->
+    <section id="view-presentation" class="hidden">
+      <div id="presentation-container"></div>
+    </section>
+
+    <!-- VIEW 4: 15-Minute Panel Review & Rubric -->
+    <section id="view-panel" class="hidden">
+      <div id="panel-container"></div>
+    </section>
+
+    <!-- VIEW 5: Data Management & Export Hub -->
+    <section id="view-manage" class="hidden">
+      <div id="manage-container"></div>
+    </section>
+
+  </main>
+
+  <!-- Institutional Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-xs text-slate-500 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>
+        <strong>St. Joseph's College (Autonomous), Tiruchirappalli</strong> — IQAC Annual Academic Audit 2026-2027
+      </div>
+      <div class="flex items-center gap-4">
+        <span>60-Min Presentation Framework</span>
+        <span>•</span>
+        <button type="button" onclick="app.loadSampleData('cs')" class="text-blue-600 hover:underline">Reload Sample Data</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Scripts -->
+  <script src="js/sample-data.js"></script>
+  <script src="js/data-store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin-dashboard.js"></script>
+  <script src="js/form-builder.js"></script>
+  <script src="js/dashboard-renderer.js"></script>
+  <script src="js/presentation-mode.js"></script>
+  <script src="js/audit-panel.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+/* IQAC Annual Academic Audit (AAA) 2026-2027 - Custom Stylesheet */
+:root {
+  --primary-navy: #1e3a8a;
+  --primary-blue: #2563eb;
+  --accent-gold: #d97706;
+  --accent-amber: #f59e0b;
+  --accent-green: #059669;
+  --accent-red: #dc2626;
+  --bg-slate: #f8fafc;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Glass and card effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.kpi-card {
+  transition: all 0.25s ease-in-out;
+  border-left-width: 4px;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Presentation Slide Deck Specifics */
+.slide-container {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 120px);
+}
+
+.presentation-slide {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* SWOC Grid Cards */
+.swoc-card-s {
+  border-top: 4px solid #10b981;
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+}
+.swoc-card-w {
+  border-top: 4px solid #f59e0b;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+}
+.swoc-card-o {
+  border-top: 4px solid #3b82f6;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+}
+.swoc-card-c {
+  border-top: 4px solid #ef4444;
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+}
+
+/* Timer Badge Pulse */
+@keyframes timerPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.timer-urgent {
+  animation: timerPulse 1s infinite;
+  color: #dc2626 !important;
+}
+
+/* Form Styles */
+.form-input-custom {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.form-input-custom:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Print Stylesheet for AAA Official Submission */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+  .no-print,
+  #header-nav,
+  #timer-bar,
+  #presentation-controls,
+  .btn-action,
+  #notification-toast {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .card, .glass-panel, .presentation-slide {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}

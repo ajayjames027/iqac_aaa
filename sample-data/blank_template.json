@@ -1,0 +1,464 @@
+{
+  "departmentInfo": {
+    "collegeName": "St. Joseph's College (Autonomous)",
+    "accreditation": "Special Heritage Status, NIRF Ranked, NAAC A++ Accredited",
+    "academicYear": "2026 - 2027",
+    "departmentName": "Department of [Your Department]",
+    "school": "School of [Your School]",
+    "hodName": "[HOD Name]",
+    "auditDate": "",
+    "facultyCount": 0,
+    "studentCountUG": 0,
+    "studentCountPG": 0,
+    "researchScholarsCount": 0
+  },
+  "attributeI": {
+    "vac": [
+      {
+        "name": "GST & Corporate Tax Filing Practices",
+        "count": 1,
+        "studentsEnrolled": 140,
+        "feeCollected": 70000,
+        "agenciesInvolved": "Institute of Cost Accountants of India (ICMAI)"
+      },
+      {
+        "name": "Tally Prime with Advanced Financial Analytics",
+        "count": 1,
+        "studentsEnrolled": 160,
+        "feeCollected": 80000,
+        "agenciesInvolved": "Tally Education"
+      }
+    ],
+    "cc": [
+      {
+        "name": "Certified Stock Market & Equity Research Analyst",
+        "count": 1,
+        "studentsEnrolled": 85,
+        "feeCollected": 42500,
+        "agenciesInvolved": "NSE Academy"
+      },
+      {
+        "name": "Digital Banking & FinTech Solutions",
+        "count": 1,
+        "studentsEnrolled": 75,
+        "feeCollected": 37500,
+        "agenciesInvolved": "Indian Institute of Banking & Finance (IIBF)"
+      }
+    ],
+    "iks": {
+      "seminarCount": 2,
+      "workshopCount": 1,
+      "fieldVisitCount": 1,
+      "studentsBenefitted": 180,
+      "details": "National Seminar on 'Vedic Computational Mathematics and Algorithms', Workshop on 'Indian Heritage Script Processing using NLP', Field Visit to Thanjavur Saraswathi Mahal Library digital manuscripts wing."
+    },
+    "visits": {
+      "industrial": 2,
+      "educational": 2,
+      "fieldWork": 1,
+      "fieldVisit": 2,
+      "studentsParticipated": 240,
+      "classSec": "III B.Sc CS (Sec A & B), II M.Sc CS",
+      "details": "Visits to ISRO Propulsion Complex (Mahendragiri), Infosys Development Center (Mysore), and BHEL Cyber Security Division."
+    },
+    "internships": {
+      "studentsInvolved": 118,
+      "details": "Industrial projects & internships with Zoho Corp (24), Tata Consultancy Services (32), Infosys Springboard (28), local software houses in Tiruchirappalli (34)."
+    },
+    "moocs": {
+      "ug": {
+        "totalStudents": 360,
+        "cycle1_registered": 240,
+        "cycle2_registered": 210,
+        "cycle1_completed": 218,
+        "cycle2_completed": 194
+      },
+      "pg": {
+        "totalStudents": 120,
+        "cycle1_registered": 115,
+        "cycle2_registered": 110,
+        "cycle1_completed": 108,
+        "cycle2_completed": 104
+      }
+    }
+  },
+  "attributeII": {
+    "newDegrees": {
+      "count": 2,
+      "details": "Dr. K. Maheswaran conferred Ph.D. in Deep Learning (Bharathidasan University); Dr. A. Vimal Jerald awarded Post-Doctoral Fellowship at NTU Singapore."
+    },
+    "netSetJrf": {
+      "count": 5,
+      "details": "UGC-NET Qualified: 3 faculty; TN-SET Qualified: 2 faculty (Computer Science & Applications)."
+    },
+    "recognizedBodies": {
+      "bosCount": 8,
+      "externalAuditCount": 4,
+      "details": "BoS Member in Bharathidasan University, Bishop Heber College, Holy Cross College, Jamal Mohamed College; External Academic Auditors at 4 Autonomous colleges."
+    },
+    "researchJournals": {
+      "reviewersCount": 9,
+      "editorsCount": 3,
+      "details": "Reviewers in IEEE Transactions on Cloud Computing, Elsevier Journal of Network & Computer Applications, Springer Multimedia Tools; Editorial Board members in 3 UGC-CARE journals."
+    },
+    "professionalBodies": {
+      "count": 18,
+      "details": "IEEE Computer Society (12 members), Computer Society of India (CSI - Life members: 18), ACM Professional Chapter (8 members)."
+    },
+    "resourcePerson": {
+      "international": 4,
+      "national": 12,
+      "state": 8,
+      "regional": 10,
+      "institutional": 14,
+      "servedFacultyNames": "Dr. S. Albert Rabara (Keynote Speaker at IEEE Int Conf Singapore & Bangkok), Dr. D. P. Jeyapalan (Resource Person for National Level UGC-HRDC Refresher Course)."
+    },
+    "fdp": {
+      "mmttc_aicte_ugc": 14,
+      "otherInstitutions": 18,
+      "throughFdc": 12,
+      "institutionalLevel": 18,
+      "details": "MMTTC Refresher Course on AI in Education, ATAL FDP on Quantum Computing, and College FDC programs on NEP 2020 Pedagogical Reforms."
+    },
+    "industrialTraining": {
+      "count": 3,
+      "details": "Dr. C. Balakrishnan & Prof. T. Kokila at Zoho Corporation, Tenkasi on Enterprise SaaS Systems. Sponsored by Zoho & College Seed Fund: INR 75,000."
+    },
+    "socialSectorProjects": {
+      "count": 3,
+      "details": "SHEPHARD Outreach digital literacy camp for 5 adopted villages; Automated inventory portal created for local Panchayat primary health center."
+    },
+    "fellowships": {
+      "national": 2,
+      "international": 1,
+      "details": "INSA Visiting Scientist Fellowship (National - 1), AICTE Faculty Fellowship (1), NTU ASEAN Research Exchange Fellowship (International - 1)."
+    },
+    "awards": {
+      "count": 6,
+      "details": "Best Teacher Award by Bharathidasan University (1), IEEE Senior Member Elevation (2), Outstanding Researcher Award by Global Knowledge Society (2), ICT Academy Best Faculty Mentor (1)."
+    },
+    "facultyMooc": {
+      "registered": 16,
+      "completed": 14,
+      "details": "NPTEL Elite + Gold (4), Elite + Silver (8), Coursera for Campus Professional Certifications (14)."
+    },
+    "abroadVisits": {
+      "count": 2,
+      "facultyNames": "Dr. S. Albert Rabara (National University of Singapore - Collaborative Research on Cloud Federation); Dr. A. Vimal Jerald (Universiti Malaya, Malaysia - Invited Lecture)."
+    }
+  },
+  "attributeIV_VII": {
+    "externalFunds": [
+      {
+        "category": "Conduct of FDP/Conference/Seminar",
+        "agency": "AICTE - ATAL Scheme",
+        "amount": 350000,
+        "facultyInvolved": "Dr. S. Albert Rabara & Team"
+      },
+      {
+        "category": "Conduct of FDP/Conference/Seminar",
+        "agency": "SERB (DST)",
+        "amount": 150000,
+        "facultyInvolved": "Dr. D. P. Jeyapalan"
+      },
+      {
+        "category": "Research Projects",
+        "agency": "DST - Data Science Initiative",
+        "amount": 1850000,
+        "facultyInvolved": "Dr. S. Albert Rabara (PI)"
+      },
+      {
+        "category": "Research Projects",
+        "agency": "ICSSR Minor Project",
+        "amount": 450000,
+        "facultyInvolved": "Dr. K. Maheswaran (PI)"
+      }
+    ],
+    "managementFunds": [
+      {
+        "category": "Conduct of FDP/Conference/Seminar",
+        "amount": 120000,
+        "facultyInvolved": "Department Association & IQAC Team"
+      },
+      {
+        "category": "Projects",
+        "amount": 250000,
+        "facultyInvolved": "4 Faculty Seed Grants"
+      },
+      {
+        "category": "Attending Conference/Workshop/Seminar",
+        "amount": 185000,
+        "facultyInvolved": "11 Faculty members"
+      }
+    ],
+    "seedMoney": {
+      "projectsAmount": 200000,
+      "patentsAmount": 80000,
+      "copyrightAmount": 45000,
+      "totalSanctioned": 325000,
+      "details": "Management seed grant disbursed for 3 IoT edge-computing student prototypes and filing fees for 2 patents & 3 copyrights."
+    },
+    "endowments": {
+      "count": 1,
+      "details": "Fr. Joseph Racine Memorial Endowment Lecture on Advanced Computing established with corpus of INR 2,00,000 contributed by 1998 Alumni Batch."
+    }
+  },
+  "attributeV": {
+    "mouCreated": {
+      "count": 3,
+      "activitiesConducted": "MoU with Red Hat Academy (38 students certified), AWS Cloud Academy (65 students certified), and Kaashiv Infotech (Hands-on IoT Bootcamp)."
+    },
+    "previousMous": {
+      "count": 5,
+      "activitiesConducted": "Active MoUs with Zoho, ICT Academy, BHEL EDC, National Cyber Defense Research Centre: 6 guest lectures, 2 faculty internships, 42 student placements."
+    },
+    "linkages": {
+      "count": 6,
+      "activitiesConducted": "Industry linkages with local IT MSMEs for 6-month final semester projects, syllabus revision consultations, and mock technical viva."
+    },
+    "eContent": {
+      "count": 14,
+      "details": "14 Four-Quadrant e-content modules uploaded on College LMS and YouTube Channel covering Data Structures, Cloud Computing, and Operating Systems."
+    }
+  },
+  "attributeVI_VIII": {
+    "clubs": [
+      {
+        "clubName": "Turing Association & Coding Club",
+        "studentsUG": 220,
+        "studentsPG": 85,
+        "activities": "Weekly algorithmic coding challenges, 24-Hour National Hackathon 'ByteQuest 2026', and Peer Debugging clinics."
+      },
+      {
+        "clubName": "Cyber Security & Ethical Guild",
+        "studentsUG": 110,
+        "studentsPG": 40,
+        "activities": "Capture the Flag (CTF) contest, campus cyber-awareness drive, vulnerability assessment workshops."
+      },
+      {
+        "clubName": "AI & Robotics Innovation Circle",
+        "studentsUG": 95,
+        "studentsPG": 45,
+        "activities": "Drone programming lab, Machine Learning bootcamps, Smart Agriculture demo model creation."
+      }
+    ],
+    "pursuingOtherDegrees": {
+      "count": 38,
+      "details": "Students concurrently pursuing Diploma in Big Data, Certificate in French/German through St. Joseph's Institute of Languages, and Online B.S. Data Science."
+    },
+    "studentChapters": {
+      "count": 2,
+      "details": "ACM Student Chapter renewed with 65 members; CSI Student Branch established in A.Y. 2026-2027 with 110 student members."
+    },
+    "competitiveExams": {
+      "appeared": 52,
+      "qualified": 18,
+      "details": "GATE (CS): 6 students qualified; UGC-NET: 2; TNPSC Group II: 4; Banking / SSC: 6."
+    },
+    "studentParticipationAwards": {
+      "sports": 14,
+      "cultural": 26,
+      "externalAcademicEvents": 48,
+      "extraCurricularEvents": 32,
+      "coCurricularEvents": 62,
+      "details": "Overall Champions in 3 Inter-Collegiate IT Symposia (NIT Trichy, St. Xavier's Palayamkottai, Loyola Chennai); Gold Medals in Bharathidasan University Inter-Collegiate Chess & Badminton."
+    }
+  },
+  "attributeIX": {
+    "phdConferred": {
+      "count": 5,
+      "details": "5 Research scholars successfully defended their doctoral viva-voce and were awarded Ph.D. in Computer Science."
+    },
+    "newGuides": {
+      "count": 2,
+      "details": "Dr. K. Maheswaran & Dr. M. Sridharan recognized as Ph.D. Research Guides by Bharathidasan University."
+    },
+    "newScholars": {
+      "count": 6,
+      "details": "6 new full-time and part-time doctoral scholars enrolled under university-approved guides."
+    },
+    "papersPublished": {
+      "scopus": 19,
+      "wos": 12,
+      "ugcCare": 24,
+      "details": "Specialized empirical research in ESG investing, FinTech adoption in rural banking, and MSME supply chain finance."
+    },
+    "conferencesPresented": {
+      "indexed": 22,
+      "nonIndexed": 6,
+      "details": "22 research papers presented in Scopus-indexed IEEE / Springer international conferences across India, Singapore, and Sri Lanka."
+    },
+    "books": {
+      "published": 3,
+      "edited": 2,
+      "chaptersContributed": 8,
+      "details": "3 Textbooks with ISBN (Prentice Hall & CRC Press), 2 Edited volumes on Cognitive Computing, 8 book chapters."
+    },
+    "patents": {
+      "applied": 4,
+      "granted": 2,
+      "details": "2 Granted Indian Patents: (1) Smart IoT-based Agro-climate monitoring system, (2) Deep Learning architecture for early retinopathy screening."
+    },
+    "copyrights": {
+      "count": 4,
+      "details": "4 Registered Software Copyrights for Academic Evaluation Tool, Campus Navigation Assistant, and Smart Attendance Vision Engine."
+    },
+    "oer": {
+      "count": 6,
+      "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "qualitativePresentation": {
+    "signatureAchievements": [
+      {
+        "title": "Record INR 28 Lakhs External Grants Mobilized",
+        "impact": "DST-SERB and AICTE grants enabled state-of-the-art AI & Cloud Computing Research Lab with 40 GPU nodes."
+      },
+      {
+        "title": "Two Indian Patents Granted to Faculty & Students",
+        "impact": "Breakthrough innovations in IoT agriculture and healthcare diagnostics, boosting department IPR profile."
+      },
+      {
+        "title": "92% NPTEL / MOOC Pass Rate with 32 Top-5% Gold/Silver Toppers",
+        "impact": "Exemplary student engagement integrating SWAYAM-NPTEL into CBCS curriculum structure."
+      },
+      {
+        "title": "100% Final Year Internships with 84% Corporate Placements",
+        "impact": "Highest campus placement package of 12 LPA with average salary increasing by 22% over previous year."
+      }
+    ],
+    "uniqueness": "Pioneering Jesuit pedagogical tradition harmonized with cutting-edge industry curricula: mandatory industrial internships, active student-run research incubators, community digital literacy outreach (SHEPHARD), and continuous 4-quadrant flipped learning ecosystem.",
+    "statusAAA2025_2026": [
+      {
+        "recommendation": "Enhance Scopus/WoS publication output per faculty member",
+        "status": "Fully Completed",
+        "evidence": "Publications increased from 14 in 2025-26 to 28 in Scopus and 16 in WoS in 2026-27."
+      },
+      {
+        "recommendation": "Establish active student chapters of international professional societies",
+        "status": "Fully Completed",
+        "evidence": "Inaugurated ACM Student Chapter and renewed CSI Student Branch with over 175 registered members."
+      },
+      {
+        "recommendation": "File for IPR and patents from PG student projects",
+        "status": "Fully Completed",
+        "evidence": "4 Patents filed, 2 Granted, and 4 Software Copyrights officially registered."
+      },
+      {
+        "recommendation": "Formalize structured parent-teacher communication channel",
+        "status": "Fully Completed",
+        "evidence": "Conducted 2 systematic PTMs with digital feedback capture and 94% parent satisfaction index."
+      }
+    ],
+    "bestPractices": [
+      {
+        "title": "'Code-to-Cloud': Industry Mentored Project Ecosystem",
+        "objectives": "To bridge academia-industry disparity through continuous multi-semester project development guided by corporate mentors.",
+        "context": "Traditional academic projects often lack industry architectural standards and version control rigor.",
+        "practice": "Every UG and PG final-year team is paired with an industry alumnus / mentor. Code is managed through GitHub Classroom, CI/CD pipelines, and evaluated by external architects.",
+        "evidence": "118 students secured direct internships and pre-placement offers (PPOs) at Tier-1 IT companies.",
+        "resourcesRequired": "Cloud credits, GitHub Education campus package, dedicated corporate mentor coordination cell."
+      },
+      {
+        "title": "360° Remedial & Peer-Assisted Learning (PAL)",
+        "objectives": "To eliminate backlogs in core algorithmic courses and uplift first-generation collegiate learners.",
+        "context": "Diverse socio-economic student background leads to varied entry-level programming aptitudes.",
+        "practice": "Diagnostic assessment at week 3; slow learners paired with high-performing student mentors (PAL) along with 30 hours of evening hands-on coding clinics.",
+        "evidence": "Semester pass percentage in Data Structures and Java increased from 74% to 94.2%. Backlogs dropped by 68%.",
+        "resourcesRequired": "Student mentor stipends from college seed funds, extended lab hours, customized bilingual course notes."
+      }
+    ],
+    "swoc": {
+      "strengths": [
+        "Experienced faculty with 85% holding Ph.D. degrees and high research citations.",
+        "Strong industry MoUs (AWS, Red Hat, Zoho) facilitating hands-on certifications.",
+        "State-of-the-art computing labs with 24/7 gigabit connectivity and high-performance GPU workstations.",
+        "Consistent NIRF and national ranking contributions with stellar placement record."
+      ],
+      "weaknesses": [
+        "Revenue from corporate consultancy services needs substantial expansion.",
+        "Limited international student enrollment due to regional demographic factors.",
+        "High student-to-faculty lab machine usage requiring accelerated replacement cycle."
+      ],
+      "opportunities": [
+        "Growing global demand for Artificial Intelligence, Cybersecurity, and Data Engineering specialists.",
+        "Establishment of multidisciplinary research centers collaborating with Life Sciences and Commerce.",
+        "Monetization of copyrighted software tools developed by in-house faculty-student teams.",
+        "Expansion of international research grants and bilateral student exchange programs."
+      ],
+      "challenges": [
+        "Rapid obsolescence of tech stacks necessitating continuous curriculum revisions every 18 months.",
+        "Intense competition from online alternative credentialing platforms.",
+        "Sustaining motivation among socio-economically marginalized students during advanced coding challenges."
+      ]
+    },
+    "futurePlans": {
+      "shortTerm": [
+        "Establish an AI & Autonomous Systems Center of Excellence with industry co-funding (Target: Q2 2027).",
+        "Achieve 100% faculty doctoral qualification and increase Scopus publications to 40 per annum.",
+        "File 5 additional national and 1 international PCT patent application."
+      ],
+      "longTerm": [
+        "Launch a specialized International Dual-Degree M.Sc. in Cloud & AI in partnership with ASEAN universities.",
+        "Achieve department revenue self-sustainability through IT consultancy and corporate training worth INR 25 Lakhs/year.",
+        "Establish a full-fledged student software startup incubation pod in the department."
+      ]
+    },
+    "pillars": {
+      "ptm": {
+        "meetingsConducted": 2,
+        "dates": "12 September 2026 & 20 February 2027",
+        "parentAttendancePercentage": 88.5,
+        "keyFeedback": "Parents commended individual mentor attention, appreciated regular SMS/LMS attendance updates, and requested additional aptitude training for campus interviews.",
+        "actionTaken": "Instituted 2 weekly hours of dedicated Quantitative Aptitude and Verbal Reasoning sessions into the Friday timetable."
+      },
+      "feedback": {
+        "studentRating": 4.7,
+        "parentRating": 4.6,
+        "alumniRating": 4.8,
+        "employerRating": 4.7,
+        "actionTakenReport": "Based on employer feedback, added Docker and Kubernetes modules into the Advanced Operating Systems curriculum. Based on student feedback, lab practical exams shifted to automated rubric-based code evaluator."
+      },
+      "teachingLearning": {
+        "innovations": "Flipped classrooms with Four-Quadrant e-content; gamified coding challenges via LeetCode & HackerRank; virtual laboratory simulations for computer network protocols; audio-visual podcasts for theoretical foundations.",
+        "ictToolsUsed": "Google Classroom, Moodle LMS, GitHub Education, Overleaf LaTeX, CodeChef platform."
+      },
+      "assessmentProcess": {
+        "reforms": "CIA question papers fully aligned with Revised Bloom's Taxonomy (K1 to K6 levels); 40% weightage reserved for higher-order thinking (Analyzing, Evaluating, Creating); dual internal scrutiny committee; rubrics shared with students prior to seminar and project evaluations."
+      },
+      "remedialTeaching": {
+        "strategy": "Diagnostic testing at entry level; categorisation into Advanced, Medium, and Slow learners; 35 hours of dedicated bilingual remedial coaching; peer-assisted mentoring; simplified question banks and concept maps.",
+        "impact": "94.2% pass percentage achieved in remedial cohort; 14 slow learners advanced to First Class with Distinction."
+      },
+      "studentSupport": {
+        "mentoringRatio": "1:20 (1 Faculty mentor for 20 students)",
+        "supportMeasures": "Fortnightly mentoring sessions; personal counseling via Jesuit Counseling Center; management scholarships worth INR 4,80,000 disbursed to 42 underprivileged students; career guidance cell sessions."
+      },
+      "guidanceCompExam": {
+        "initiatives": "Departmental GATE Club conducting weekend problem-solving sessions; free CSIR/UGC-NET coaching for PG scholars; TNPSC General Studies study circle; 18 students cleared competitive examinations this A.Y."
+      },
+      "sustainability": {
+        "initiatives": "100% Paperless Continuous Internal Assessments (CIA) and assignment submissions via Moodle; E-Waste segregation and recycling protocol with certified vendor; energy-efficient LED and smart motion-sensor lab switches reducing electricity usage by 18%; student-developed energy monitoring dashboard."
+      }
+    }
+  },
+  "panelReview": {
+    "expertName": "Prof. Dr. R. Ramanathan, Senior Professor, National Institute of Technology (NIT)",
+    "deanName": "Dr. Francis Xavier, Dean, School of Computing Sciences",
+    "iqacCoordinator": "Dr. S. Alfred, IQAC Coordinator",
+    "administratorName": "Rev. Dr. Principal, St. Joseph's College",
+    "scores": {
+      "curriculum": 5,
+      "faculty": 5,
+      "resources": 4,
+      "learningTeaching": 5,
+      "extendedCurricular": 5,
+      "research": 5,
+      "presentationQuality": 5,
+      "complianceAAA": 5
+    },
+    "overallGrade": "A++",
+    "commendations": "1. Exceptional research velocity with 28 Scopus publications and 2 granted patents. 2. Outstanding MOOC completion rate exceeding 90%. 3. Strong industry tie-ups with Red Hat and AWS resulting in high placements.",
+    "recommendations": "1. Accelerate external corporate consultancy to monetize in-house software assets. 2. Pursue international collaborative research grants under Horizon Europe or DST-ASEAN schemes. 3. Expand student participation in national hackathons like Smart India Hackathon (SIH)."
+  }
+}

@@ -625,8 +625,17 @@ class DataStore {
   }
 
   isAttributeEnabled(attrId) {
+    if (!attrId) return true;
     const config = this.getMeetingAgendaConfig();
-    return config.enabledAttributes ? config.enabledAttributes[attrId] !== false : true;
+    if (!config || !config.enabledAttributes) return true;
+    if (config.enabledAttributes[attrId] !== undefined) {
+      return config.enabledAttributes[attrId] !== false;
+    }
+    const alt = attrId.startsWith('attr') ? attrId.replace('attr', 'att') : (attrId.startsWith('att') ? attrId.replace('att', 'attr') : attrId);
+    if (config.enabledAttributes[alt] !== undefined) {
+      return config.enabledAttributes[alt] !== false;
+    }
+    return true;
   }
 
   isQuestionEnabled(questionId) {

@@ -201,9 +201,14 @@ class PresentationMode {
       slides.push({ id: 3, title: "Attribute II: Faculty Resources & Development", render: () => this.slide3Faculty(data) });
     }
 
-    // Slide 4: Attribute 4, 7, 3 & IX (Research, Grants, Infrastructure)
-    if (isAttrOn('att4_7') || isAttrOn('att9') || isAttrOn('att3')) {
-      slides.push({ id: 4, title: "Attribute 4, 7, 3 & IX: Research, Grants & Infrastructure", render: () => this.slide4ResearchGrants(data) });
+    // Slide: Attribute III (Infrastructure & Learning Resources)
+    if (isAttrOn('att3')) {
+      slides.push({ id: 'att3', title: "Attribute III: Infrastructure & Learning Resources", render: () => this.slideAtt3Infrastructure(data) });
+    }
+
+    // Slide 4: Attribute 4, 7 & IX (Research, Grants & IPR)
+    if (isAttrOn('att4_7') || isAttrOn('att9')) {
+      slides.push({ id: 4, title: "Attribute 4, 7 & IX: Research, Grants & IPR", render: () => this.slide4ResearchGrants(data) });
     }
 
     // Slide 5: Attribute VI, VIII & Table 10 Outcomes
@@ -594,6 +599,108 @@ class PresentationMode {
             <div class="p-2.5 bg-slate-900/80 rounded border border-slate-700/60">
               <span class="font-bold text-slate-200 block">Abroad Visits for Academic Purpose:</span>
               <p class="text-slate-300 text-[11px] mt-0.5">${att2.abroadVisits?.facultyNames || 'International research collaboration and conference presentations.'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Slide: Attribute III - Infrastructure & Learning Resources
+  slideAtt3Infrastructure(data) {
+    const att3 = data.attributeIII || {};
+    const equipments = att3.purchasedEquipments || [];
+    const library = att3.departmentLibrary || {
+      booksPurchased2026_2027: 0,
+      totalBooks: 0,
+      nationalJournalsPurchased2026_2027: 0,
+      internationalJournalsPurchased2026_2027: 0,
+      totalJournals: 0,
+      dailyFacultyFootfall: 0,
+      dailyStudentFootfall: 0
+    };
+
+    const totalSpend = equipments.reduce((sum, e) => sum + (Number(e.amountINR) || 0), 0);
+
+    return `
+      <div class="space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+          <div>
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Attribute III</span>
+            <h2 class="text-2xl font-black text-white">Infrastructure & Learning Resources</h2>
+          </div>
+          <span class="text-xs text-slate-400">First 15-Mins Dashboard</span>
+        </div>
+
+        <!-- Metric KPI Pills -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-indigo-950/60 border border-indigo-700/50 p-3 rounded-xl">
+            <span class="text-[10px] text-indigo-300 font-bold uppercase block">Procured Equipments</span>
+            <span class="text-2xl font-black text-white mt-1 block">${equipments.length}</span>
+            <span class="text-[10px] text-slate-400">hardware / software units</span>
+          </div>
+          <div class="bg-blue-950/60 border border-blue-700/50 p-3 rounded-xl">
+            <span class="text-[10px] text-blue-300 font-bold uppercase block">Equipment Investment</span>
+            <span class="text-2xl font-black text-blue-300 mt-1 block">₹${(totalSpend / 100000).toFixed(2)} L</span>
+            <span class="text-[10px] text-slate-400">in A.Y. 2026-2027</span>
+          </div>
+          <div class="bg-emerald-950/60 border border-emerald-700/50 p-3 rounded-xl">
+            <span class="text-[10px] text-emerald-300 font-bold uppercase block">Dept Library Books</span>
+            <span class="text-2xl font-black text-emerald-300 mt-1 block">${library.totalBooks || 0}</span>
+            <span class="text-[10px] text-slate-400">+${library.booksPurchased2026_2027 || 0} new titles</span>
+          </div>
+          <div class="bg-purple-950/60 border border-purple-700/50 p-3 rounded-xl">
+            <span class="text-[10px] text-purple-300 font-bold uppercase block">Daily Footfall</span>
+            <span class="text-2xl font-black text-purple-300 mt-1 block">${(library.dailyFacultyFootfall || 0) + (library.dailyStudentFootfall || 0)}</span>
+            <span class="text-[10px] text-slate-400">faculty & student visits/day</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 3.1 Lab Equipment Purchased -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <h3 class="text-xs font-bold uppercase text-indigo-400 flex items-center gap-1.5">
+              <i data-lucide="hard-drive" class="w-4 h-4"></i> 3.1 Laboratory Equipment Procured in 2026-2027
+            </h3>
+            <div class="space-y-2 text-xs max-h-56 overflow-y-auto pr-1">
+              ${equipments.length === 0 ? `
+                <div class="p-3 bg-slate-900/60 rounded text-slate-400 italic text-center">No equipment purchases recorded.</div>
+              ` : equipments.map(eq => `
+                <div class="p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/60 flex justify-between items-center">
+                  <div>
+                    <span class="font-bold text-white block">${eq.equipmentName}</span>
+                    <span class="text-[10px] text-indigo-300">${eq.labName} • ${eq.type} (${eq.purchaseDate || '2026'})</span>
+                  </div>
+                  <span class="font-mono font-bold text-emerald-400 text-xs">₹${Number(eq.amountINR || 0).toLocaleString()}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- 3.2 Department Library Learning Resources -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <h3 class="text-xs font-bold uppercase text-purple-400 flex items-center gap-1.5">
+              <i data-lucide="book-open" class="w-4 h-4"></i> 3.2 Department Library Learning Resources & Usage
+            </h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-700/60">
+                <span class="text-[10px] text-slate-400 uppercase block">Total Books Collection</span>
+                <span class="text-xl font-black text-white mt-1 block">${library.totalBooks || 0}</span>
+                <span class="text-[10px] text-emerald-400">+${library.booksPurchased2026_2027 || 0} purchased this year</span>
+              </div>
+              <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-700/60">
+                <span class="text-[10px] text-slate-400 uppercase block">Journals Subscribed</span>
+                <span class="text-xl font-black text-white mt-1 block">${library.totalJournals || 0}</span>
+                <span class="text-[10px] text-purple-400">${library.nationalJournalsPurchased2026_2027 || 0} Nat'l, ${library.internationalJournalsPurchased2026_2027 || 0} Int'l</span>
+              </div>
+              <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-700/60 col-span-2">
+                <span class="text-[10px] text-slate-400 uppercase block mb-1">Average Daily Footfall (Visits / Day)</span>
+                <div class="flex items-center justify-between text-xs font-medium">
+                  <span class="text-slate-300">Faculty Visits: <strong class="text-white">${library.dailyFacultyFootfall || 0}</strong></span>
+                  <span class="text-slate-300">Student Visits: <strong class="text-white">${library.dailyStudentFootfall || 0}</strong></span>
+                  <span class="text-purple-300 font-bold">Total: ${(library.dailyFacultyFootfall || 0) + (library.dailyStudentFootfall || 0)}/day</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1310,36 +1417,88 @@ class PresentationMode {
   // Slide 15: Academic Pillar 4 - Comp Exams & Sustainability
   slide15CompExamsSustainability(data) {
     const pillars = data.qualitativePresentation?.pillars || {};
+    const att10 = data.attributeX || {};
+    const csrList = att10.csrActivities || [];
+    const sust = att10.sustainability || {};
+
+    const totalBeneficiaries = csrList.reduce((sum, c) => sum + (Number(c.studentsBenefited) || 0), 0);
+    const totalCsrFunds = csrList.reduce((sum, c) => sum + (Number(c.amountINR) || 0), 0);
+
     return `
       <div class="space-y-6">
         <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
           <div>
-            <span class="text-xs font-bold text-teal-400 uppercase tracking-widest">Quality Pillar 4</span>
-            <h2 class="text-2xl font-black text-white">Guidance for Competitive Examinations & Sustainability</h2>
+            <span class="text-xs font-bold text-teal-400 uppercase tracking-widest">Quality Pillar 4 & Attribute X</span>
+            <h2 class="text-2xl font-black text-white">Guidance for Competitive Exams, CSR & Environmental Sustainability</h2>
           </div>
-          <span class="text-xs text-slate-400">Career & Green Initiatives</span>
+          <span class="text-xs text-slate-400">Followed by 30-Min Presentation</span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <!-- Guidance for Competitive Exams -->
-          <div class="bg-slate-800/80 p-5 rounded-xl border border-slate-700 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <!-- 1. Guidance for Competitive Exams -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
             <h3 class="text-xs font-bold uppercase text-teal-400 flex items-center gap-1.5">
-              <i data-lucide="target" class="w-4 h-4"></i> Guidance for Competitive Examinations
+              <i data-lucide="target" class="w-4 h-4"></i> Competitive Exams Coaching
             </h3>
-            <div class="p-3.5 bg-slate-900/80 rounded-lg border border-slate-700/60 space-y-2">
-              <span class="text-slate-200 font-bold block text-[11px]">GATE, NET/SET, UPSC & TNPSC Coaching:</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">${pillars.guidanceCompExam?.initiatives || 'Weekend problem-solving sessions and test series.'}</p>
+            <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-700/60 space-y-2">
+              <span class="text-slate-200 font-bold block text-[11px]">GATE, NET/SET, UPSC & TNPSC:</span>
+              <p class="text-slate-300 text-[11px] leading-relaxed">${pillars.guidanceCompExam?.initiatives || 'Weekend intensive problem-solving sessions, test series, and mentorship.'}</p>
+            </div>
+            <div class="p-2.5 bg-teal-950/40 rounded border border-teal-800/50 flex items-center justify-between text-[11px]">
+              <span class="text-slate-300">Coached Students:</span>
+              <span class="font-bold text-teal-300">${pillars.guidanceCompExam?.studentsBenefited || 45}+ enrolled</span>
             </div>
           </div>
 
-          <!-- Sustainability -->
-          <div class="bg-slate-800/80 p-5 rounded-xl border border-slate-700 space-y-3">
-            <h3 class="text-xs font-bold uppercase text-emerald-400 flex items-center gap-1.5">
-              <i data-lucide="leaf" class="w-4 h-4"></i> Sustainability Practices & Green Initiatives
+          <!-- 2. Extension & CSR Collaborations (Attribute X) -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+                <i data-lucide="heart-handshake" class="w-4 h-4"></i> Extension & CSR Projects
+              </h3>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 border border-emerald-700 text-emerald-300 font-mono font-bold">${csrList.length}</span>
+            </div>
+            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              ${csrList.length === 0 ? `
+                <div class="p-2.5 bg-slate-900/60 rounded text-slate-400 italic">No CSR activities recorded.</div>
+              ` : csrList.map(c => `
+                <div class="p-2 bg-slate-900/80 rounded border border-slate-700/60">
+                  <span class="font-bold text-white block text-[11px]">${c.activityName}</span>
+                  <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                    <span>${c.collaboratingAgency}</span>
+                    <span class="text-emerald-400 font-medium">${c.studentsBenefited || 0} benefited</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="p-2.5 bg-emerald-950/40 rounded border border-emerald-800/50 flex items-center justify-between text-[11px]">
+              <span class="text-slate-300">CSR Funds Mobilized:</span>
+              <span class="font-bold text-emerald-300">₹${(totalCsrFunds / 100000).toFixed(2)} Lakhs</span>
+            </div>
+          </div>
+
+          <!-- 3. Environmental Sustainability Dimensions -->
+          <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+            <h3 class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+              <i data-lucide="leaf" class="w-4 h-4"></i> Green Campus Initiatives
             </h3>
-            <div class="p-3.5 bg-slate-900/80 rounded-lg border border-slate-700/60 space-y-2">
-              <span class="text-emerald-300 font-bold block text-[11px]">Paperless Campus & Energy Conservation:</span>
-              <p class="text-slate-300 text-[11px] leading-relaxed">${pillars.sustainability?.initiatives || 'Paperless CIA submissions, e-waste protocol, and energy-saving measures.'}</p>
+            <div class="space-y-1.5 text-[11px]">
+              <div class="p-2 bg-slate-900/80 rounded border border-slate-700/60">
+                <span class="text-blue-300 font-bold block text-[10px]">1. Paperless CIA Assessments</span>
+                <span class="text-slate-300 text-[10px]">${sust.paperlessCIA || '100% digital submissions via LMS'}</span>
+              </div>
+              <div class="p-2 bg-slate-900/80 rounded border border-slate-700/60">
+                <span class="text-amber-300 font-bold block text-[10px]">2. Solar Energy Grid Usage</span>
+                <span class="text-slate-300 text-[10px]">${sust.solarEnergyUsage || 'Rooftop solar grid coverage'}</span>
+              </div>
+              <div class="p-2 bg-slate-900/80 rounded border border-slate-700/60">
+                <span class="text-emerald-300 font-bold block text-[10px]">3. Plastic-Free Campus</span>
+                <span class="text-slate-300 text-[10px]">${sust.plasticFreeCampus || 'Strict single-use plastic ban'}</span>
+              </div>
+              <div class="p-2 bg-slate-900/80 rounded border border-slate-700/60">
+                <span class="text-cyan-300 font-bold block text-[10px]">4. Rainwater Harvesting</span>
+                <span class="text-slate-300 text-[10px]">${sust.rainwaterHarvesting || 'Connected to campus recharge wells'}</span>
+              </div>
             </div>
           </div>
         </div>

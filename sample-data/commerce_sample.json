@@ -164,6 +164,32 @@
       "facultyNames": "Dr. S. Albert Rabara (Paper presentation & session chair at IEEE ICACCI Singapore), Dr. A. Vimal Jerald (Research collaboration at NTU Singapore)."
     }
   },
+  "attributeIII": {
+    "researchFacility": [
+      {
+        "labName": "Commerce Computer Center & FinTech Lab",
+        "equipment": "30 All-in-One Desktop Systems & FinTech Terminals",
+        "facilityType": "New Facility",
+        "purchaseDate": "20.07.2026",
+        "amount": 900000
+      },
+      {
+        "labName": "Business Analytics & Statistical Lab",
+        "equipment": "SPSS 29 & Tally Prime Multi-User Network License",
+        "facilityType": "Existing",
+        "purchaseDate": "12.08.2026",
+        "amount": 240000
+      }
+    ],
+    "departmentLibrary": {
+      "booksPurchased": 140,
+      "journalsPurchased": 12,
+      "totalBooks": 4100,
+      "totalJournals": 60,
+      "facultyVisitsPerDay": 10,
+      "studentVisitsPerDay": 65
+    }
+  },
   "attributeIV_VII": {
     "externalFunds": [
       {
@@ -349,6 +375,32 @@
     "oer": {
       "count": 6,
       "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "attributeX": {
+    "csrExtension": [
+      {
+        "activityName": "Financial Literacy & Digital Banking for Self-Help Groups (SHGs)",
+        "type": "Industry",
+        "agency": "Canara Bank CSR",
+        "isCsr": "YES",
+        "beneficiaries": 190,
+        "amount": 80000
+      },
+      {
+        "activityName": "Environmental Cleanliness & Green Economy Awareness",
+        "type": "NGO",
+        "agency": "Clean Trichy Mission",
+        "isCsr": "NO",
+        "beneficiaries": 150,
+        "amount": 30000
+      }
+    ],
+    "greenInitiatives": {
+      "paperlessCIA": "Digital CIA submission and grading via LMS",
+      "solarEnergyUsage": "Department powered by college-wide green solar grid",
+      "plasticFreeCampus": "Green campus certified protocol",
+      "rainWaterHarvesting": "Functional rain water harvesting system"
     }
   },
   "qualitativePresentation": {

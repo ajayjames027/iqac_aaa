@@ -166,6 +166,39 @@ window.CS_SAMPLE_DATA = {
       "facultyNames": "Dr. S. Albert Rabara (Paper presentation & session chair at IEEE ICACCI Singapore), Dr. A. Vimal Jerald (Research collaboration at NTU Singapore)."
     }
   },
+  "attributeIII": {
+    "researchFacility": [
+      {
+        "labName": "Artificial Intelligence & Machine Learning Lab",
+        "equipment": "GPU Workstation (NVIDIA RTX A6000)",
+        "facilityType": "New Facility",
+        "purchaseDate": "15.07.2026",
+        "amount": 450000
+      },
+      {
+        "labName": "IoT & Embedded Systems Lab",
+        "equipment": "Raspberry Pi 5 & Jetson Orin Nano Kits",
+        "facilityType": "Existing",
+        "purchaseDate": "18.08.2026",
+        "amount": 185000
+      },
+      {
+        "labName": "Cloud Computing Infrastructure Center",
+        "equipment": "High-Density Server Nodes (Dell PowerEdge)",
+        "facilityType": "Existing",
+        "purchaseDate": "05.09.2026",
+        "amount": 290000
+      }
+    ],
+    "departmentLibrary": {
+      "booksPurchased": 125,
+      "journalsPurchased": 15,
+      "totalBooks": 3250,
+      "totalJournals": 85,
+      "facultyVisitsPerDay": 8,
+      "studentVisitsPerDay": 45
+    }
+  },
   "attributeIV_VII": {
     "externalFunds": [
       {
@@ -351,6 +384,40 @@ window.CS_SAMPLE_DATA = {
     "oer": {
       "count": 6,
       "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "attributeX": {
+    "csrExtension": [
+      {
+        "activityName": "Tree Plantation and Environmental Awareness Programme",
+        "type": "Industry",
+        "agency": "ABC Industries Pvt. Ltd.",
+        "isCsr": "YES",
+        "beneficiaries": 240,
+        "amount": 75000
+      },
+      {
+        "activityName": "Plastic Waste Collection & E-Waste Recycling Campaign",
+        "type": "NGO",
+        "agency": "XYZ Foundation",
+        "isCsr": "NO",
+        "beneficiaries": 180,
+        "amount": 35000
+      },
+      {
+        "activityName": "Rural Youth Digital Literacy & Cyber Hygiene Outreach",
+        "type": "Industry",
+        "agency": "Kaashiv Infotech CSR Wing",
+        "isCsr": "YES",
+        "beneficiaries": 310,
+        "amount": 110000
+      }
+    ],
+    "greenInitiatives": {
+      "paperlessCIA": "100% paperless internal assessment via Moodle LMS",
+      "solarEnergyUsage": "Solar rooftop array powering 35% of lab computer load",
+      "plasticFreeCampus": "Single-use plastics strictly prohibited across departmental premises",
+      "rainWaterHarvesting": "Operational ground recharge sumps in department block"
     }
   },
   "qualitativePresentation": {
@@ -730,6 +797,32 @@ window.COMMERCE_SAMPLE_DATA = {
       "facultyNames": "Dr. S. Albert Rabara (Paper presentation & session chair at IEEE ICACCI Singapore), Dr. A. Vimal Jerald (Research collaboration at NTU Singapore)."
     }
   },
+  "attributeIII": {
+    "researchFacility": [
+      {
+        "labName": "Commerce Computer Center & FinTech Lab",
+        "equipment": "30 All-in-One Desktop Systems & FinTech Terminals",
+        "facilityType": "New Facility",
+        "purchaseDate": "20.07.2026",
+        "amount": 900000
+      },
+      {
+        "labName": "Business Analytics & Statistical Lab",
+        "equipment": "SPSS 29 & Tally Prime Multi-User Network License",
+        "facilityType": "Existing",
+        "purchaseDate": "12.08.2026",
+        "amount": 240000
+      }
+    ],
+    "departmentLibrary": {
+      "booksPurchased": 140,
+      "journalsPurchased": 12,
+      "totalBooks": 4100,
+      "totalJournals": 60,
+      "facultyVisitsPerDay": 10,
+      "studentVisitsPerDay": 65
+    }
+  },
   "attributeIV_VII": {
     "externalFunds": [
       {
@@ -915,6 +1008,32 @@ window.COMMERCE_SAMPLE_DATA = {
     "oer": {
       "count": 6,
       "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "attributeX": {
+    "csrExtension": [
+      {
+        "activityName": "Financial Literacy & Digital Banking for Self-Help Groups (SHGs)",
+        "type": "Industry",
+        "agency": "Canara Bank CSR",
+        "isCsr": "YES",
+        "beneficiaries": 190,
+        "amount": 80000
+      },
+      {
+        "activityName": "Environmental Cleanliness & Green Economy Awareness",
+        "type": "NGO",
+        "agency": "Clean Trichy Mission",
+        "isCsr": "NO",
+        "beneficiaries": 150,
+        "amount": 30000
+      }
+    ],
+    "greenInitiatives": {
+      "paperlessCIA": "Digital CIA submission and grading via LMS",
+      "solarEnergyUsage": "Department powered by college-wide green solar grid",
+      "plasticFreeCampus": "Green campus certified protocol",
+      "rainWaterHarvesting": "Functional rain water harvesting system"
     }
   },
   "qualitativePresentation": {
@@ -1294,6 +1413,17 @@ window.BLANK_SAMPLE_DATA = {
       "facultyNames": "Dr. S. Albert Rabara (Paper presentation & session chair at IEEE ICACCI Singapore), Dr. A. Vimal Jerald (Research collaboration at NTU Singapore)."
     }
   },
+  "attributeIII": {
+    "researchFacility": [],
+    "departmentLibrary": {
+      "booksPurchased": 0,
+      "journalsPurchased": 0,
+      "totalBooks": 0,
+      "totalJournals": 0,
+      "facultyVisitsPerDay": 0,
+      "studentVisitsPerDay": 0
+    }
+  },
   "attributeIV_VII": {
     "externalFunds": [
       {
@@ -1479,6 +1609,15 @@ window.BLANK_SAMPLE_DATA = {
     "oer": {
       "count": 6,
       "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "attributeX": {
+    "csrExtension": [],
+    "greenInitiatives": {
+      "paperlessCIA": "",
+      "solarEnergyUsage": "",
+      "plasticFreeCampus": "",
+      "rainWaterHarvesting": ""
     }
   },
   "qualitativePresentation": {

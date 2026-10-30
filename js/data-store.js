@@ -99,6 +99,36 @@ class DataStore {
         phd: { strength: 6, onCampus: 0, offCampus: 4, higherStudies: 1, entrepreneur: 1, others: 0 }
       };
     }
+    if (!data.attributeIII) {
+      data.attributeIII = {
+        researchFacility: [
+          { labName: "Research Computing & Advanced Analytics Lab", equipment: "High-Performance Workstation Nodes", facilityType: "New Facility", purchaseDate: "15.07.2026", amount: 450000 },
+          { labName: "IoT & Instrumentation Lab", equipment: "Microcontroller & Sensor Interface Kits", facilityType: "Existing", purchaseDate: "18.08.2026", amount: 185000 }
+        ],
+        departmentLibrary: {
+          booksPurchased: 125,
+          journalsPurchased: 15,
+          totalBooks: 3250,
+          totalJournals: 85,
+          facultyVisitsPerDay: 8,
+          studentVisitsPerDay: 45
+        }
+      };
+    }
+    if (!data.attributeX) {
+      data.attributeX = {
+        csrExtension: [
+          { activityName: "Green Campus Tree Plantation & Environmental Awareness", type: "Industry", agency: "ABC Industries Pvt. Ltd.", isCsr: "YES", beneficiaries: 240, amount: 75000 },
+          { activityName: "Plastic Waste Segregation & E-Waste Recycling Drive", type: "NGO", agency: "Tiruchirappalli Green Foundation", isCsr: "NO", beneficiaries: 180, amount: 35000 }
+        ],
+        greenInitiatives: {
+          paperlessCIA: "100% paperless internal assessments via Moodle LMS",
+          solarEnergyUsage: "Solar rooftop array powering 35% of departmental lab load",
+          plasticFreeCampus: "Single-use plastic banned across department blocks",
+          rainWaterHarvesting: "Operational rainwater harvesting sumps and recharge points"
+        }
+      };
+    }
     if (!data.qualitativePresentation) data.qualitativePresentation = {};
     if (!data.qualitativePresentation.statusOfActivities) {
       const oldAtr = data.qualitativePresentation.statusAAA2025_2026 || [];
@@ -421,6 +451,266 @@ class DataStore {
         recommendations: "Scale up consultancy projects and expand international academic tie-ups."
       }
     };
+  }
+
+  // --- Meeting Agenda & Question Selection Management ---
+  getAllAttributesMetadata() {
+    return [
+      {
+        id: 't1_scholars',
+        code: 'T1',
+        name: 'Table 1: Research Scholars Matrix',
+        category: 'Research',
+        questions: [
+          { id: 't1_fulltime', code: '1.A', label: 'Full-Time Research Scholars (M/F)', default: true },
+          { id: 't1_parttime', code: '1.B', label: 'Part-Time Research Scholars (M/F)', default: true }
+        ]
+      },
+      {
+        id: 't2_activities',
+        code: 'T2',
+        name: 'Table 2: Status of Activities Completed (ATR & FOP 2026)',
+        category: 'Governance',
+        questions: [
+          { id: 't2_aaa_atr', code: '2.A', label: 'Status based on AAA 2025–2026 ATR', default: true },
+          { id: 't2_fop_2026', code: '2.B', label: 'Status based on Faculty Orientation June 2026', default: true }
+        ]
+      },
+      {
+        id: 'att1',
+        code: 'Attr I',
+        name: 'Attribute I: Curriculum Design & MOOC Progression',
+        category: 'Curriculum',
+        questions: [
+          { id: 'att1_vac', code: '1.2a', label: 'Value-Added Courses (VAC)', default: true },
+          { id: 'att1_cc', code: '1.2b', label: 'Certificate Courses (CC)', default: true },
+          { id: 'att1_iks', code: '1.3', label: 'Indian Knowledge Systems (IKS)', default: true },
+          { id: 'att1_visits', code: '1.4', label: 'Industrial, Educational & Field Visits', default: true },
+          { id: 'att1_internships', code: '1.5', label: 'Corporate & Field Internships', default: true },
+          { id: 'att1_moocs', code: '1.8', label: 'SWAYAM / NPTEL MOOC Progression (UG/PG)', default: true },
+          { id: 'att1_ptm', code: '1.10', label: 'Parent Teacher Meetings (PTM)', default: true }
+        ]
+      },
+      {
+        id: 'att2',
+        code: 'Attr II',
+        name: 'Attribute II: Faculty Resources & Development',
+        category: 'Faculty',
+        questions: [
+          { id: 'att2_degrees', code: '2.2', label: 'New Degrees Conferred (Ph.D./PDF)', default: true },
+          { id: 'att2_netset', code: '2.10', label: 'NET / SET / JRF Qualified Faculty', default: true },
+          { id: 'att2_bodies', code: '2.3', label: 'Memberships in Recognised Bodies & Audits', default: true },
+          { id: 'att2_journals', code: '2.4', label: 'Journal Editors & Reviewers (Scopus/WoS)', default: true },
+          { id: 'att2_prof_bodies', code: '2.5', label: 'Professional Body Memberships', default: true },
+          { id: 'att2_resource', code: '2.6', label: 'Resource Person / Keynote Invites', default: true },
+          { id: 'att2_fdp', code: '2.7', label: 'FDPs & Orientation Courses', default: true },
+          { id: 'att2_industry', code: '2.9', label: 'Industrial Training & Fellowships', default: true },
+          { id: 'att2_abroad', code: '2.13', label: 'Faculty Abroad Academic Visits', default: true }
+        ]
+      },
+      {
+        id: 'att3',
+        code: 'Attr III',
+        name: 'Attribute III: Infrastructure & Learning Resources',
+        category: 'Infrastructure',
+        questions: [
+          { id: 'att3_facility', code: '3.1', label: 'Research Facility & Lab Equipment Purchased', default: true },
+          { id: 'att3_library', code: '3.2', label: 'Department Library (Volumes & Daily Visits)', default: true }
+        ]
+      },
+      {
+        id: 'att4_7',
+        code: 'Attr IV & VII',
+        name: 'Attribute IV & VII: Research Grants, Seed Money & Endowments',
+        category: 'Grants',
+        questions: [
+          { id: 'att4_external', code: '4.3', label: 'External Agency Research & Conference Grants', default: true },
+          { id: 'att7_mgmt', code: '7.1', label: 'Management Research & Conference Support', default: true },
+          { id: 'att7_seed', code: '7.2', label: 'Seed Money for Projects, Patents & Copyrights', default: true },
+          { id: 'att4_endowments', code: '4.4', label: 'Endowments Established & Memorial Lectures', default: true }
+        ]
+      },
+      {
+        id: 'att5',
+        code: 'Attr V',
+        name: 'Attribute V: Learning, Teaching & Evaluation (MoUs & E-Content)',
+        category: 'Teaching',
+        questions: [
+          { id: 'att5_mou', code: '5.5a', label: 'New MoUs Signed in 2026–27', default: true },
+          { id: 'att5_prev_mou', code: '5.5b', label: 'Previous Active Industry MoUs', default: true },
+          { id: 'att5_linkages', code: '5.5c', label: 'Academic & Research Linkages', default: true },
+          { id: 'att5_econtent', code: '5.6', label: 'Four-Quadrant E-Contents (LMS/MOOC)', default: true }
+        ]
+      },
+      {
+        id: 'att6_8',
+        code: 'Attr VI & VIII',
+        name: 'Attribute VI & VIII: Extended Curricular, Clubs & Awards',
+        category: 'Student Activities',
+        questions: [
+          { id: 'att6_clubs', code: '6.4', label: 'Departmental Clubs & Student Chapters', default: true },
+          { id: 'att6_exams', code: '6.2', label: 'Competitive Examinations (GATE, NET, UPSC)', default: true },
+          { id: 'att8_awards', code: '8.2', label: 'Student Prizes & Championship Trophies', default: true }
+        ]
+      },
+      {
+        id: 't10_outcomes',
+        code: 'T10',
+        name: 'Table 10: Students Outcomes – 2026 Passed Out',
+        category: 'Outcomes',
+        questions: [
+          { id: 't10_ug', code: '10.A', label: 'UG Placements, Higher Studies & Entrepreneurs', default: true },
+          { id: 't10_pg', code: '10.B', label: 'PG Placements, Higher Studies & Entrepreneurs', default: true },
+          { id: 't10_phd', code: '10.C', label: 'Ph.D. Placements & Career Progression', default: true }
+        ]
+      },
+      {
+        id: 'att9',
+        code: 'Attr IX',
+        name: 'Attribute IX: Research, Innovations & Intellectual Property',
+        category: 'Research',
+        questions: [
+          { id: 'att9_phd', code: '9.1', label: 'Ph.D. Conferred, Guides & Enrolment', default: true },
+          { id: 'att9_papers', code: '9.8', label: 'Journal Papers (Scopus, WoS, UGC-CARE)', default: true },
+          { id: 'att9_conferences', code: '9.9', label: 'Conference Papers Presented', default: true },
+          { id: 'att9_books', code: '9.10', label: 'Books Authored & Chapters Contributed', default: true },
+          { id: 'att9_patents', code: '9.11a', label: 'Indian Patents (Granted & Applied)', default: true },
+          { id: 'att9_copyrights', code: '9.11b', label: 'Software Copyrights Registered', default: true },
+          { id: 'att9_oer', code: '9.11c', label: 'Open Educational Resources (OER)', default: true }
+        ]
+      },
+      {
+        id: 'att10',
+        code: 'Attr X',
+        name: 'Attribute X: Institutional Values, Green Initiatives & CSR',
+        category: 'Values & CSR',
+        questions: [
+          { id: 'att10_csr', code: '10.1', label: 'CSR Collaborations & Extension Outreach', default: true },
+          { id: 'att10_green', code: '10.2', label: 'Sustainability & Green Campus Practices', default: true }
+        ]
+      }
+    ];
+  }
+
+  getMeetingAgendaConfig() {
+    try {
+      const stored = localStorage.getItem('IQAC_AAA_MEETING_AGENDA_CONFIG');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Error reading agenda config:', e);
+    }
+    return this.getDefaultAgendaConfig();
+  }
+
+  getDefaultAgendaConfig() {
+    const config = {
+      preset: 'all',
+      enabledAttributes: {},
+      enabledQuestions: {}
+    };
+    this.getAllAttributesMetadata().forEach(attr => {
+      config.enabledAttributes[attr.id] = true;
+      attr.questions.forEach(q => {
+        config.enabledQuestions[q.id] = true;
+      });
+    });
+    return config;
+  }
+
+  saveMeetingAgendaConfig(config) {
+    localStorage.setItem('IQAC_AAA_MEETING_AGENDA_CONFIG', JSON.stringify(config));
+    this.notify();
+  }
+
+  isAttributeEnabled(attrId) {
+    const config = this.getMeetingAgendaConfig();
+    return config.enabledAttributes ? config.enabledAttributes[attrId] !== false : true;
+  }
+
+  isQuestionEnabled(questionId) {
+    const config = this.getMeetingAgendaConfig();
+    return config.enabledQuestions ? config.enabledQuestions[questionId] !== false : true;
+  }
+
+  getAgendaStats() {
+    const config = this.getMeetingAgendaConfig();
+    const all = this.getAllAttributesMetadata();
+    const totalAttrs = all.length;
+    let activeAttrs = 0;
+    let totalQuestions = 0;
+    let activeQuestions = 0;
+
+    all.forEach(attr => {
+      const attrActive = config.enabledAttributes ? config.enabledAttributes[attr.id] !== false : true;
+      if (attrActive) activeAttrs++;
+      attr.questions.forEach(q => {
+        totalQuestions++;
+        const qActive = config.enabledQuestions ? config.enabledQuestions[q.id] !== false : true;
+        if (attrActive && qActive) {
+          activeQuestions++;
+        }
+      });
+    });
+
+    return {
+      totalAttributes: totalAttrs,
+      activeAttributes: activeAttrs,
+      totalQuestions: totalQuestions,
+      activeQuestions: activeQuestions,
+      isFiltered: activeAttrs < totalAttrs || activeQuestions < totalQuestions,
+      preset: config.preset || 'custom'
+    };
+  }
+
+  applyAgendaPreset(presetKey) {
+    const all = this.getAllAttributesMetadata();
+    const config = {
+      preset: presetKey,
+      enabledAttributes: {},
+      enabledQuestions: {}
+    };
+
+    const enableAllInAttr = (attrId) => {
+      config.enabledAttributes[attrId] = true;
+      const attr = all.find(a => a.id === attrId);
+      if (attr) {
+        attr.questions.forEach(q => { config.enabledQuestions[q.id] = true; });
+      }
+    };
+
+    const disableAllInAttr = (attrId) => {
+      config.enabledAttributes[attrId] = false;
+      const attr = all.find(a => a.id === attrId);
+      if (attr) {
+        attr.questions.forEach(q => { config.enabledQuestions[q.id] = false; });
+      }
+    };
+
+    if (presetKey === 'all') {
+      const full = this.getDefaultAgendaConfig();
+      this.saveMeetingAgendaConfig(full);
+      return full;
+    }
+
+    // Default everything to disabled first
+    all.forEach(a => disableAllInAttr(a.id));
+
+    if (presetKey === 'executive_15m') {
+      ['t1_scholars', 't2_activities', 'att1', 'att2', 'att4_7', 'att5', 't10_outcomes', 'att9'].forEach(enableAllInAttr);
+    } else if (presetKey === 'research_ipr') {
+      ['t1_scholars', 'att3', 'att4_7', 'att9'].forEach(enableAllInAttr);
+    } else if (presetKey === 'curriculum_teaching') {
+      ['att1', 'att2', 'att5'].forEach(enableAllInAttr);
+    } else if (presetKey === 'student_progression') {
+      ['att4_7', 'att6_8', 't10_outcomes', 'att10'].forEach(enableAllInAttr);
+    } else if (presetKey === 'governance_atr') {
+      ['t2_activities', 'att1', 'att5', 'att10'].forEach(enableAllInAttr);
+    }
+
+    this.saveMeetingAgendaConfig(config);
+    return config;
   }
 }
 

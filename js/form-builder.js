@@ -33,17 +33,19 @@ class FormBuilder {
           </div>
         </div>
 
-        <!-- Section Navigation Pills (Matching questions.docx Tables 1 to 11) -->
+        <!-- Section Navigation Pills (Matching 10 Attributes and Tables) -->
         <div class="px-6 py-3 bg-slate-100/70 border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 text-xs font-medium text-slate-600 scrollbar-thin">
-          ${this.renderNavTab('profile', 'Profile & Scholars (T1)', 'building')}
-          ${this.renderNavTab('activities', 'Status of Activities (T2)', 'check-square')}
-          ${this.renderNavTab('att1', 'Att I: Curriculum & PTM (T3-4)', 'book-open')}
-          ${this.renderNavTab('att2', 'Att II: Faculty (T5)', 'users')}
-          ${this.renderNavTab('att4_7', 'Att 4 & 7: Grants & Seed (T6)', 'indian-rupee')}
-          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs (T7)', 'laptop')}
-          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards (T8-9)', 'trophy')}
-          ${this.renderNavTab('outcomes', 'Students Outcomes 2026 (T10)', 'graduation-cap')}
-          ${this.renderNavTab('att9', 'Att IX: Research & IPR (T11)', 'award')}
+          ${this.renderNavTab('profile', 'Profile & Scholars (T1)', 'building', 't1_scholars')}
+          ${this.renderNavTab('activities', 'Status of Activities (T2)', 'check-square', 't2_activities')}
+          ${this.renderNavTab('att1', 'Att I: Curriculum & PTM', 'book-open', 'attr1')}
+          ${this.renderNavTab('att2', 'Att II: Faculty', 'users', 'attr2')}
+          ${this.renderNavTab('att3', 'Att III: Infrastructure & Library', 'hard-drive', 'attr3')}
+          ${this.renderNavTab('att4_7', 'Att IV & VII: Grants & Seed', 'indian-rupee', 'attr4')}
+          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs', 'laptop', 'attr5')}
+          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy', 'attr6')}
+          ${this.renderNavTab('outcomes', 'Students Outcomes 2026', 'graduation-cap', 't10_outcomes')}
+          ${this.renderNavTab('att9', 'Att IX: Research & IPR', 'award', 'attr9')}
+          ${this.renderNavTab('att10', 'Att X: Values, Green & CSR', 'leaf', 'attr10')}
           ${this.renderNavTab('qualitative', '30-Min Presentation Flow', 'presentation')}
           ${this.renderNavTab('pillars', 'Crucial Academic Pillars', 'layers')}
           ${this.renderNavTab('panel', '15-Min Review Rubric', 'clipboard-check')}
@@ -64,15 +66,60 @@ class FormBuilder {
     }
   }
 
-  renderNavTab(tabKey, label, icon) {
+  renderNavTab(tabKey, label, icon, attrKey) {
     const isActive = this.activeTab === tabKey;
-    const activeClasses = isActive ? 'bg-blue-600 text-white shadow-sm font-semibold' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200';
+    const isAgendaOn = attrKey && window.dataStore && typeof window.dataStore.isAttributeEnabled === 'function'
+      ? window.dataStore.isAttributeEnabled(attrKey)
+      : true;
+
+    let agendaBadge = '';
+    if (attrKey) {
+      if (isAgendaOn) {
+        agendaBadge = `<span class="ml-1 px-1 py-0.2 text-[9px] font-bold rounded bg-blue-100 text-blue-700 tracking-wider">★ AGENDA</span>`;
+      } else {
+        agendaBadge = `<span class="ml-1 px-1 py-0.2 text-[9px] font-medium rounded bg-slate-200 text-slate-500 tracking-wider">OFF</span>`;
+      }
+    }
+
+    const activeClasses = isActive 
+      ? 'bg-blue-600 text-white shadow-sm font-semibold' 
+      : (isAgendaOn 
+          ? 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200' 
+          : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200 opacity-80');
+
     return `
       <button type="button" onclick="formBuilder.switchTab('${tabKey}')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition ${activeClasses}">
         <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
         <span>${label}</span>
+        ${agendaBadge}
       </button>
     `;
+  }
+
+  renderAgendaBanner(attrKey, title) {
+    if (!attrKey || !window.dataStore || typeof window.dataStore.isAttributeEnabled !== 'function') return '';
+    const isOn = window.dataStore.isAttributeEnabled(attrKey);
+    if (isOn) {
+      return `
+        <div class="mb-4 p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-800">
+          <span class="flex items-center gap-1.5 font-medium">
+            <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
+            <span><strong>${title}</strong> is active in the upcoming Academic Audit Review Meeting Agenda.</span>
+          </span>
+          <span class="px-2 py-0.5 rounded text-[10px] bg-blue-600 text-white font-bold tracking-wide uppercase">Meeting Focus</span>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="mb-4 p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-800">
+          <span class="flex items-center gap-1.5 font-medium">
+            <i data-lucide="info" class="w-4 h-4 text-amber-600"></i>
+            <span><strong>${title}</strong> is currently unselected in the Admin Meeting Agenda. (Data is saved for records/archive).</span>
+          </span>
+          <span class="px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-bold tracking-wide uppercase">Archival Only</span>
+        </div>
+      `;
+    }
   }
 
   switchTab(tabKey) {
@@ -95,6 +142,8 @@ class FormBuilder {
         return this.renderAtt1Tab(data.attributeI);
       case 'att2':
         return this.renderAtt2Tab(data.attributeII);
+      case 'att3':
+        return this.renderAtt3Tab(data.attributeIII);
       case 'att4_7':
         return this.renderAtt4_7Tab(data.attributeIV_VII);
       case 'att5':
@@ -105,6 +154,8 @@ class FormBuilder {
         return this.renderOutcomesTab(data.studentsOutcomes2026);
       case 'att9':
         return this.renderAtt9Tab(data.attributeIX);
+      case 'att10':
+        return this.renderAtt10Tab(data.attributeX);
       case 'qualitative':
         return this.renderQualitativeTab(data.qualitativePresentation);
       case 'pillars':
@@ -138,6 +189,8 @@ class FormBuilder {
           </div>
           <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">questions.docx - Table 1</span>
         </div>
+
+        ${this.renderAgendaBanner('t1_scholars', 'Table 1 - Research Scholars Profile')}
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
@@ -282,6 +335,8 @@ class FormBuilder {
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 2</span>
         </div>
 
+        ${this.renderAgendaBanner('t2_activities', 'Table 2 - Status of Activities')}
+
         <!-- Section A: Based on AAA 2025 - 2026 -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -402,6 +457,8 @@ class FormBuilder {
           </div>
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 1 & 2</span>
         </div>
+
+        ${this.renderAgendaBanner('attr1', 'Attribute I - Curriculum Design')}
 
         <!-- 1. Value Added Courses (VAC) -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -640,6 +697,8 @@ class FormBuilder {
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 3</span>
         </div>
 
+        ${this.renderAgendaBanner('attr2', 'Attribute II - Faculty Resources')}
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Degrees & NET/SET -->
           <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
@@ -793,7 +852,197 @@ class FormBuilder {
     `;
   }
 
-  // TAB 4: Attribute 4 & 7 - Grants, Management Funds, Seed Money & Endowments
+
+  // TAB: Attribute III - Infrastructure & Learning Resources
+  renderAtt3Tab(att3) {
+    const safeAtt3 = att3 || {};
+    const equipments = safeAtt3.purchasedEquipments || [];
+    const library = safeAtt3.departmentLibrary || {
+      booksPurchased2026_2027: 0,
+      totalBooks: 0,
+      nationalJournalsPurchased2026_2027: 0,
+      internationalJournalsPurchased2026_2027: 0,
+      totalJournals: 0,
+      dailyFacultyFootfall: 0,
+      dailyStudentFootfall: 0
+    };
+
+    const totalEquipmentSpend = equipments.reduce((sum, item) => sum + (Number(item.amountINR) || 0), 0);
+
+    return `
+      <div class="space-y-6">
+        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Attribute III - Infrastructure & Learning Resources</h3>
+            <p class="text-xs text-slate-500">Laboratory Equipment Purchases (3.1) and Department Library Resources & Footfall (3.2).</p>
+          </div>
+          <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">Templates_AAA_2026-2027 - Attribute-III</span>
+        </div>
+
+        ${this.renderAgendaBanner('attr3', 'Attribute III - Infrastructure & Learning Resources')}
+
+        <!-- Quick Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-indigo-700 uppercase">Equipments Purchased</span>
+            <div class="text-xl font-bold text-indigo-900 mt-1">${equipments.length} <span class="text-xs font-normal text-indigo-600">items</span></div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-blue-700 uppercase">Equipment Investment</span>
+            <div class="text-xl font-bold text-blue-900 mt-1">₹${(totalEquipmentSpend / 100000).toFixed(2)} <span class="text-xs font-normal text-blue-600">Lakhs</span></div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-emerald-700 uppercase">Dept Library Books</span>
+            <div class="text-xl font-bold text-emerald-900 mt-1">${library.totalBooks || 0} <span class="text-xs font-normal text-emerald-600">(+${library.booksPurchased2026_2027 || 0} new)</span></div>
+          </div>
+          <div class="bg-purple-50 border border-purple-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-purple-700 uppercase">Daily Library Footfall</span>
+            <div class="text-xl font-bold text-purple-900 mt-1">${(library.dailyFacultyFootfall || 0) + (library.dailyStudentFootfall || 0)} <span class="text-xs font-normal text-purple-600">visits/day</span></div>
+          </div>
+        </div>
+
+        <!-- Section 3.1: Purchased Equipments -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="hard-drive" class="w-4 h-4 text-indigo-600"></i>
+                3.1 Laboratory Equipment Purchased in A.Y. 2026-2027
+              </h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">List of major equipment, software licenses, and research hardware procured.</p>
+            </div>
+            <button type="button" onclick="formBuilder.addFacilityRow()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Equipment
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left text-slate-700">
+              <thead class="text-[11px] text-slate-600 uppercase bg-slate-200/70 border-b">
+                <tr>
+                  <th class="p-2">#</th>
+                  <th class="p-2">Lab / Facility Name</th>
+                  <th class="p-2">Equipment Name & Specs</th>
+                  <th class="p-2">Type</th>
+                  <th class="p-2">Date Purchased</th>
+                  <th class="p-2">Cost (₹)</th>
+                  <th class="p-2 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 bg-white">
+                ${equipments.length === 0 ? `
+                  <tr><td colspan="7" class="text-center py-4 text-slate-400 italic">No equipment entries recorded. Click 'Add Equipment' above to add.</td></tr>
+                ` : equipments.map((eq, idx) => `
+                  <tr>
+                    <td class="p-2 font-semibold text-slate-400">${idx + 1}</td>
+                    <td class="p-2">
+                      <input type="text" value="${eq.labName || ''}" placeholder="e.g. AI Research Lab" onchange="formBuilder.updateFacilityItem(${idx}, 'labName', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                    </td>
+                    <td class="p-2">
+                      <input type="text" value="${eq.equipmentName || ''}" placeholder="Equipment / Model" onchange="formBuilder.updateFacilityItem(${idx}, 'equipmentName', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                    </td>
+                    <td class="p-2">
+                      <select onchange="formBuilder.updateFacilityItem(${idx}, 'type', this.value)" class="w-full text-xs p-1.5 border rounded">
+                        <option value="Major Equipment" ${eq.type === 'Major Equipment' ? 'selected' : ''}>Major Equipment</option>
+                        <option value="Minor Equipment" ${eq.type === 'Minor Equipment' ? 'selected' : ''}>Minor Equipment</option>
+                        <option value="Software License" ${eq.type === 'Software License' ? 'selected' : ''}>Software License</option>
+                        <option value="Compute Server" ${eq.type === 'Compute Server' ? 'selected' : ''}>Compute Server</option>
+                        <option value="Other" ${eq.type === 'Other' ? 'selected' : ''}>Other</option>
+                      </select>
+                    </td>
+                    <td class="p-2">
+                      <input type="date" value="${eq.purchaseDate || ''}" onchange="formBuilder.updateFacilityItem(${idx}, 'purchaseDate', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                    </td>
+                    <td class="p-2">
+                      <input type="number" value="${eq.amountINR || 0}" onchange="formBuilder.updateFacilityItem(${idx}, 'amountINR', parseInt(this.value)||0)" class="w-28 text-xs p-1.5 border rounded font-mono font-medium" />
+                    </td>
+                    <td class="p-2 text-center">
+                      <button type="button" onclick="formBuilder.removeFacilityRow(${idx})" class="text-red-500 hover:text-red-700 p-1" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 3.2: Department Library -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div class="border-b border-slate-200 pb-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="book" class="w-4 h-4 text-purple-600"></i>
+              3.2 Department Library Resources & Usage
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">Volumes, print journals, e-subscriptions, and average daily footfall.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Books & Volumes -->
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="book-marked" class="w-3.5 h-3.5 text-blue-600"></i>
+                Books & Titles
+              </span>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Purchased in 2026-2027</label>
+                  <input type="number" value="${library.booksPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('booksPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Total Books in Dept</label>
+                  <input type="number" value="${library.totalBooks || 0}" onchange="formBuilder.updateLibraryField('totalBooks', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Journals & Subscriptions -->
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="newspaper" class="w-3.5 h-3.5 text-emerald-600"></i>
+                Journals Subscribed
+              </span>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">National New</label>
+                  <input type="number" value="${library.nationalJournalsPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('nationalJournalsPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Int'l New</label>
+                  <input type="number" value="${library.internationalJournalsPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('internationalJournalsPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Total Journals</label>
+                  <input type="number" value="${library.totalJournals || 0}" onchange="formBuilder.updateLibraryField('totalJournals', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Daily Footfall -->
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3 md:col-span-2">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-purple-600"></i>
+                Average Daily Footfall (Visits / Day)
+              </span>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Faculty Footfall</label>
+                  <input type="number" value="${library.dailyFacultyFootfall || 0}" onchange="formBuilder.updateLibraryField('dailyFacultyFootfall', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+                <div>
+                  <label class="text-[11px] text-slate-500 block mb-1">Student Footfall</label>
+                  <input type="number" value="${library.dailyStudentFootfall || 0}" onchange="formBuilder.updateLibraryField('dailyStudentFootfall', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+    // TAB 4: Attribute 4 & 7 - Grants, Management Funds, Seed Money & Endowments
   renderAtt4_7Tab(att4_7) {
     return `
       <div class="space-y-6">
@@ -804,6 +1053,8 @@ class FormBuilder {
           </div>
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 4</span>
         </div>
+
+        ${this.renderAgendaBanner('attr4', 'Attribute IV & VII - Grants & Seed Money')}
 
         <!-- 1. External Funds -->
         <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200">
@@ -939,6 +1190,8 @@ class FormBuilder {
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 5</span>
         </div>
 
+        ${this.renderAgendaBanner('attr5', 'Attribute V - Learning & Teaching')}
+
         <div class="space-y-4">
           <!-- New MoUs -->
           <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -1006,6 +1259,8 @@ class FormBuilder {
           </div>
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 6 & 7</span>
         </div>
+
+        ${this.renderAgendaBanner('attr6', 'Attribute VI & VIII - Extension, Clubs & Awards')}
 
         <!-- Clubs List -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -1152,6 +1407,8 @@ class FormBuilder {
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 10</span>
         </div>
 
+        ${this.renderAgendaBanner('t10_outcomes', 'Table 10 - Student Outcomes 2026')}
+
         <!-- Metric KPI Cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200">
@@ -1260,6 +1517,8 @@ class FormBuilder {
           </div>
           <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 8</span>
         </div>
+
+        ${this.renderAgendaBanner('attr9', 'Attribute IX - Research, Publications & IPR')}
 
         <!-- PhD Supervision & Research Scholars -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -1383,7 +1642,172 @@ class FormBuilder {
     `;
   }
 
-  // TAB 8: 30-Min Presentation Content Flow
+
+  // TAB: Attribute X - Institutional Values, Green Initiatives & CSR Extension
+  renderAtt10Tab(att10) {
+    const safeAtt10 = att10 || {};
+    const csrList = safeAtt10.csrActivities || [];
+    const sust = safeAtt10.sustainability || {
+      paperlessCIA: '',
+      solarEnergyUsage: '',
+      plasticFreeCampus: '',
+      rainwaterHarvesting: ''
+    };
+
+    const totalBeneficiaries = csrList.reduce((sum, item) => sum + (Number(item.studentsBenefited) || 0), 0);
+    const totalCsrFunds = csrList.reduce((sum, item) => sum + (Number(item.amountINR) || 0), 0);
+
+    return `
+      <div class="space-y-6">
+        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Attribute X - Institutional Values, Green Initiatives & CSR Extension</h3>
+            <p class="text-xs text-slate-500">Corporate Social Responsibility (CSR), Environmental Sustainability, and Eco-friendly Best Practices.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">Templates_AAA_2026-2027 - Attribute-X</span>
+        </div>
+
+        ${this.renderAgendaBanner('attr10', 'Attribute X - Institutional Values, Green Initiatives & CSR')}
+
+        <!-- Quick Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-emerald-700 uppercase">Extension / CSR Events</span>
+            <div class="text-xl font-bold text-emerald-900 mt-1">${csrList.length} <span class="text-xs font-normal text-emerald-600">conducted</span></div>
+          </div>
+          <div class="bg-teal-50 border border-teal-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-teal-700 uppercase">Community Beneficiaries</span>
+            <div class="text-xl font-bold text-teal-900 mt-1">${totalBeneficiaries.toLocaleString()} <span class="text-xs font-normal text-teal-600">people</span></div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-blue-700 uppercase">CSR Funds Mobilized</span>
+            <div class="text-xl font-bold text-blue-900 mt-1">₹${(totalCsrFunds / 100000).toFixed(2)} <span class="text-xs font-normal text-blue-600">Lakhs</span></div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+            <span class="text-[11px] font-semibold text-amber-700 uppercase">Green Pillars Tracked</span>
+            <div class="text-xl font-bold text-amber-900 mt-1">4 <span class="text-xs font-normal text-amber-600">Sustainability areas</span></div>
+          </div>
+        </div>
+
+        <!-- Section 10.1: Extension Activities & CSR -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-600"></i>
+                10.1 Extension Activities & CSR Collaborations in A.Y. 2026-2027
+              </h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">Outreach, societal development, NGO partnerships, and CSR projects.</p>
+            </div>
+            <button type="button" onclick="formBuilder.addCsrRow()" class="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left text-slate-700">
+              <thead class="text-[11px] text-slate-600 uppercase bg-slate-200/70 border-b">
+                <tr>
+                  <th class="p-2">#</th>
+                  <th class="p-2">Activity / Initiative Title</th>
+                  <th class="p-2">Type</th>
+                  <th class="p-2">Collaborating Agency / Partner</th>
+                  <th class="p-2 text-center">Is CSR?</th>
+                  <th class="p-2">Beneficiaries</th>
+                  <th class="p-2">Funding (₹)</th>
+                  <th class="p-2 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 bg-white">
+                ${csrList.length === 0 ? `
+                  <tr><td colspan="8" class="text-center py-4 text-slate-400 italic">No CSR or extension activities recorded. Click 'Add Activity' to record.</td></tr>
+                ` : csrList.map((c, idx) => `
+                  <tr>
+                    <td class="p-2 font-semibold text-slate-400">${idx + 1}</td>
+                    <td class="p-2">
+                      <input type="text" value="${c.activityName || ''}" placeholder="Activity Name" onchange="formBuilder.updateCsrItem(${idx}, 'activityName', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                    </td>
+                    <td class="p-2">
+                      <select onchange="formBuilder.updateCsrItem(${idx}, 'type', this.value)" class="w-full text-xs p-1.5 border rounded">
+                        <option value="Extension Activity" ${c.type === 'Extension Activity' ? 'selected' : ''}>Extension Activity</option>
+                        <option value="CSR Project" ${c.type === 'CSR Project' ? 'selected' : ''}>CSR Project</option>
+                        <option value="Community Outreach" ${c.type === 'Community Outreach' ? 'selected' : ''}>Community Outreach</option>
+                        <option value="Environmental Drive" ${c.type === 'Environmental Drive' ? 'selected' : ''}>Environmental Drive</option>
+                      </select>
+                    </td>
+                    <td class="p-2">
+                      <input type="text" value="${c.collaboratingAgency || ''}" placeholder="Collaborating Agency / NGO" onchange="formBuilder.updateCsrItem(${idx}, 'collaboratingAgency', this.value)" class="w-full text-xs p-1.5 border rounded" />
+                    </td>
+                    <td class="p-2 text-center">
+                      <input type="checkbox" ${c.isCSR ? 'checked' : ''} onchange="formBuilder.updateCsrItem(${idx}, 'isCSR', this.checked)" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" />
+                    </td>
+                    <td class="p-2">
+                      <input type="number" value="${c.studentsBenefited || 0}" onchange="formBuilder.updateCsrItem(${idx}, 'studentsBenefited', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded font-medium" />
+                    </td>
+                    <td class="p-2">
+                      <input type="number" value="${c.amountINR || 0}" onchange="formBuilder.updateCsrItem(${idx}, 'amountINR', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded font-mono font-medium" />
+                    </td>
+                    <td class="p-2 text-center">
+                      <button type="button" onclick="formBuilder.removeCsrRow(${idx})" class="text-red-500 hover:text-red-700 p-1" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 10.2: Green Campus & Sustainability Initiatives -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div class="border-b border-slate-200 pb-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="leaf" class="w-4 h-4 text-emerald-600"></i>
+              10.2 Green Campus & Institutional Values
+            </h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">Four core sustainability dimensions practiced in the department.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
+                Paperless Internal Assessments (CIA) & Operations
+              </label>
+              <textarea rows="2" placeholder="e.g. 100% digital submissions via Moodle LMS, digital grading rubrics..." onchange="formBuilder.updateGreenField('paperlessCIA', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.paperlessCIA || ''}</textarea>
+            </div>
+
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
+                <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>
+                Renewable & Solar Energy Usage
+              </label>
+              <textarea rows="2" placeholder="e.g. 35% power requirement powered by rooftop solar panels..." onchange="formBuilder.updateGreenField('solarEnergyUsage', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.solarEnergyUsage || ''}</textarea>
+            </div>
+
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
+                <i data-lucide="recycle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                Plastic-Free Campus & Solid Waste Management
+              </label>
+              <textarea rows="2" placeholder="e.g. Strict ban on single-use plastics, electronic scrap recycling..." onchange="formBuilder.updateGreenField('plasticFreeCampus', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.plasticFreeCampus || ''}</textarea>
+            </div>
+
+            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
+              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
+                <i data-lucide="droplet" class="w-3.5 h-3.5 text-cyan-600"></i>
+                Rainwater Harvesting & Water Conservation
+              </label>
+              <textarea rows="2" placeholder="e.g. Recharge wells, sensor taps, greywater recycling for gardens..." onchange="formBuilder.updateGreenField('rainwaterHarvesting', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.rainwaterHarvesting || ''}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+    // TAB 8: 30-Min Presentation Content Flow
   renderQualitativeTab(qual) {
     return `
       <div class="space-y-6">
@@ -1984,6 +2408,95 @@ class FormBuilder {
       window.dataStore.saveCurrentData();
       this.showSaveIndicator();
     }
+  }
+
+  addFacilityRow() {
+    const data = window.dataStore.data;
+    if (!data.attributeIII) data.attributeIII = {};
+    if (!data.attributeIII.purchasedEquipments) data.attributeIII.purchasedEquipments = [];
+    data.attributeIII.purchasedEquipments.push({
+      labName: '',
+      equipmentName: '',
+      type: 'Major Equipment',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      amountINR: 0
+    });
+    window.dataStore.saveCurrentData();
+    window.dataStore.notify();
+    this.render(data);
+  }
+
+  removeFacilityRow(index) {
+    const data = window.dataStore.data;
+    if (data.attributeIII?.purchasedEquipments) {
+      data.attributeIII.purchasedEquipments.splice(index, 1);
+      window.dataStore.saveCurrentData();
+      window.dataStore.notify();
+      this.render(data);
+    }
+  }
+
+  updateFacilityItem(index, field, val) {
+    const data = window.dataStore.data;
+    if (data.attributeIII?.purchasedEquipments?.[index]) {
+      data.attributeIII.purchasedEquipments[index][field] = val;
+      window.dataStore.saveCurrentData();
+      this.showSaveIndicator();
+    }
+  }
+
+  updateLibraryField(field, val) {
+    const data = window.dataStore.data;
+    if (!data.attributeIII) data.attributeIII = {};
+    if (!data.attributeIII.departmentLibrary) data.attributeIII.departmentLibrary = {};
+    data.attributeIII.departmentLibrary[field] = val;
+    window.dataStore.saveCurrentData();
+    this.showSaveIndicator();
+  }
+
+  addCsrRow() {
+    const data = window.dataStore.data;
+    if (!data.attributeX) data.attributeX = {};
+    if (!data.attributeX.csrActivities) data.attributeX.csrActivities = [];
+    data.attributeX.csrActivities.push({
+      activityName: '',
+      type: 'Extension Activity',
+      collaboratingAgency: '',
+      isCSR: true,
+      studentsBenefited: 0,
+      amountINR: 0
+    });
+    window.dataStore.saveCurrentData();
+    window.dataStore.notify();
+    this.render(data);
+  }
+
+  removeCsrRow(index) {
+    const data = window.dataStore.data;
+    if (data.attributeX?.csrActivities) {
+      data.attributeX.csrActivities.splice(index, 1);
+      window.dataStore.saveCurrentData();
+      window.dataStore.notify();
+      this.render(data);
+    }
+  }
+
+  updateCsrItem(index, field, val) {
+    const data = window.dataStore.data;
+    if (data.attributeX?.csrActivities?.[index]) {
+      data.attributeX.csrActivities[index][field] = val;
+      window.dataStore.saveCurrentData();
+      this.showSaveIndicator();
+    }
+  }
+
+  updateGreenField(field, val) {
+    const data = window.dataStore.data;
+    if (!data.attributeX) data.attributeX = {};
+    if (!data.attributeX.sustainability) data.attributeX.sustainability = {};
+    data.attributeX.sustainability[field] = val;
+    window.dataStore.saveCurrentData();
+    this.showSaveIndicator();
   }
 
   showSaveIndicator() {

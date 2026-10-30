@@ -10,11 +10,13 @@ class DashboardRenderer {
       status_act: false,
       att1: false,
       att2: false,
+      att3: false,
       att4_7: false,
       att5: false,
       att6_8: false,
       outcomes: false,
-      att9: false
+      att9: false,
+      att10: false
     };
     this.allExpanded = false;
   }
@@ -57,7 +59,7 @@ class DashboardRenderer {
 
   toggleAllDetails() {
     this.allExpanded = !this.allExpanded;
-    const sections = ['scholars', 'status_act', 'att1', 'att2', 'att4_7', 'att5', 'att6_8', 'outcomes', 'att9'];
+    const sections = ['scholars', 'status_act', 'att1', 'att2', 'att3', 'att4_7', 'att5', 'att6_8', 'outcomes', 'att9', 'att10'];
     sections.forEach(sec => {
       this.expandedSections[sec] = this.allExpanded;
       const container = document.getElementById(`detail-container-${sec}`);
@@ -251,8 +253,33 @@ class DashboardRenderer {
     const maleTotal = ftM + ptM;
     const femaleTotal = ftF + ptF;
     const totalScholars = ftTotal + ptTotal || dept.researchScholarsCount || 0;
+    const isAttrOn = (id) => window.dataStore ? window.dataStore.isAttributeEnabled(id) : true;
+    const agendaStats = window.dataStore ? window.dataStore.getAgendaStats() : { isFiltered: false, activeAttributes: 11, totalAttributes: 11, activeQuestions: 38, totalQuestions: 38 };
 
     this.container.innerHTML = `
+      <div class="space-y-6">
+        <!-- Meeting Focus Agenda Notice Banner (If filtered by Admin) -->
+        ${agendaStats.isFiltered ? `
+          <div class="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950 shadow-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="p-2 bg-amber-500 text-white rounded-lg shadow-sm">
+                <i data-lucide="sliders" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <strong class="font-bold text-sm text-amber-900">Meeting Focus Agenda Active (${agendaStats.activeAttributes} of ${agendaStats.totalAttributes} Attributes Enabled)</strong>
+                <p class="text-[11px] text-amber-800 mt-0.5">Preset: <span class="uppercase font-bold">${agendaStats.preset}</span>. Displaying only the ${agendaStats.activeQuestions} questions selected by the IQAC Admin for this audit review.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-center">
+              <button type="button" onclick="adminDashboard.selectAgendaPreset('all')" class="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold rounded-lg transition text-xs whitespace-nowrap">
+                Show All 10 Attributes
+              </button>
+              <button type="button" onclick="adminDashboard.openAgendaConfigModal()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition text-xs shadow-sm whitespace-nowrap">
+                Configure Agenda
+              </button>
+            </div>
+          </div>
+        ` : ''}
       <div class="space-y-6">
         <!-- Executive Header Banner (Matching Admin Console Style) -->
         <div class="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -486,6 +513,7 @@ class DashboardRenderer {
         </div>
 
         <!-- Table 1: Research Scholars Matrix Card (FT & PT x Male & Female) -->
+        ${isAttrOn('t1_scholars') ? `
         <div class="bg-white rounded-xl p-4 border border-purple-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <div class="p-2.5 bg-purple-600 text-white rounded-xl shadow-sm">
@@ -559,6 +587,8 @@ class DashboardRenderer {
           </table>
         </div>
 
+        ` : ''}
+
         <!-- ATTRIBUTE-WISE DISPLAY BAR (FILTER / JUMP NAVIGATION - Matching Admin Filter Bar) -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 sticky top-16 z-30">
           <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
@@ -567,14 +597,17 @@ class DashboardRenderer {
               Filter Attribute:
             </span>
             ${this.renderAttrPill('all', 'All Sections', 'layers')}
-            ${this.renderAttrPill('status_act', 'Activities (T2)', 'check-square')}
-            ${this.renderAttrPill('att1', 'Att I: Curriculum (T3-4)', 'book-open')}
-            ${this.renderAttrPill('att2', 'Att II: Faculty (T5)', 'users')}
-            ${this.renderAttrPill('att4_7', 'Att 4 & 7: Grants (T6)', 'indian-rupee')}
-            ${this.renderAttrPill('att5', 'Att V: Teaching (T7)', 'laptop')}
-            ${this.renderAttrPill('att6_8', 'Att VI & VIII: Clubs (T8-9)', 'trophy')}
-            ${this.renderAttrPill('outcomes', 'Students Outcomes (T10)', 'graduation-cap')}
-            ${this.renderAttrPill('att9', 'Att IX: Research (T11)', 'award')}
+            ${isAttrOn('t1_scholars') ? this.renderAttrPill('scholars', 'Scholars (T1)', 'users-round') : ''}
+            ${isAttrOn('t2_activities') ? this.renderAttrPill('status_act', 'Activities (T2)', 'check-square') : ''}
+            ${isAttrOn('att1') ? this.renderAttrPill('att1', 'Att I: Curriculum', 'book-open') : ''}
+            ${isAttrOn('att2') ? this.renderAttrPill('att2', 'Att II: Faculty', 'users') : ''}
+            ${isAttrOn('att3') ? this.renderAttrPill('att3', 'Att III: Infrastructure', 'server') : ''}
+            ${isAttrOn('att4_7') ? this.renderAttrPill('att4_7', 'Att 4 & 7: Grants', 'indian-rupee') : ''}
+            ${isAttrOn('att5') ? this.renderAttrPill('att5', 'Att V: Teaching', 'laptop') : ''}
+            ${isAttrOn('att6_8') ? this.renderAttrPill('att6_8', 'Att VI & VIII: Clubs', 'trophy') : ''}
+            ${isAttrOn('t10_outcomes') ? this.renderAttrPill('outcomes', 'Outcomes 2026', 'graduation-cap') : ''}
+            ${isAttrOn('att9') ? this.renderAttrPill('att9', 'Att IX: Research', 'award') : ''}
+            ${isAttrOn('att10') ? this.renderAttrPill('att10', 'Att X: Green & CSR', 'leaf') : ''}
           </div>
 
           <div class="flex items-center gap-2 text-xs text-slate-500">
@@ -662,16 +695,18 @@ class DashboardRenderer {
           </div>
         ` : ''}
 
-        <!-- DETAILED ATTRIBUTE-WISE SECTIONS CONTAINER (Matching questions.docx Tables 2 to 11) -->
+        <!-- DETAILED ATTRIBUTE-WISE SECTIONS CONTAINER (Matching questions.docx Tables 2 to 11 & Attributes I to X) -->
         <div class="space-y-8">
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'status_act') ? this.renderStatusOfActivitiesSection(data.qualitativePresentation) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att1') ? this.renderAttributeISection(att1) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att2') ? this.renderAttributeIISection(att2) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att4_7') ? this.renderAttributeIV_VIISection(att4_7) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att5') ? this.renderAttributeVSection(att5) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att6_8') ? this.renderAttributeVI_VIIISection(att6_8) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'outcomes') ? this.renderStudentsOutcomesSection(data.studentsOutcomes2026) : ''}
-          ${(this.selectedAttribute === 'all' || this.selectedAttribute === 'att9') ? this.renderAttributeIXSection(att9) : ''}
+          ${(isAttrOn('t2_activities') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'status_act')) ? this.renderStatusOfActivitiesSection(data.qualitativePresentation) : ''}
+          ${(isAttrOn('att1') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att1')) ? this.renderAttributeISection(att1) : ''}
+          ${(isAttrOn('att2') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att2')) ? this.renderAttributeIISection(att2) : ''}
+          ${(isAttrOn('att3') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att3')) ? this.renderAttributeIIISection(data.attributeIII) : ''}
+          ${(isAttrOn('att4_7') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att4_7')) ? this.renderAttributeIV_VIISection(att4_7) : ''}
+          ${(isAttrOn('att5') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att5')) ? this.renderAttributeVSection(att5) : ''}
+          ${(isAttrOn('att6_8') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att6_8')) ? this.renderAttributeVI_VIIISection(att6_8) : ''}
+          ${(isAttrOn('t10_outcomes') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'outcomes')) ? this.renderStudentsOutcomesSection(data.studentsOutcomes2026) : ''}
+          ${(isAttrOn('att9') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att9')) ? this.renderAttributeIXSection(att9) : ''}
+          ${(isAttrOn('att10') && (this.selectedAttribute === 'all' || this.selectedAttribute === 'att10')) ? this.renderAttributeXSection(data.attributeX) : ''}
         </div>
 
         <!-- Transition to 30-Min Presentation Banner -->
@@ -715,15 +750,18 @@ class DashboardRenderer {
 
   getAttributeTitle(key) {
     const map = {
-      all: 'All Sections (Tables 1 to 11)',
+      all: 'All Sections (Tables 1 to 11 & Attributes I to X)',
+      scholars: 'Table 1: Research Scholars Matrix',
       status_act: 'Table 2: Status of Activities Completed',
       att1: 'Table 3 & 4: Attribute I - Curriculum & PTM',
       att2: 'Table 5: Attribute II - Faculty Resources',
+      att3: 'Attribute III: Infrastructure & Learning Resources',
       att4_7: 'Table 6: Attribute 4 & 7 - Grants & Resource Mobilization',
       att5: 'Table 7: Attribute V - Learning & Teaching (MoUs)',
       att6_8: 'Table 8 & 9: Attribute VI & VIII - Clubs & Awards',
       outcomes: 'Table 10: Students Outcomes – 2026 Passed out',
-      att9: 'Table 11: Attribute IX - Research & Innovation Outcomes'
+      att9: 'Table 11: Attribute IX - Research & Innovation Outcomes',
+      att10: 'Attribute X: Institutional Values & Green Initiatives'
     };
     return map[key] || 'All Attributes';
   }
@@ -2444,6 +2482,254 @@ class DashboardRenderer {
           </div>
         </div>
       </div>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE III: INFRASTRUCTURE & LIBRARY
+  // ==========================================
+  renderAttributeIIISection(att3) {
+    const isExpanded = this.isSectionExpanded('att3');
+    if (!att3) att3 = {};
+    const facilities = att3.researchFacility || [];
+    const library = att3.departmentLibrary || {};
+    const totalEquipmentAmount = facilities.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
+    const amountLakhs = (totalEquipmentAmount / 100000).toFixed(2);
+
+    return `
+      <section id="attr-section-att3" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-24">
+        <!-- Section Header -->
+        <div class="p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-cyan-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="server" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-cyan-100 text-cyan-900 border border-cyan-200">Attribute III</span>
+                <h3 class="text-base font-bold text-slate-800">Infrastructure & Learning Resources</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Research laboratories, specialized equipment purchased, and departmental library footfalls.</p>
+            </div>
+          </div>
+          <button id="detail-btn-att3" type="button" onclick="dashboardRenderer.toggleSection('att3')" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs flex items-center gap-1.5 transition shadow-sm self-start sm:self-center ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}">
+            <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+            <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+          </button>
+        </div>
+
+        <!-- Count-First Grid -->
+        <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Lab Equipment Purchased</span>
+            <div class="text-xl font-black text-cyan-700 mt-0.5">${facilities.length} Units</div>
+            <span class="text-[10px] text-slate-400">Total ₹ ${amountLakhs} Lakhs</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Library Volumes</span>
+            <div class="text-xl font-black text-blue-700 mt-0.5">${(library.totalBooks || 0) + (library.booksPurchased || 0)}</div>
+            <span class="text-[10px] text-slate-400">${library.booksPurchased || 0} purchased in 2026-27</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Subscribed Journals</span>
+            <div class="text-xl font-black text-indigo-700 mt-0.5">${library.totalJournals || 0}</div>
+            <span class="text-[10px] text-slate-400">${library.journalsPurchased || 0} added this year</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Daily Library Footfall</span>
+            <div class="text-xl font-black text-emerald-700 mt-0.5">${(library.facultyVisitsPerDay || 0) + (library.studentVisitsPerDay || 0)}</div>
+            <span class="text-[10px] text-slate-400">Faculty: ${library.facultyVisitsPerDay || 0} | Students: ${library.studentVisitsPerDay || 0}</span>
+          </div>
+        </div>
+
+        <!-- Expandable Detail Container -->
+        <div id="detail-container-att3" class="${isExpanded ? '' : 'hidden'} border-t border-slate-200 p-5 space-y-6 bg-slate-50/50">
+          <!-- 3.1 Equipment Purchased Table -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="cpu" class="w-4 h-4 text-cyan-600"></i>
+              3.1 Research Facility & Specialized Lab Equipment Purchased
+            </h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th class="p-2.5">S.No.</th>
+                    <th class="p-2.5">Name of the Lab</th>
+                    <th class="p-2.5">Equipment / Instruments Purchased</th>
+                    <th class="p-2.5">Facility Type</th>
+                    <th class="p-2.5">Date of Purchase</th>
+                    <th class="p-2.5 text-right">Cost (₹)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  ${facilities.map((f, idx) => `
+                    <tr class="hover:bg-slate-50">
+                      <td class="p-2.5 font-bold">${idx + 1}</td>
+                      <td class="p-2.5 font-semibold text-slate-900">${f.labName || 'Research Lab'}</td>
+                      <td class="p-2.5">${f.equipment || ''}</td>
+                      <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.facilityType === 'New Facility' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">${f.facilityType || 'Existing'}</span></td>
+                      <td class="p-2.5">${f.purchaseDate || ''}</td>
+                      <td class="p-2.5 text-right font-black text-slate-900">₹ ${(Number(f.amount) || 0).toLocaleString('en-IN')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3.2 Department Library Details -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="book-marked" class="w-4 h-4 text-blue-600"></i>
+              3.2 Department Library Resources & Daily Utilization
+            </h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div class="p-3 bg-slate-50 rounded-lg">
+                <span class="text-slate-500 text-[10px] block">Books in Dept Library</span>
+                <span class="text-base font-black text-slate-800">${library.totalBooks || 0}</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg">
+                <span class="text-slate-500 text-[10px] block">New Books (2026-27)</span>
+                <span class="text-base font-black text-blue-700">${library.booksPurchased || 0}</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg">
+                <span class="text-slate-500 text-[10px] block">Total Journals Subscribed</span>
+                <span class="text-base font-black text-slate-800">${library.totalJournals || 0}</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg">
+                <span class="text-slate-500 text-[10px] block">Average Daily Visitors</span>
+                <span class="text-base font-black text-emerald-700">${(library.facultyVisitsPerDay || 0) + (library.studentVisitsPerDay || 0)} per day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  // ==========================================
+  // ATTRIBUTE X: INSTITUTIONAL VALUES & GREEN INITIATIVES
+  // ==========================================
+  renderAttributeXSection(att10) {
+    const isExpanded = this.isSectionExpanded('att10');
+    if (!att10) att10 = {};
+    const csr = att10.csrExtension || [];
+    const green = att10.greenInitiatives || {};
+    const totalBeneficiaries = csr.reduce((sum, item) => sum + (Number(item.beneficiaries) || 0), 0);
+    const totalCsrFunding = csr.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+    return `
+      <section id="attr-section-att10" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-24">
+        <!-- Section Header -->
+        <div class="p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-sm">
+              <i data-lucide="leaf" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200">Attribute X</span>
+                <h3 class="text-base font-bold text-slate-800">Institutional Values, Green Initiatives & CSR Extension</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Corporate Social Responsibility (CSR) collaborative projects, paperless audits, and green campus outcomes.</p>
+            </div>
+          </div>
+          <button id="detail-btn-att10" type="button" onclick="dashboardRenderer.toggleSection('att10')" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs flex items-center gap-1.5 transition shadow-sm self-start sm:self-center ${isExpanded ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}">
+            <i data-lucide="${isExpanded ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>
+            <span>${isExpanded ? 'Hide Details' : 'View Details'}</span>
+          </button>
+        </div>
+
+        <!-- Count-First Grid -->
+        <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">CSR & Extension Drives</span>
+            <div class="text-xl font-black text-emerald-700 mt-0.5">${csr.length} Programmes</div>
+            <span class="text-[10px] text-slate-400">₹ ${(totalCsrFunding / 100000).toFixed(2)}L mobilized</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Community Beneficiaries</span>
+            <div class="text-xl font-black text-blue-700 mt-0.5">${totalBeneficiaries} Citizens</div>
+            <span class="text-[10px] text-slate-400">Rural & outreach impact</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Paperless Internal CIA</span>
+            <div class="text-xl font-black text-purple-700 mt-0.5">100% Digital</div>
+            <span class="text-[10px] text-slate-400">Moodle LMS evaluation</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">Green Campus Compliance</span>
+            <div class="text-xl font-black text-amber-600 mt-0.5">Active</div>
+            <span class="text-[10px] text-slate-400">Solar, Rainwater & Plastic-Free</span>
+          </div>
+        </div>
+
+        <!-- Expandable Detail Container -->
+        <div id="detail-container-att10" class="${isExpanded ? '' : 'hidden'} border-t border-slate-200 p-5 space-y-6 bg-slate-50/50">
+          <!-- 10.1 CSR Table -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-600"></i>
+              10.1 Collaboration with Industries & NGOs under CSR Activities
+            </h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th class="p-2.5">S.No.</th>
+                    <th class="p-2.5">Name & Nature of the Activity</th>
+                    <th class="p-2.5">Sector Type</th>
+                    <th class="p-2.5">Collaborating Agency</th>
+                    <th class="p-2.5 text-center">Part of CSR</th>
+                    <th class="p-2.5 text-center">Beneficiaries</th>
+                    <th class="p-2.5 text-right">Support (₹)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  ${csr.map((c, idx) => `
+                    <tr class="hover:bg-slate-50">
+                      <td class="p-2.5 font-bold">${idx + 1}</td>
+                      <td class="p-2.5 font-semibold text-slate-900">${c.activityName || ''}</td>
+                      <td class="p-2.5">${c.type || 'Industry'}</td>
+                      <td class="p-2.5">${c.agency || ''}</td>
+                      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.isCsr === 'YES' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">${c.isCsr || 'YES'}</span></td>
+                      <td class="p-2.5 text-center font-bold">${c.beneficiaries || 0}</td>
+                      <td class="p-2.5 text-right font-black text-slate-900">₹ ${(Number(c.amount) || 0).toLocaleString('en-IN')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 10.2 Green Campus & Sustainability Details -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+              10.2 Sustainability Practices & Green Initiatives
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-slate-50 rounded-lg space-y-1">
+                <strong class="text-slate-800 font-bold block">Paperless Examinations & CIA:</strong>
+                <p class="text-slate-600">${green.paperlessCIA || 'Continuous Internal Assessment conducted 100% digitally through college LMS.'}</p>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg space-y-1">
+                <strong class="text-slate-800 font-bold block">Solar Energy & Power Conservation:</strong>
+                <p class="text-slate-600">${green.solarEnergyUsage || 'Department laboratories linked to college solar rooftop grid array.'}</p>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg space-y-1">
+                <strong class="text-slate-800 font-bold block">Plastic-Free Protocol:</strong>
+                <p class="text-slate-600">${green.plasticFreeCampus || 'Single-use plastic banned across staff rooms and student laboratory premises.'}</p>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-lg space-y-1">
+                <strong class="text-slate-800 font-bold block">Rainwater Harvesting:</strong>
+                <p class="text-slate-600">${green.rainWaterHarvesting || 'Integrated groundwater recharge sumps functional in departmental quadrangle.'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     `;
   }
 

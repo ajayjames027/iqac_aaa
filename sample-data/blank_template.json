@@ -164,6 +164,17 @@
       "facultyNames": "Dr. S. Albert Rabara (Paper presentation & session chair at IEEE ICACCI Singapore), Dr. A. Vimal Jerald (Research collaboration at NTU Singapore)."
     }
   },
+  "attributeIII": {
+    "researchFacility": [],
+    "departmentLibrary": {
+      "booksPurchased": 0,
+      "journalsPurchased": 0,
+      "totalBooks": 0,
+      "totalJournals": 0,
+      "facultyVisitsPerDay": 0,
+      "studentVisitsPerDay": 0
+    }
+  },
   "attributeIV_VII": {
     "externalFunds": [
       {
@@ -349,6 +360,15 @@
     "oer": {
       "count": 6,
       "details": "6 Complete Open Educational Resource course packs published under Creative Commons (CC-BY-NC) on institutional repository."
+    }
+  },
+  "attributeX": {
+    "csrExtension": [],
+    "greenInitiatives": {
+      "paperlessCIA": "",
+      "solarEnergyUsage": "",
+      "plasticFreeCampus": "",
+      "rainWaterHarvesting": ""
     }
   },
   "qualitativePresentation": {

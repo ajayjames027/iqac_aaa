@@ -44,8 +44,13 @@ class PresentationMode {
   render(data, initialSlideIndex = null) {
     if (!this.container || !data) return;
 
+    const activeSlides = this.getActiveSlides(data);
+    this.totalSlides = activeSlides.length;
+
     if (initialSlideIndex !== null && typeof initialSlideIndex === 'number') {
       this.currentSlide = Math.min(Math.max(initialSlideIndex, 0), this.totalSlides - 1);
+    } else if (this.currentSlide >= this.totalSlides) {
+      this.currentSlide = Math.max(0, this.totalSlides - 1);
     }
 
     // Auto sync timer phase with slide
@@ -120,8 +125,8 @@ class PresentationMode {
           <div class="flex items-center gap-2">
             <span>Slide <strong>${this.currentSlide + 1}</strong> of ${this.totalSlides}</span>
             <select onchange="presentationMode.goToSlide(parseInt(this.value))" class="bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1 text-xs outline-none">
-              ${Array.from({ length: this.totalSlides }).map((_, i) => `
-                <option value="${i}" ${this.currentSlide === i ? 'selected' : ''}>Slide ${i + 1}: ${this.getSlideTitle(i)}</option>
+              ${activeSlides.map((s, i) => `
+                <option value="${i}" ${this.currentSlide === i ? 'selected' : ''}>Slide ${i + 1}: ${s.title}</option>
               `).join('')}
             </select>
           </div>
@@ -176,27 +181,87 @@ class PresentationMode {
     return titles[index] || `Slide ${index + 1}`;
   }
 
-  renderCurrentSlide(data) {
-    switch (this.currentSlide) {
-      case 0: return this.slide0Title(data);
-      case 1: return this.slide1DashboardSummary(data);
-      case 2: return this.slide2Curriculum(data);
-      case 3: return this.slide3Faculty(data);
-      case 4: return this.slide4ResearchGrants(data);
-      case 5: return this.slide5StudentEngagements(data);
-      case 6: return this.slide6SignatureAchievements(data);
-      case 7: return this.slide7Uniqueness(data);
-      case 8: return this.slide8Atr2025_26(data);
-      case 9: return this.slide9BestPractices(data);
-      case 10: return this.slide10Swoc(data);
-      case 11: return this.slide11FuturePlans(data);
-      case 12: return this.slide12PtmFeedback(data);
-      case 13: return this.slide13TLandAssessment(data);
-      case 14: return this.slide14RemedialSupport(data);
-      case 15: return this.slide15CompExamsSustainability(data);
-      case 16: return this.slide16PanelInteraction(data);
-      default: return this.slide0Title(data);
+  getActiveSlides(data) {
+    const isAttrOn = (id) => window.dataStore ? window.dataStore.isAttributeEnabled(id) : true;
+    const slides = [];
+
+    // Slide 0: Executive Welcome Title (Always)
+    slides.push({ id: 0, title: "Executive Title & Department Identity", render: () => this.slide0Title(data) });
+
+    // Slide 1: 15-Mins Dashboard Overview (Always)
+    slides.push({ id: 1, title: "First 15-Mins: Dashboard Overview & KPI Metrics", render: () => this.slide1DashboardSummary(data) });
+
+    // Slide 2: Attribute I & V (Curriculum, MoUs)
+    if (isAttrOn('att1') || isAttrOn('att5')) {
+      slides.push({ id: 2, title: "Attribute I & V: Curriculum, MoUs & MOOC Progression", render: () => this.slide2Curriculum(data) });
     }
+
+    // Slide 3: Attribute II (Faculty)
+    if (isAttrOn('att2')) {
+      slides.push({ id: 3, title: "Attribute II: Faculty Resources & Development", render: () => this.slide3Faculty(data) });
+    }
+
+    // Slide 4: Attribute 4, 7, 3 & IX (Research, Grants, Infrastructure)
+    if (isAttrOn('att4_7') || isAttrOn('att9') || isAttrOn('att3')) {
+      slides.push({ id: 4, title: "Attribute 4, 7, 3 & IX: Research, Grants & Infrastructure", render: () => this.slide4ResearchGrants(data) });
+    }
+
+    // Slide 5: Attribute VI, VIII & Table 10 Outcomes
+    if (isAttrOn('att6_8') || isAttrOn('t10_outcomes')) {
+      slides.push({ id: 5, title: "Attribute VI, VIII & Outcomes: Student Progression & Placements", render: () => this.slide5StudentEngagements(data) });
+    }
+
+    // Slide 6: Signature Achievements (30-Min Qualitative)
+    slides.push({ id: 6, title: "Signature Achievements & Verifiable Impact (2026-2027)", render: () => this.slide6SignatureAchievements(data) });
+
+    // Slide 7: Uniqueness of Department
+    slides.push({ id: 7, title: "Uniqueness of the Department (Distinctive Identity)", render: () => this.slide7Uniqueness(data) });
+
+    // Slide 8: Status of Activities Completed (Table 2)
+    if (isAttrOn('t2_activities')) {
+      slides.push({ id: 8, title: "Status of Activities Completed (AAA 2025-2026 ATR & FOP June 2026)", render: () => this.slide8Atr2025_26(data) });
+    }
+
+    // Slide 9: Best Practices
+    slides.push({ id: 9, title: "Institutional Best Practices (NAAC Format)", render: () => this.slide9BestPractices(data) });
+
+    // Slide 10: SWOC Analysis
+    slides.push({ id: 10, title: "SWOC Analysis Matrix", render: () => this.slide10Swoc(data) });
+
+    // Slide 11: Future Strategic Roadmap
+    slides.push({ id: 11, title: "Future Strategic Roadmap (1 & 3-5 Year Targets)", render: () => this.slide11FuturePlans(data) });
+
+    // Slide 12: Academic Pillar 1 - PTM & Feedback (Attribute I)
+    if (isAttrOn('att1')) {
+      slides.push({ id: 12, title: "Academic Pillar 1: PTM & Stakeholder Feedback / ATR", render: () => this.slide12PtmFeedback(data) });
+    }
+
+    // Slide 13: Academic Pillar 2 - Teaching-Learning & Assessment (Attribute V)
+    if (isAttrOn('att5')) {
+      slides.push({ id: 13, title: "Academic Pillar 2: Teaching-Learning (TL) Innovations & Assessment", render: () => this.slide13TLandAssessment(data) });
+    }
+
+    // Slide 14: Academic Pillar 3 - Remedial Teaching & Student Support
+    if (isAttrOn('att5') || isAttrOn('att4_7')) {
+      slides.push({ id: 14, title: "Academic Pillar 3: Remedial Teaching & Student Support", render: () => this.slide14RemedialSupport(data) });
+    }
+
+    // Slide 15: Academic Pillar 4 - Comp Exams & Sustainability (Attributes VI, VIII & X)
+    if (isAttrOn('att6_8') || isAttrOn('att10')) {
+      slides.push({ id: 15, title: "Academic Pillar 4: Competitive Exams & Sustainability (Green Campus)", render: () => this.slide15CompExamsSustainability(data) });
+    }
+
+    // Slide 16: Panel Review Rubric (Always)
+    slides.push({ id: 16, title: "Last 15-Mins: Expert Interaction & Evaluation Panel", render: () => this.slide16PanelInteraction(data) });
+
+    return slides;
+  }
+
+  renderCurrentSlide(data) {
+    const activeSlides = this.getActiveSlides(data);
+    if (!activeSlides || activeSlides.length === 0) return this.slide0Title(data);
+    const slide = activeSlides[this.currentSlide] || activeSlides[0];
+    return slide.render();
   }
 
   // Slide 0: Executive Welcome Title

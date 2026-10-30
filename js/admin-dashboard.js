@@ -179,6 +179,13 @@ class AdminDashboard {
           </div>
 
           <div class="flex items-center gap-2">
+            <button type="button" onclick="adminDashboard.openAgendaConfigModal()" class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+              <span>Meeting Agenda & Questions</span>
+              <span id="admin-agenda-pill" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
+                ${window.dataStore ? window.dataStore.getAgendaStats().activeAttributes + '/' + window.dataStore.getAgendaStats().totalAttributes + ' Attrs' : 'All Active'}
+              </span>
+            </button>
             <button type="button" onclick="adminDashboard.showAddDeptModal()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
               <i data-lucide="plus" class="w-4 h-4"></i>
               <span>Add Department</span>
@@ -224,6 +231,50 @@ class AdminDashboard {
             <p class="text-[10px] text-amber-600 font-semibold mt-1">Indian Patents Granted & Published</p>
           </div>
         </div>
+
+        <!-- Meeting Agenda Status Banner -->
+        ${(() => {
+          const stats = window.dataStore ? window.dataStore.getAgendaStats() : { isFiltered: false, activeAttributes: 11, totalAttributes: 11, activeQuestions: 38, totalQuestions: 38 };
+          if (!stats.isFiltered) {
+            return `
+              <div class="bg-purple-50 border border-purple-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950">
+                <div class="flex items-center gap-2.5">
+                  <span class="p-2 bg-purple-600 text-white rounded-lg shadow-sm">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                  </span>
+                  <div>
+                    <strong class="font-bold text-sm text-purple-900">Full Academic Audit Active (All 10 Attributes • ${stats.totalQuestions} Questions)</strong>
+                    <p class="text-[11px] text-purple-700 mt-0.5">All questions across 10 Attributes are currently displayed in departmental dashboards and 60-minute presentations.</p>
+                  </div>
+                </div>
+                <button type="button" onclick="adminDashboard.openAgendaConfigModal()" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition text-xs shadow-sm whitespace-nowrap self-start sm:self-center">
+                  Configure Agenda
+                </button>
+              </div>
+            `;
+          }
+          return `
+            <div class="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950 shadow-sm">
+              <div class="flex items-center gap-2.5">
+                <span class="p-2 bg-amber-500 text-white rounded-lg shadow-sm">
+                  <i data-lucide="sliders" class="w-4 h-4"></i>
+                </span>
+                <div>
+                  <strong class="font-bold text-sm text-amber-900">Custom Agenda Active: ${stats.activeAttributes} of ${stats.totalAttributes} Attributes (${stats.activeQuestions} of ${stats.totalQuestions} Questions)</strong>
+                  <p class="text-[11px] text-amber-800 mt-0.5">Preset: <span class="uppercase font-bold text-amber-900">${stats.preset}</span>. Only selected questions will appear in the executive dashboard and presentation mode.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-center">
+                <button type="button" onclick="adminDashboard.selectAgendaPreset('all')" class="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold rounded-lg transition text-xs whitespace-nowrap">
+                  Reset to All
+                </button>
+                <button type="button" onclick="adminDashboard.openAgendaConfigModal()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition text-xs shadow-sm whitespace-nowrap">
+                  Edit Selection
+                </button>
+              </div>
+            </div>
+          `;
+        })()}
 
         <!-- Filter Pills & Status Tabs -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
@@ -493,6 +544,241 @@ class AdminDashboard {
     const m = document.getElementById('add-dept-modal');
     if (m) m.remove();
     this.render();
+  }
+
+  // --- Meeting Agenda & Question Configurator Modal ---
+  openAgendaConfigModal() {
+    let existing = document.getElementById('agenda-config-modal');
+    if (existing) existing.remove();
+
+    const config = window.dataStore.getMeetingAgendaConfig();
+    const allMetadata = window.dataStore.getAllAttributesMetadata();
+
+    const modal = document.createElement('div');
+    modal.id = 'agenda-config-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full my-8 overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-purple-950 via-indigo-900 to-slate-900 p-5 text-white flex justify-between items-center flex-shrink-0">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wide">
+                IQAC Central Admin Meeting Controller
+              </span>
+            </div>
+            <h3 class="text-lg font-black mt-1 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-5 h-5 text-purple-400"></i>
+              Audit Meeting Agenda & Question Configurator
+            </h3>
+            <p class="text-xs text-purple-200 mt-0.5">
+              Select which attributes and questions to display on the departmental dashboard and 60-min meeting presentation.
+            </p>
+          </div>
+          <button type="button" onclick="adminDashboard.closeAgendaConfigModal()" class="text-slate-300 hover:text-white p-2 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Presets Bar -->
+        <div class="bg-slate-50 border-b border-slate-200 p-4 flex-shrink-0 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Quick Meeting Presets:</span>
+            <div class="flex gap-2">
+              <button type="button" onclick="adminDashboard.selectAllQuestions(true)" class="text-[11px] text-blue-600 font-bold hover:underline">Select All</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="adminDashboard.selectAllQuestions(false)" class="text-[11px] text-rose-600 font-bold hover:underline">Clear All</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <button type="button" onclick="adminDashboard.selectAgendaPreset('all')" class="px-3 py-1.5 rounded-lg border font-semibold transition ${config.preset === 'all' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}">
+              🌟 All 10 Attributes (Complete Audit)
+            </button>
+            <button type="button" onclick="adminDashboard.selectAgendaPreset('executive_15m')" class="px-3 py-1.5 rounded-lg border font-semibold transition ${config.preset === 'executive_15m' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}">
+              ⏱️ Executive 15-Min Meeting
+            </button>
+            <button type="button" onclick="adminDashboard.selectAgendaPreset('research_ipr')" class="px-3 py-1.5 rounded-lg border font-semibold transition ${config.preset === 'research_ipr' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}">
+              🔬 Research & IPR Focus
+            </button>
+            <button type="button" onclick="adminDashboard.selectAgendaPreset('curriculum_teaching')" class="px-3 py-1.5 rounded-lg border font-semibold transition ${config.preset === 'curriculum_teaching' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}">
+              📚 Curriculum & Teaching
+            </button>
+            <button type="button" onclick="adminDashboard.selectAgendaPreset('student_progression')" class="px-3 py-1.5 rounded-lg border font-semibold transition ${config.preset === 'student_progression' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}">
+              🎓 Student Outcomes & CSR
+            </button>
+          </div>
+        </div>
+
+        <!-- Body: Accordion of Attributes & Questions -->
+        <div id="agenda-attributes-list" class="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+          ${allMetadata.map(attr => {
+            const isAttrChecked = config.enabledAttributes ? config.enabledAttributes[attr.id] !== false : true;
+            return `
+              <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                <!-- Attribute Master Header -->
+                <div class="bg-slate-100/80 px-4 py-3 flex items-center justify-between border-b border-slate-200">
+                  <div class="flex items-center gap-3">
+                    <input type="checkbox" id="attr-chk-${attr.id}" ${isAttrChecked ? 'checked' : ''} onchange="adminDashboard.toggleAttributeAgenda('${attr.id}', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer" />
+                    <div>
+                      <label for="attr-chk-${attr.id}" class="font-bold text-slate-900 cursor-pointer text-xs sm:text-sm flex items-center gap-2">
+                        <span>${attr.name}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700 uppercase">${attr.code}</span>
+                      </label>
+                      <span class="text-[11px] text-slate-500">${attr.questions.length} Questions • ${attr.category}</span>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-semibold text-slate-400">
+                    <span id="attr-count-${attr.id}">${attr.questions.filter(q => (config.enabledQuestions ? config.enabledQuestions[q.id] !== false : true) && isAttrChecked).length}</span> / ${attr.questions.length} Active
+                  </span>
+                </div>
+
+                <!-- Sub-questions Grid -->
+                <div class="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  ${attr.questions.map(q => {
+                    const isQChecked = isAttrChecked && (config.enabledQuestions ? config.enabledQuestions[q.id] !== false : true);
+                    return `
+                      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-purple-50/50 transition cursor-pointer border border-transparent hover:border-purple-200">
+                        <input type="checkbox" id="q-chk-${q.id}" data-attr="${attr.id}" ${isQChecked ? 'checked' : ''} onchange="adminDashboard.toggleQuestionAgenda('${attr.id}', '${q.id}', this.checked)" class="q-checkbox mt-0.5 w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer" />
+                        <div>
+                          <span class="font-bold text-slate-800 text-[11px] block">
+                            <span class="text-purple-700 font-mono text-[10px] mr-1">[${q.code}]</span>${q.label}
+                          </span>
+                        </div>
+                      </label>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 border-t border-slate-200 p-4 flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div class="text-slate-600" id="agenda-stats-text">
+            ${(() => {
+              const stats = window.dataStore.getAgendaStats();
+              return `<strong>${stats.activeAttributes} of ${stats.totalAttributes} Attributes</strong> (${stats.activeQuestions} of ${stats.totalQuestions} Questions) enabled for presentation meeting.`;
+            })()}
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="adminDashboard.resetAgendaConfig()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition">
+              Reset All
+            </button>
+            <button type="button" onclick="adminDashboard.saveAndApplyAgendaConfig()" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              <span>Apply to Meeting & Dashboards</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  closeAgendaConfigModal() {
+    const modal = document.getElementById('agenda-config-modal');
+    if (modal) modal.remove();
+  }
+
+  toggleAttributeAgenda(attrId, isChecked) {
+    const checkboxes = document.querySelectorAll(`input[data-attr="${attrId}"]`);
+    checkboxes.forEach(cb => { cb.checked = isChecked; });
+    this.updateAgendaStatsDisplay();
+  }
+
+  toggleQuestionAgenda(attrId, qId, isChecked) {
+    if (isChecked) {
+      const attrChk = document.getElementById(`attr-chk-${attrId}`);
+      if (attrChk) attrChk.checked = true;
+    }
+    this.updateAgendaStatsDisplay();
+  }
+
+  selectAllQuestions(enableAll) {
+    const attrCheckboxes = document.querySelectorAll('input[id^="attr-chk-"]');
+    attrCheckboxes.forEach(cb => { cb.checked = enableAll; });
+    const qCheckboxes = document.querySelectorAll('.q-checkbox');
+    qCheckboxes.forEach(cb => { cb.checked = enableAll; });
+    this.updateAgendaStatsDisplay();
+  }
+
+  selectAgendaPreset(presetKey) {
+    window.dataStore.applyAgendaPreset(presetKey);
+    this.closeAgendaConfigModal();
+    this.render();
+    if (window.app && window.app.currentView === 'dashboard') {
+      window.app.renderCurrentView();
+    }
+  }
+
+  updateAgendaStatsDisplay() {
+    const allMetadata = window.dataStore.getAllAttributesMetadata();
+    let activeAttrs = 0;
+    let activeQuestions = 0;
+    let totalQuestions = 0;
+
+    allMetadata.forEach(attr => {
+      const attrChk = document.getElementById(`attr-chk-${attr.id}`);
+      const isAttrOn = attrChk ? attrChk.checked : false;
+      if (isAttrOn) activeAttrs++;
+
+      let countInAttr = 0;
+      attr.questions.forEach(q => {
+        totalQuestions++;
+        const qChk = document.getElementById(`q-chk-${q.id}`);
+        if (isAttrOn && qChk && qChk.checked) {
+          activeQuestions++;
+          countInAttr++;
+        }
+      });
+      const cntEl = document.getElementById(`attr-count-${attr.id}`);
+      if (cntEl) cntEl.textContent = countInAttr;
+    });
+
+    const statsEl = document.getElementById('agenda-stats-text');
+    if (statsEl) {
+      statsEl.innerHTML = `<strong>${activeAttrs} of ${allMetadata.length} Attributes</strong> (${activeQuestions} of ${totalQuestions} Questions) enabled for presentation meeting.`;
+    }
+  }
+
+  saveAndApplyAgendaConfig() {
+    const allMetadata = window.dataStore.getAllAttributesMetadata();
+    const config = {
+      preset: 'custom',
+      enabledAttributes: {},
+      enabledQuestions: {}
+    };
+
+    allMetadata.forEach(attr => {
+      const attrChk = document.getElementById(`attr-chk-${attr.id}`);
+      const isAttrOn = attrChk ? attrChk.checked : false;
+      config.enabledAttributes[attr.id] = isAttrOn;
+
+      attr.questions.forEach(q => {
+        const qChk = document.getElementById(`q-chk-${q.id}`);
+        config.enabledQuestions[q.id] = isAttrOn && (qChk ? qChk.checked : false);
+      });
+    });
+
+    window.dataStore.saveMeetingAgendaConfig(config);
+    this.closeAgendaConfigModal();
+    this.render();
+
+    alert(`Meeting Agenda Updated!\nOnly the ${window.dataStore.getAgendaStats().activeAttributes} selected attributes and their questions will now be displayed during the meeting presentation and executive dashboard.`);
+    
+    if (window.app) {
+      window.app.renderCurrentView();
+    }
+  }
+
+  resetAgendaConfig() {
+    window.dataStore.applyAgendaPreset('all');
+    this.closeAgendaConfigModal();
+    this.render();
+    if (window.app) {
+      window.app.renderCurrentView();
+    }
   }
 }
 

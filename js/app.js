@@ -9,8 +9,8 @@ class App {
     // Initialize components
     window.formBuilder = new FormBuilder('form-container');
     window.dashboardRenderer = new DashboardRenderer('dashboard-container');
-    window.presentationMode = new PresentationMode('presentation-container');
-    window.auditPanel = new AuditPanel('panel-container');
+    window.adminDashboard = new AdminDashboard('admin-container');
+    window.attributeFilterHub = new AttributeFilterHub('filter-container');
 
     // Subscribe to store updates
     window.dataStore.subscribe((data) => {
@@ -81,10 +81,18 @@ class App {
   onDataUpdated(data) {
     if (!data) return;
 
-    // Update active department indicator in navbar
+    // Update active department indicators
     const label = document.getElementById('active-dept-label');
     if (label && data.departmentInfo) {
       label.textContent = data.departmentInfo.departmentName || 'Department';
+    }
+    const topDept = document.getElementById('top-dept-name');
+    if (topDept) {
+      topDept.textContent = window.dataStore?.activeDepartment || 'Department';
+    }
+    const sidebarDl = document.getElementById('sidebar-deadline-text');
+    if (sidebarDl && window.dataStore) {
+      sidebarDl.textContent = window.dataStore.formatDeadlineForDisplay();
     }
 
     // Update active view
@@ -93,19 +101,13 @@ class App {
         if (window.adminDashboard) window.adminDashboard.loadData();
         break;
       case 'form':
-        window.formBuilder.render(data);
+        if (window.formBuilder) window.formBuilder.render(data);
         break;
       case 'dashboard':
-        window.dashboardRenderer.render(data);
+        if (window.dashboardRenderer) window.dashboardRenderer.render(data);
         break;
-      case 'presentation':
-        window.presentationMode.render(data);
-        break;
-      case 'panel':
-        window.auditPanel.render(data);
-        break;
-      case 'manage':
-        this.renderManageTab(data);
+      case 'filter':
+        if (window.attributeFilterHub) window.attributeFilterHub.render();
         break;
     }
   }
@@ -114,7 +116,7 @@ class App {
     this.currentView = viewName;
 
     // Hide all view containers
-    const views = ['admin', 'form', 'dashboard', 'presentation', 'panel', 'manage'];
+    const views = ['admin', 'form', 'dashboard', 'filter'];
     views.forEach(v => {
       const el = document.getElementById(`view-${v}`);
       if (el) {
@@ -125,15 +127,15 @@ class App {
         }
       }
 
-      // Update Nav Buttons
+      // Update Nav Buttons for Light Sidebar
       const btn = document.getElementById(`nav-btn-${v}`);
       if (btn) {
         if (v === viewName) {
-          btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+          btn.classList.remove('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900', 'text-slate-300', 'hover:bg-slate-800');
           btn.classList.add('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
         } else {
           btn.classList.remove('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
-          btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+          btn.classList.add('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900', 'font-semibold');
         }
       }
     });
@@ -328,6 +330,26 @@ class App {
       }
     };
     reader.readAsText(file);
+  }
+  toggleSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    const toggleText = document.getElementById('sidebar-toggle-text');
+    const toggleIcon = document.getElementById('sidebar-toggle-icon');
+    if (!sidebar) return;
+
+    const isHidden = sidebar.classList.contains('hidden');
+    if (isHidden) {
+      sidebar.classList.remove('hidden');
+      if (toggleText) toggleText.textContent = 'Hide Menu';
+      if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'panel-left-close');
+    } else {
+      sidebar.classList.add('hidden');
+      if (toggleText) toggleText.textContent = 'Show Menu';
+      if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'panel-left-open');
+    }
+    if (window.lucide) {
+      lucide.createIcons();
+    }
   }
 }
 

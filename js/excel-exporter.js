@@ -612,6 +612,130 @@ class ExcelExporter {
     this.downloadFile(xml, `IQAC_Faculty_Contributions_Directory_2026_2027.xls`);
   }
 
+  // EXPORT AAA FEBRUARY 2027 ATTRIBUTE 1 WORKBOOK (12 SHEETS MATCHING EXCEL TEMPLATE)
+  static exportCardWorkbook(cardData, schema, deptName = 'Department') {
+    return this.exportAttribute1Workbook(cardData, schema, deptName);
+  }
+
+  static exportAttribute1Workbook(attribute1Data, schema, deptName = 'Department') {
+    if (!schema || !Array.isArray(schema)) {
+      schema = window.DEFAULT_ATTRIBUTE1_SCHEMA || [];
+    }
+    const data = attribute1Data || {};
+    const worksheets = [];
+
+    schema.forEach(sheet => {
+      const sheetKey = sheet.key;
+      const sData = data[sheetKey];
+      const rows = [];
+
+      // Title & Subtitle
+      rows.push([{ value: sheet.title || sheetKey, style: 'Title' }]);
+      if (sheet.subtitle || sheet.instruction || sheet.note) {
+        rows.push([{ value: [sheet.subtitle, sheet.instruction, sheet.note].filter(Boolean).join(' | '), style: 'SubHeader' }]);
+      }
+      rows.push([{ value: `Department: ${deptName} | Generated: ${new Date().toLocaleDateString()}`, style: 'SubHeader' }]);
+      rows.push([]);
+
+      if (sheet.type === 'profile') {
+        const prof = (sData && sData.profile) ? sData.profile : (sheet.profileQuestions || {});
+        rows.push([{ value: 'Department Profile', style: 'Header' }, { value: prof.department || deptName, style: 'Cell' }]);
+        rows.push([{ value: 'Shift', style: 'Header' }, { value: prof.shift || 'Shift I', style: 'Cell' }]);
+        rows.push([{ value: 'Programmes Offered - UG', style: 'Header' }, { value: prof.programmes?.ug || '', style: 'Cell' }]);
+        rows.push([{ value: 'Programmes Offered - PG', style: 'Header' }, { value: prof.programmes?.pg || '', style: 'Cell' }]);
+        rows.push([{ value: 'Programmes Offered - PhD', style: 'Header' }, { value: prof.programmes?.phd || '', style: 'Cell' }]);
+        rows.push([{ value: 'Head of Department / Coordinator', style: 'Header' }, { value: prof.hodName || '', style: 'Cell' }]);
+        rows.push([]);
+
+        // Faculty details
+        rows.push([{ value: 'Faculty Details', style: 'SubHeader' }]);
+        const facHeaders = sheet.facultyDetails?.headers || ['Faculty Category', 'Male', 'Female'];
+        rows.push([...facHeaders.map(h => ({ value: h, style: 'Header' })), { value: 'Total', style: 'Header' }]);
+        const facRows = (sData && sData.facultyDetails) ? sData.facultyDetails : (sheet.facultyDetails?.rows || []);
+        facRows.forEach(fr => {
+          const m = Number(fr.male) || 0;
+          const f = Number(fr.female) || 0;
+          rows.push([
+            { value: fr.label || '', style: 'Cell' },
+            { value: m, style: 'Number' },
+            { value: f, style: 'Number' },
+            { value: m + f, style: 'Number' }
+          ]);
+        });
+        rows.push([]);
+
+        // Student details
+        rows.push([{ value: 'Student Details', style: 'SubHeader' }]);
+        const stuHeaders = sheet.studentDetails?.headers || ['Programme Level', 'Male', 'Female', 'Other Gender', 'Other States', 'Other Countries'];
+        rows.push([...stuHeaders.map(h => ({ value: h, style: 'Header' })), { value: 'Total', style: 'Header' }]);
+        const stuRows = (sData && sData.studentDetails) ? sData.studentDetails : (sheet.studentDetails?.rows || []);
+        stuRows.forEach(sr => {
+          const m = Number(sr.male) || 0;
+          const f = Number(sr.female) || 0;
+          const og = Number(sr.otherGender) || 0;
+          const os = Number(sr.otherStates) || 0;
+          const oc = Number(sr.otherCountries) || 0;
+          rows.push([
+            { value: sr.programme || '', style: 'Cell' },
+            { value: m, style: 'Number' },
+            { value: f, style: 'Number' },
+            { value: og, style: 'Number' },
+            { value: os, style: 'Number' },
+            { value: oc, style: 'Number' },
+            { value: m + f + og, style: 'Number' }
+          ]);
+        });
+
+      } else if (sheet.type === 'table') {
+        const cols = sheet.columns || [];
+        rows.push(cols.map(c => ({ value: c.label, style: 'Header' })));
+        const tableRows = Array.isArray(sData) ? sData : (sheet.rows || []);
+        tableRows.forEach(tr => {
+          rows.push(cols.map(c => ({
+            value: tr[c.key] !== undefined ? tr[c.key] : '',
+            style: typeof tr[c.key] === 'number' ? 'Number' : 'Cell'
+          })));
+        });
+
+      } else if (sheet.type === 'multi_table') {
+        (sheet.sections || []).forEach((sec, idx) => {
+          if (idx > 0) rows.push([]);
+          rows.push([{ value: sec.title, style: 'SubHeader' }]);
+          const cols = sec.columns || [];
+          rows.push(cols.map(c => ({ value: c.label, style: 'Header' })));
+          const secRows = (sData && sData[sec.id]) ? sData[sec.id] : (sec.rows || []);
+          secRows.forEach(tr => {
+            rows.push(cols.map(c => ({
+              value: tr[c.key] !== undefined ? tr[c.key] : '',
+              style: typeof tr[c.key] === 'number' ? 'Number' : 'Cell'
+            })));
+          });
+        });
+
+      } else if (sheet.type === 'batch_table') {
+        const cols = sheet.columns || [];
+        (sheet.batches || []).forEach((bat, idx) => {
+          if (idx > 0) rows.push([]);
+          rows.push([{ value: bat.name, style: 'SubHeader' }]);
+          rows.push(cols.map(c => ({ value: c.label, style: 'Header' })));
+          const batRows = (sData && sData[bat.id]) ? sData[bat.id] : (bat.rows || []);
+          batRows.forEach(tr => {
+            rows.push(cols.map(c => ({
+              value: tr[c.key] !== undefined ? tr[c.key] : '',
+              style: typeof tr[c.key] === 'number' ? 'Number' : 'Cell'
+            })));
+          });
+        });
+      }
+
+      worksheets.push({ name: sheet.sheetName || sheetKey, rows });
+    });
+
+    const xml = this.generateXmlWorkbook(worksheets);
+    this.downloadFile(xml, `AAA_February_2027_Attribute_1_${deptName.replace(/[^a-zA-Z0-9]/g, '_')}.xls`);
+  }
+
+
   // EXPORT CROSS-DEPARTMENT COMPARISON TO EXCEL
   static exportComparisonMatrixToExcel(attributeTitle, columns, matrixData) {
     const rows = [

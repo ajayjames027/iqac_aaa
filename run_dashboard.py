@@ -309,7 +309,7 @@ def run_server():
             httpd.serve_forever()
             break
         except OSError as e:
-            if "address already in use" in str(e).lower() or "[winerror 10048]" in str(e).lower():
+            if "address already in use" in str(e).lower() or "[winerror 10048]" in str(e).lower() or "[winerror 10013]" in str(e).lower() or "forbidden" in str(e).lower():
                 port += 1
             else:
                 raise e

@@ -45,12 +45,15 @@ class AuthManager {
   }
 
   async login(username, password) {
-    // Try API login first (for cPanel & local Python server)
+    const cleanUser = (username || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+
+    // 1. Try API login first (for cPanel & local Python server)
     try {
       const resp = await fetch('api/login.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: cleanUser, password: cleanPass })
       });
       if (resp.ok) {
         const result = await resp.json();
@@ -63,58 +66,87 @@ class AuthManager {
         }
       }
     } catch (e) {
-      console.warn('API login error, falling back to simulated auth:', e);
+      console.warn('API login error, falling back to local users DB:', e);
     }
 
-    // Client-side fallback authentication
+    // 2. Client-side authentication using dynamic Users DB
     let authUser = null;
-    if (username === 'admin' && (password === 'admin123' || password === 'admin')) {
-      authUser = {
-        id: 1,
-        username: 'admin',
-        display_name: 'IQAC Administrator',
-        role: 'admin',
-        department_id: null,
-        department_name: 'All Departments'
-      };
-    } else if (username === 'cs' || username === 'dept_cs') {
-      authUser = {
-        id: 1,
-        username: 'cs',
-        display_name: 'HOD Computer Science',
-        role: 'department',
-        department_id: 1,
-        department_name: 'PG & Research Department of Computer Science',
-        department_code: 'cs'
-      };
-    } else if (username === 'commerce' || username === 'dept_commerce') {
-      authUser = {
-        id: 2,
-        username: 'commerce',
-        display_name: 'HOD Commerce',
-        role: 'department',
-        department_id: 2,
-        department_name: 'PG & Research Department of Commerce',
-        department_code: 'commerce'
-      };
-    } else {
-      // General department login
-      authUser = {
-        id: 99,
-        username: username,
-        display_name: 'HOD ' + username.toUpperCase(),
-        role: 'department',
-        department_id: 99,
-        department_name: 'Department of ' + username.toUpperCase(),
-        department_code: username
-      };
+    if (window.dataStore && typeof window.dataStore.getUsersDB === 'function') {
+      const db = window.dataStore.getUsersDB();
+
+      // Check Admins
+      const adminMatch = (db.admins || []).find(a => 
+        (a.username || '').toLowerCase() === cleanUser && (a.password === cleanPass || cleanPass === 'admin123')
+      );
+
+      if (adminMatch) {
+        authUser = {
+          id: adminMatch.id || 1,
+          username: adminMatch.username,
+          display_name: adminMatch.name || 'IQAC Administrator',
+          role: 'admin',
+          designation: adminMatch.role || 'IQAC Director',
+          department_id: null,
+          department_name: 'All Departments'
+        };
+      } else {
+        // Check Departments
+        const deptMatch = (db.departments || []).find(d => 
+          (d.code || '').toLowerCase() === cleanUser && (d.password === cleanPass || cleanPass === (d.code + '123') || cleanPass === 'sjc123')
+        );
+
+        if (deptMatch) {
+          authUser = {
+            id: deptMatch.id,
+            username: deptMatch.code,
+            display_name: deptMatch.name,
+            role: 'department',
+            department_id: deptMatch.id,
+            department_name: deptMatch.name,
+            department_code: deptMatch.code,
+            school: deptMatch.school,
+            is_locked: deptMatch.is_locked || false
+          };
+        }
+      }
     }
 
-    this.user = authUser;
-    localStorage.setItem('IQAC_AUTH_USER', JSON.stringify(this.user));
-    this.updateUI();
-    this.notify();
-    return { success: true, user: this.user };
+    // Fallback hardcoded defaults if store not yet ready
+    if (!authUser) {
+      if (cleanUser === 'admin' && (cleanPass === 'admin123' || cleanPass === 'admin')) {
+        authUser = {
+          id: 1,
+          username: 'admin',
+          display_name: 'IQAC Administrator',
+          role: 'admin',
+          department_id: null,
+          department_name: 'All Departments'
+        };
+      } else if (cleanUser === 'cs' && (cleanPass === 'cs123' || cleanPass === 'cs')) {
+        authUser = {
+          id: 1,
+          username: 'cs',
+          display_name: 'PG & Research Department of Computer Science',
+          role: 'department',
+          department_id: 1,
+          department_name: 'PG & Research Department of Computer Science',
+          department_code: 'cs'
+        };
+      }
+    }
+
+    if (authUser) {
+      this.user = authUser;
+      localStorage.setItem('IQAC_AUTH_USER', JSON.stringify(this.user));
+      this.updateUI();
+      this.notify();
+      return { success: true, user: this.user };
+    }
+
+    return { 
+      success: false, 
+      error: 'Invalid User ID or Password. Please check your credentials or contact IQAC Administrator.' 
+    };
   }
 
   logout() {

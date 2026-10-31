@@ -74,8 +74,163 @@ class DataStore {
     this.notify();
   }
 
+
+  // Master Attribute Cards Schema (Admin Editable for PART-A and Attributes 1 to 10)
+  getAllCardsSchema() {
+    try {
+      const saved = localStorage.getItem('IQAC_AAA_MASTER_CARDS_SCHEMA');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Error reading saved master cards schema:', e);
+    }
+    if (window.ALL_ATTRIBUTES_CARDS_SCHEMA) {
+      return JSON.parse(JSON.stringify(window.ALL_ATTRIBUTES_CARDS_SCHEMA));
+    }
+    return [];
+  }
+
+  saveAllCardsSchema(newSchema) {
+    try {
+      localStorage.setItem('IQAC_AAA_MASTER_CARDS_SCHEMA', JSON.stringify(newSchema));
+      return true;
+    } catch (e) {
+      console.error('Error saving master cards schema:', e);
+      return false;
+    }
+  }
+
+  resetAllCardsSchema() {
+    try {
+      localStorage.removeItem('IQAC_AAA_MASTER_CARDS_SCHEMA');
+      return this.getAllCardsSchema();
+    } catch (e) {
+      return window.ALL_ATTRIBUTES_CARDS_SCHEMA || [];
+    }
+  }
+
+  initDefaultCardsFormData() {
+    const data = {};
+    const cards = this.getAllCardsSchema();
+    if (cards && Array.isArray(cards)) {
+      cards.forEach(card => {
+        data[card.id] = {};
+        (card.sheets || []).forEach(sheet => {
+          if (sheet.type === 'profile') {
+            data[card.id][sheet.key] = {
+              profile: JSON.parse(JSON.stringify(sheet.profileQuestions || {})),
+              facultyDetails: JSON.parse(JSON.stringify(sheet.facultyDetails?.rows || [])),
+              studentDetails: JSON.parse(JSON.stringify(sheet.studentDetails?.rows || []))
+            };
+          } else if (sheet.type === 'table') {
+            data[card.id][sheet.key] = JSON.parse(JSON.stringify(sheet.rows || []));
+          } else if (sheet.type === 'multi_table') {
+            const m = {};
+            (sheet.sections || []).forEach(sec => {
+              m[sec.id] = JSON.parse(JSON.stringify(sec.rows || []));
+            });
+            data[card.id][sheet.key] = m;
+          } else if (sheet.type === 'batch_table') {
+            const b = {};
+            (sheet.batches || []).forEach(bat => {
+              b[bat.id] = JSON.parse(JSON.stringify(bat.rows || []));
+            });
+            data[card.id][sheet.key] = b;
+          }
+        });
+      });
+    }
+    return data;
+  }
+
+  // Attribute 1 Questionnaire Schema (Admin Editable)
+  getAttribute1Schema() {
+    try {
+      const saved = localStorage.getItem('IQAC_AAA_ATTR1_SCHEMA');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Error reading saved Attribute 1 schema:', e);
+    }
+    if (window.DEFAULT_ATTRIBUTE1_SCHEMA) {
+      return JSON.parse(JSON.stringify(window.DEFAULT_ATTRIBUTE1_SCHEMA));
+    }
+    return [];
+  }
+
+  saveAttribute1Schema(newSchema) {
+    try {
+      localStorage.setItem('IQAC_AAA_ATTR1_SCHEMA', JSON.stringify(newSchema));
+      return true;
+    } catch (e) {
+      console.error('Error saving Attribute 1 schema:', e);
+      return false;
+    }
+  }
+
+  resetAttribute1Schema() {
+    try {
+      localStorage.removeItem('IQAC_AAA_ATTR1_SCHEMA');
+      return this.getAttribute1Schema();
+    } catch (e) {
+      return window.DEFAULT_ATTRIBUTE1_SCHEMA || [];
+    }
+  }
+
+  initDefaultAttribute1Data() {
+    const data = {};
+    const schema = this.getAttribute1Schema();
+    if (schema && Array.isArray(schema)) {
+      schema.forEach(sheet => {
+        if (sheet.type === 'profile') {
+          data[sheet.key] = {
+            profile: JSON.parse(JSON.stringify(sheet.profileQuestions || {})),
+            facultyDetails: JSON.parse(JSON.stringify(sheet.facultyDetails?.rows || [])),
+            studentDetails: JSON.parse(JSON.stringify(sheet.studentDetails?.rows || []))
+          };
+        } else if (sheet.type === 'table') {
+          data[sheet.key] = JSON.parse(JSON.stringify(sheet.rows || []));
+        } else if (sheet.type === 'multi_table') {
+          const m = {};
+          (sheet.sections || []).forEach(sec => {
+            m[sec.id] = JSON.parse(JSON.stringify(sec.rows || []));
+          });
+          data[sheet.key] = m;
+        } else if (sheet.type === 'batch_table') {
+          const b = {};
+          (sheet.batches || []).forEach(bat => {
+            b[bat.id] = JSON.parse(JSON.stringify(bat.rows || []));
+          });
+          data[sheet.key] = b;
+        }
+      });
+    }
+    return data;
+  }
+
+  getAttribute1SheetData(sheetKey) {
+    if (!this.data) return null;
+    if (!this.data.attribute1Data) {
+      this.data.attribute1Data = this.initDefaultAttribute1Data();
+    }
+    return this.data.attribute1Data[sheetKey];
+  }
+
+  updateAttribute1SheetData(sheetKey, sheetData) {
+    if (!this.data) return;
+    if (!this.data.attribute1Data) {
+      this.data.attribute1Data = this.initDefaultAttribute1Data();
+    }
+    this.data.attribute1Data[sheetKey] = sheetData;
+    this.saveCurrentData();
+  }
+
   ensureSchema(data) {
     if (!data) return data;
+    if (!data.attributeFormData || Object.keys(data.attributeFormData).length === 0) {
+      data.attributeFormData = this.initDefaultCardsFormData();
+    }
+    if (!data.attribute1Data || Object.keys(data.attribute1Data).length === 0) {
+      data.attribute1Data = this.initDefaultAttribute1Data();
+    }
     if (!data.departmentInfo) data.departmentInfo = {};
     if (!data.departmentInfo.scholars) {
       const total = data.departmentInfo.researchScholarsCount || 24;
@@ -245,13 +400,13 @@ class DataStore {
 
   async loadSample(sampleType = 'cs') {
     if (sampleType === 'commerce' && window.COMMERCE_SAMPLE_DATA) {
-      this.data = JSON.parse(JSON.stringify(window.COMMERCE_SAMPLE_DATA));
+      this.data = this.ensureSchema(JSON.parse(JSON.stringify(window.COMMERCE_SAMPLE_DATA)));
       this.activeDepartment = this.data.departmentInfo.departmentName;
       this.saveCurrentData();
       this.notify();
       return true;
     } else if (window.CS_SAMPLE_DATA) {
-      this.data = JSON.parse(JSON.stringify(window.CS_SAMPLE_DATA));
+      this.data = this.ensureSchema(JSON.parse(JSON.stringify(window.CS_SAMPLE_DATA)));
       this.activeDepartment = this.data.departmentInfo.departmentName;
       this.saveCurrentData();
       this.notify();
@@ -262,7 +417,7 @@ class DataStore {
     try {
       const resp = await fetch(filename);
       if (resp.ok) {
-        this.data = await resp.json();
+        this.data = this.ensureSchema(await resp.json());
         this.activeDepartment = this.data.departmentInfo.departmentName;
         this.saveCurrentData();
         this.notify();
@@ -749,6 +904,282 @@ class DataStore {
 
     this.saveMeetingAgendaConfig(config);
     return config;
+  }
+
+  // ================= SUBMISSION DEADLINE MANAGEMENT =================
+  getSubmissionDeadline() {
+    try {
+      const stored = localStorage.getItem('IQAC_SUBMISSION_DEADLINE');
+      if (stored) return stored;
+    } catch (e) {}
+    // Default deadline: 28 Feb 2027 at 23:59
+    return '2027-02-28T23:59';
+  }
+
+  setSubmissionDeadline(isoDateTime) {
+    try {
+      localStorage.setItem('IQAC_SUBMISSION_DEADLINE', isoDateTime);
+      this.notify();
+      return true;
+    } catch (e) {
+      console.error('Failed to save submission deadline:', e);
+      return false;
+    }
+  }
+
+  isDeadlinePassed() {
+    const deadline = this.getSubmissionDeadline();
+    if (!deadline) return false;
+    try {
+      return new Date() > new Date(deadline);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  formatDeadlineForDisplay() {
+    const dl = this.getSubmissionDeadline();
+    if (!dl) return 'No Deadline Configured';
+    try {
+      const d = new Date(dl);
+      return d.toLocaleString('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return dl;
+    }
+  }
+
+  // ================= USERS & ACCESS MANAGEMENT DATABASE =================
+  getUsersDB() {
+    try {
+      const stored = localStorage.getItem('IQAC_USERS_DB');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    // Default pre-populated accounts
+    const initialDB = {
+      departments: [
+        {
+          id: 1,
+          code: 'cs',
+          name: 'PG & Research Department of Computer Science',
+          school: 'School of Computing Sciences',
+          hod_name: 'Dr. S. Albert Rabara',
+          password: 'cs123',
+          is_locked: false,
+          status: 'submitted',
+          last_updated: '2026-10-30 11:30'
+        },
+        {
+          id: 2,
+          code: 'commerce',
+          name: 'PG & Research Department of Commerce',
+          school: 'School of Management Studies',
+          hod_name: 'Dr. F. R. Alexander Pravin Durai',
+          password: 'commerce123',
+          is_locked: false,
+          status: 'submitted',
+          last_updated: '2026-10-30 10:15'
+        },
+        {
+          id: 3,
+          code: 'physics',
+          name: 'PG & Research Department of Physics',
+          school: 'School of Physical Sciences',
+          hod_name: 'Dr. N. Lawrence',
+          password: 'physics123',
+          is_locked: false,
+          status: 'in_progress',
+          last_updated: '2026-10-29 14:20'
+        },
+        {
+          id: 4,
+          code: 'chemistry',
+          name: 'PG & Research Department of Chemistry',
+          school: 'School of Chemical Sciences',
+          hod_name: 'Dr. A. Rose Venis',
+          password: 'chemistry123',
+          is_locked: false,
+          status: 'draft',
+          last_updated: '2026-10-28 11:00'
+        },
+        {
+          id: 5,
+          code: 'maths',
+          name: 'PG & Research Department of Mathematics',
+          school: 'School of Computing Sciences',
+          hod_name: 'Dr. J. Maria Joseph',
+          password: 'maths123',
+          is_locked: false,
+          status: 'draft',
+          last_updated: '2026-10-28 09:30'
+        },
+        {
+          id: 6,
+          code: 'history',
+          name: 'Department of History',
+          school: 'School of Social Sciences',
+          hod_name: 'Dr. K. Lingammal',
+          password: 'history123',
+          is_locked: false,
+          status: 'in_progress',
+          last_updated: '2026-10-29 16:45'
+        },
+        {
+          id: 7,
+          code: 'english',
+          name: 'Department of English',
+          school: 'School of Languages',
+          hod_name: 'Dr. V. L. Jayapaul',
+          password: 'english123',
+          is_locked: false,
+          status: 'draft',
+          last_updated: '2026-10-27 15:10'
+        },
+        {
+          id: 8,
+          code: 'economics',
+          name: 'Department of Economics',
+          school: 'School of Management Studies',
+          hod_name: 'Dr. S. Sujatha',
+          password: 'economics123',
+          is_locked: false,
+          status: 'submitted',
+          last_updated: '2026-10-30 08:50'
+        }
+      ],
+      admins: [
+        {
+          id: 1,
+          username: 'admin',
+          name: 'IQAC Administrator',
+          role: 'IQAC Director / Administrator',
+          password: 'admin123'
+        },
+        {
+          id: 2,
+          username: 'iqac_coord',
+          name: 'Dr. A. John Peter',
+          role: 'IQAC Coordinator',
+          password: 'coord123'
+        }
+      ]
+    };
+
+    this.saveUsersDB(initialDB);
+    return initialDB;
+  }
+
+  saveUsersDB(db) {
+    try {
+      localStorage.setItem('IQAC_USERS_DB', JSON.stringify(db));
+      if (db && Array.isArray(db.departments)) {
+        const names = db.departments.map(d => d.name);
+        this.saveDepartmentList(names);
+      }
+      this.notify();
+      return true;
+    } catch (e) {
+      console.error('Failed to save users DB:', e);
+      return false;
+    }
+  }
+
+  addDepartmentUser(deptData) {
+    const db = this.getUsersDB();
+    const cleanCode = (deptData.code || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (!cleanCode) throw new Error('Valid Department Code / User ID is required');
+
+    if (db.departments.some(d => d.code.toLowerCase() === cleanCode)) {
+      throw new Error(`Department User ID "${cleanCode}" already exists`);
+    }
+
+    const newDept = {
+      id: Date.now(),
+      code: cleanCode,
+      name: (deptData.name || '').trim(),
+      school: (deptData.school || 'School of Sciences').trim(),
+      hod_name: (deptData.hod_name || '').trim(),
+      password: (deptData.password || 'sjc123').trim(),
+      is_locked: false,
+      status: 'draft',
+      last_updated: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    };
+
+    db.departments.push(newDept);
+    this.saveUsersDB(db);
+    return newDept;
+  }
+
+  updateDepartmentUser(code, updates) {
+    const db = this.getUsersDB();
+    const idx = db.departments.findIndex(d => d.code.toLowerCase() === code.toLowerCase());
+    if (idx === -1) throw new Error(`Department "${code}" not found`);
+
+    db.departments[idx] = { ...db.departments[idx], ...updates };
+    this.saveUsersDB(db);
+    return db.departments[idx];
+  }
+
+  deleteDepartmentUser(code) {
+    const db = this.getUsersDB();
+    const initialLen = db.departments.length;
+    db.departments = db.departments.filter(d => d.code.toLowerCase() !== code.toLowerCase());
+    if (db.departments.length === initialLen) throw new Error(`Department "${code}" not found`);
+    this.saveUsersDB(db);
+    return true;
+  }
+
+  addAdminUser(adminData) {
+    const db = this.getUsersDB();
+    const cleanUsername = (adminData.username || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (!cleanUsername) throw new Error('Valid Admin User ID is required');
+
+    if (db.admins.some(a => a.username.toLowerCase() === cleanUsername)) {
+      throw new Error(`Admin User ID "${cleanUsername}" already exists`);
+    }
+
+    const newAdmin = {
+      id: Date.now(),
+      username: cleanUsername,
+      name: (adminData.name || 'IQAC Officer').trim(),
+      role: (adminData.role || 'IQAC Coordinator').trim(),
+      password: (adminData.password || 'admin123').trim()
+    };
+
+    db.admins.push(newAdmin);
+    this.saveUsersDB(db);
+    return newAdmin;
+  }
+
+  updateAdminUser(username, updates) {
+    const db = this.getUsersDB();
+    const idx = db.admins.findIndex(a => a.username.toLowerCase() === username.toLowerCase());
+    if (idx === -1) throw new Error(`Admin "${username}" not found`);
+
+    db.admins[idx] = { ...db.admins[idx], ...updates };
+    this.saveUsersDB(db);
+    return db.admins[idx];
+  }
+
+  deleteAdminUser(username) {
+    if (username.toLowerCase() === 'admin') {
+      throw new Error('Default root administrator account cannot be deleted');
+    }
+    const db = this.getUsersDB();
+    const initialLen = db.admins.length;
+    db.admins = db.admins.filter(a => a.username.toLowerCase() !== username.toLowerCase());
+    if (db.admins.length === initialLen) throw new Error(`Admin "${username}" not found`);
+    this.saveUsersDB(db);
+    return true;
   }
 }
 

@@ -1,3058 +1,1761 @@
-// IQAC AAA 2026-2027 - Dynamic Form Builder & Event Handlers
+// IQAC AAA February 2027 - Master Form Builder with Attribute Cards & Sheet Navigation
+// Rules:
+// 1. Landing view displays Cards for: PART-A and Attributes 1 to 10.
+// 2. Each card shows exact progress: e.g. "4/11 Sheets Finished".
+// 3. No placeholders in input boxes.
+// 4. Needed columns use dropdown options: (VAC / CC), (Online / Offline / Blended), (Mention YES/NO), (SKILL, KNOWLEDGE, BOTH), etc.
+// 5. Full width layout for viewing all boxes comfortably.
+// 6. Every sheet has dedicated Save Sheet Data buttons at top and bottom.
+// 7. Prominent title: Annual Academic Audit (AAA) 2026-2027.
+// 8. Questions/Headers are EDITABLE ONLY BY ADMIN; Departments can ONLY FILL DATA.
 
 class FormBuilder {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
-    this.activeTab = 'hub'; // Landing view: Attributes Directory Hub
-    this.viewMode = 'edit'; // 'edit' or 'view'
+    this.activeCardId = null; // null = Cards Gallery View; 'part_a', 'att1', etc. = Active Attribute
+    this.activeSheetKey = null; // Key of active sheet within current card
+    this.adminEditQuestionsMode = false; // Toggleable ONLY by Admin
+    this.saveTimeout = null;
+    this.academicYear = '2026–2027';
   }
 
-  setViewMode(mode) {
-    this.viewMode = mode;
-    this.render(window.dataStore.data);
+  // Check if current logged-in user is IQAC Admin
+  isAdmin() {
+    return window.authManager && typeof window.authManager.isAdmin === 'function' 
+      ? window.authManager.isAdmin() 
+      : false;
   }
 
-  openAttribute(attrKey, mode = 'edit') {
-    this.activeTab = attrKey;
-    this.viewMode = mode;
-    this.render(window.dataStore.data);
+  // Retrieve Master Cards Schema
+  getMasterSchema() {
+    if (window.dataStore && typeof window.dataStore.getAllCardsSchema === 'function') {
+      return window.dataStore.getAllCardsSchema();
+    }
+    return window.ALL_ATTRIBUTES_CARDS_SCHEMA || [];
   }
 
-  saveCurrentData() {
-    window.dataStore.saveCurrentData();
+  // Open specific card
+  openCard(cardId) {
+    this.activeCardId = cardId;
+    const card = this.getActiveCard();
+    if (card && card.sheets && card.sheets.length > 0) {
+      this.activeSheetKey = card.sheets[0].key;
+    } else {
+      this.activeSheetKey = null;
+    }
+    this.adminEditQuestionsMode = false;
+    this.render(window.dataStore ? window.dataStore.data : null);
+    if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Return to Cards Gallery
+  backToCards() {
+    this.activeCardId = null;
+    this.activeSheetKey = null;
+    this.adminEditQuestionsMode = false;
+    this.render(window.dataStore ? window.dataStore.data : null);
+    if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Get active card object
+  getActiveCard() {
+    if (!this.activeCardId) return null;
+    const schema = this.getMasterSchema();
+    return schema.find(c => c.id === this.activeCardId) || null;
+  }
+
+  // Get active sheet definition
+  getActiveSheet() {
+    const card = this.getActiveCard();
+    if (!card || !card.sheets) return null;
+    return card.sheets.find(s => s.key === this.activeSheetKey) || card.sheets[0] || null;
+  }
+
+  // Switch sheet within active card
+  switchSheet(sheetKey) {
+    this.activeSheetKey = sheetKey;
+    this.render(window.dataStore ? window.dataStore.data : null);
+    if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Toggle Admin Question Edit Mode
+  toggleAdminEditQuestionsMode() {
+    if (!this.isAdmin()) {
+      alert('Access Denied: Only IQAC Administrators can edit the questionnaire schema.');
+      return;
+    }
+    this.adminEditQuestionsMode = !this.adminEditQuestionsMode;
+    this.render(window.dataStore ? window.dataStore.data : null);
+  }
+
+  // Save changes to Question Schema (Admin Only)
+  saveQuestionSchema() {
+    if (!this.isAdmin()) return;
+    const schema = this.getMasterSchema();
+    if (window.dataStore) {
+      window.dataStore.saveAllCardsSchema(schema);
+    }
+    this.adminEditQuestionsMode = false;
+    alert('Questionnaire Template successfully saved and updated across all departments!');
+    this.render(window.dataStore ? window.dataStore.data : null);
+  }
+
+  // Reset Question Schema to original Excel template (Admin Only)
+  resetQuestionSchemaToDefault() {
+    if (!this.isAdmin()) return;
+    if (confirm('Reset questionnaire structure and column headers to the official Excel template? (This will restore default question text)')) {
+      if (window.dataStore) {
+        window.dataStore.resetAllCardsSchema();
+      }
+      this.adminEditQuestionsMode = false;
+      alert('Questionnaire reset to default Excel template!');
+      this.render(window.dataStore ? window.dataStore.data : null);
+    }
+  }
+
+  // Show visual save feedback
+  showSaveIndicator() {
+    const els = document.querySelectorAll('.card-save-indicator');
+    els.forEach(el => {
+      el.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Saved';
+      el.className = 'card-save-indicator text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-medium flex items-center gap-1.5 shadow-xs';
+    });
+  }
+
+  // Trigger auto-save
+  triggerAutoSave() {
+    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+    const els = document.querySelectorAll('.card-save-indicator');
+    els.forEach(el => {
+      el.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-spin"></span> Saving...';
+      el.className = 'card-save-indicator text-xs px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium flex items-center gap-1.5';
+    });
+    this.saveTimeout = setTimeout(() => {
+      if (window.dataStore) {
+        window.dataStore.saveCurrentData();
+      }
+      this.showSaveIndicator();
+    }, 350);
+  }
+
+  // Dedicated Save Sheet Data method
+  saveCurrentSheetData(sheetKey) {
+    if (this.isSubmissionLocked()) {
+      alert('The submission deadline has expired. Records are locked in read-only mode.');
+      return;
+    }
+    if (window.dataStore) {
+      window.dataStore.saveCurrentData();
+    }
     this.showSaveIndicator();
-    alert('Changes saved successfully!');
+    const sheet = this.getActiveSheet();
+    const sheetName = sheet ? (sheet.sheetName || sheet.key) : (sheetKey || 'Sheet');
+    alert(`Data for ${sheetName} saved successfully!`);
+    this.render(window.dataStore ? window.dataStore.data : null);
   }
 
-  exportCurrentAttributeExcel() {
-    if (!window.ExcelExporter) return;
-    const data = window.dataStore.data;
-    const deptName = data.departmentInfo?.departmentName || 'Department';
-    window.ExcelExporter.exportAttributeToExcel(this.activeTab, data, deptName);
+  saveCurrentDepartmentData() {
+    if (window.dataStore) {
+      window.dataStore.saveCurrentData();
+    }
+    this.showSaveIndicator();
+    alert('Department data saved successfully!');
+    this.render(window.dataStore ? window.dataStore.data : null);
   }
 
-  printCurrentAttributePdf() {
-    window.print();
-  }
+  exportCurrentCardToExcel() {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const deptName = window.dataStore?.activeDepartment || 'Department';
+    const cardData = this.getCardData(card.id);
 
-  submitDepartmentToIQAC() {
-    const data = window.dataStore.data;
-    const deptName = data.departmentInfo?.departmentName || 'Department';
-    if (confirm(`Submit final AAA 2026-2027 data for "${deptName}" to the IQAC Committee?`)) {
-      window.dataStore.setDepartmentSubmissionStatus(deptName, { status: 'submitted' });
-      alert('Department Audit Data successfully submitted to IQAC!\nStatus: SUBMITTED TO IQAC');
-      this.render(data);
+    if (window.ExcelExporter && typeof window.ExcelExporter.exportAttribute1Workbook === 'function') {
+      window.ExcelExporter.exportAttribute1Workbook(cardData, card.sheets, `${deptName}_${card.cardCode}`);
+    } else {
+      alert('Excel exporter ready. Downloading sheets...');
     }
   }
 
-  render(data) {
-    if (!this.container || !data) return;
+  // Retrieve current card's data object from store
+  getCardData(cardId) {
+    const data = window.dataStore?.data;
+    if (!data) return {};
+    if (!data.attributeFormData) {
+      if (window.dataStore && typeof window.dataStore.initDefaultCardsFormData === 'function') {
+        data.attributeFormData = window.dataStore.initDefaultCardsFormData();
+      } else {
+        data.attributeFormData = {};
+      }
+    }
+    if (!data.attributeFormData[cardId]) {
+      data.attributeFormData[cardId] = {};
+    }
+    return data.attributeFormData[cardId];
+  }
 
-    this.container.innerHTML = `
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <!-- Form Header with Sub-tabs navigation -->
-        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <i data-lucide="edit-3" class="w-5 h-5 text-blue-600"></i>
-              Department Data Entry Form
-            </h2>
-            <p class="text-xs text-slate-500 mt-1">
-              Fill in the standardized AAA Questionnaire. Data automatically synchronizes with the 15-Min Dashboard and 30-Min Presentation slides.
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span id="save-indicator" class="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-medium flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Auto-saved
-            </span>
-            <button type="button" onclick="formBuilder.resetActiveTab()" class="text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition">
-              Refresh Section
-            </button>
-          </div>
-        </div>
+  // ================= PROGRESS & COMPLETION CALCULATOR =================
+  // Calculates: how many sheets in a card have finished (e.g., 4 / 11)
+  getCompletionStats(card) {
+    const cardData = this.getCardData(card.id);
+    const totalSheets = card.sheets?.length || 0;
+    let finishedCount = 0;
 
-        <!-- Section Navigation Pills (Attributes Hub, 10 Attributes, and Complete Dossier) -->
-        <div class="px-6 py-3 bg-slate-100/70 border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 text-xs font-medium text-slate-600 scrollbar-thin">
-          <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition font-bold ${this.activeTab === 'hub' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200'}">
-            <i data-lucide="grid" class="w-3.5 h-3.5"></i>
-            <span>Attributes Hub</span>
-          </button>
-          ${this.renderNavTab('profile', 'Profile & Scholars (T1)', 'building', 't1_scholars')}
-          ${this.renderNavTab('activities', 'Status of Activities (T2)', 'check-square', 't2_activities')}
-          ${this.renderNavTab('att1', 'Att I: Curriculum', 'book-open', 'att1')}
-          ${this.renderNavTab('att2', 'Att II: Faculty', 'users', 'att2')}
-          ${this.renderNavTab('att3', 'Att III: Infrastructure', 'hard-drive', 'att3')}
-          ${this.renderNavTab('att4_7', 'Att IV & VII: Grants', 'indian-rupee', 'att4_7')}
-          ${this.renderNavTab('att5', 'Att V: Teaching & MoUs', 'laptop', 'att5')}
-          ${this.renderNavTab('att6_8', 'Att VI & VIII: Clubs & Awards', 'trophy', 'att6_8')}
-          ${this.renderNavTab('outcomes', 'Outcomes 2026 (T10)', 'graduation-cap', 't10_outcomes')}
-          ${this.renderNavTab('att9', 'Att IX: Research & IPR', 'award', 'att9')}
-          ${this.renderNavTab('att10', 'Att X: Values, Green & CSR', 'leaf', 'att10')}
-          ${this.renderNavTab('qualitative', '30m Presentation Flow', 'presentation')}
-          ${this.renderNavTab('pillars', 'Crucial Pillars', 'layers')}
-          ${this.renderNavTab('panel', '15m Review Rubric', 'clipboard-check')}
-          <button type="button" onclick="formBuilder.switchTab('complete_dossier')" class="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition font-bold ${this.activeTab === 'complete_dossier' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'}">
-            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-            <span>Complete Dossier</span>
-          </button>
-        </div>
+    (card.sheets || []).forEach(sheet => {
+      const sData = cardData[sheet.key];
+      let isFinished = false;
 
-        <!-- Form Tab Body -->
-        <form id="aaa-main-form" class="p-6">
-          <div id="form-tab-content">
-            ${this.renderActiveTabContent(data)}
-          </div>
-        </form>
-      </div>
-    `;
+      if (sheet.type === 'profile') {
+        const prof = sData?.profile || sheet.profileQuestions || {};
+        const facRows = sData?.facultyDetails || sheet.facultyDetails?.rows || [];
+        const hasProf = Boolean(prof.department || prof.hodName);
+        const hasFac = facRows.some(r => (Number(r.male) > 0 || Number(r.female) > 0));
+        if (hasProf || hasFac) isFinished = true;
+      } else if (sheet.type === 'multi_table' || sheet.type === 'batch_table') {
+        if (sData && typeof sData === 'object') {
+          if (Array.isArray(sData)) {
+            isFinished = sData.some(row => Object.entries(row).some(([k, v]) => k !== 'sno' && k !== 's_no' && k !== 'sl_no' && String(v).trim() !== ''));
+          } else {
+            isFinished = Object.values(sData).some(arr => Array.isArray(arr) && arr.length > 0 && arr.some(r => Object.values(r).some(v => String(v).trim() !== '')));
+          }
+        }
+      } else {
+        // Standard table
+        if (Array.isArray(sData) && sData.length > 0) {
+          isFinished = sData.some(row => {
+            return Object.entries(row).some(([k, v]) => k !== 'sno' && k !== 's_no' && k !== 'sl_no' && String(v).trim() !== '');
+          });
+        }
+      }
 
-    // If viewMode is 'view' or submission is locked, disable form fields
-    const isLocked = window.dataStore ? window.dataStore.isDepartmentLocked() : false;
-    if (this.viewMode === 'view' || isLocked) {
-      const inputs = this.container.querySelectorAll('#form-tab-content input, #form-tab-content select, #form-tab-content textarea');
-      inputs.forEach(el => {
-        el.setAttribute('disabled', 'disabled');
-        el.classList.add('bg-slate-50', 'cursor-not-allowed');
+      if (isFinished) finishedCount++;
+    });
+
+    const percentage = totalSheets > 0 ? Math.round((finishedCount / totalSheets) * 100) : 0;
+    return { finishedCount, totalSheets, percentage };
+  }
+
+  // ================= DROPDOWN OPTIONS DETECTOR =================
+  // Detects if a column requires a dropdown, e.g. (VAC / CC), (Online/Offline), YES/NO, etc.
+  getDropdownOptions(label, key = '') {
+    const lbl = (label || '').trim().toLowerCase();
+    const k = (key || '').toLowerCase();
+
+    // 0. SDG Goal Dropdown (All 17 UN Sustainable Development Goals)
+    if (k === 'sdggoal' || lbl.includes('sdg goal') || lbl.includes('sdg') || lbl.includes('sustainable development')) {
+      return [
+        '',
+        'Goal 1: No Poverty',
+        'Goal 2: Zero Hunger',
+        'Goal 3: Good Health and Well-being',
+        'Goal 4: Quality Education',
+        'Goal 5: Gender Equality',
+        'Goal 6: Clean Water and Sanitation',
+        'Goal 7: Affordable and Clean Energy',
+        'Goal 8: Decent Work and Economic Growth',
+        'Goal 9: Industry, Innovation and Infrastructure',
+        'Goal 10: Reduced Inequalities',
+        'Goal 11: Sustainable Cities and Communities',
+        'Goal 12: Responsible Consumption and Production',
+        'Goal 13: Climate Action',
+        'Goal 14: Life Below Water',
+        'Goal 15: Life on Land',
+        'Goal 16: Peace, Justice and Strong Institutions',
+        'Goal 17: Partnerships for the Goals'
+      ];
+    }
+
+    // 1. VAC / CC
+    if (lbl.includes('vac / cc') || lbl.includes('vac/cc') || lbl.includes('(vac / cc)')) {
+      return ['', 'VAC', 'CC'];
+    }
+
+    // 2. Mode (Online / Offline / Blended)
+    if (lbl.includes('online') && lbl.includes('offline')) {
+      if (lbl.includes('blended')) {
+        return ['', 'Online', 'Offline', 'Blended'];
+      }
+      return ['', 'Online', 'Offline'];
+    }
+
+    // 3. YES / NO
+    if (lbl.includes('yes/no') || lbl.includes('yes / no') || lbl.includes('mention yes/no') || lbl.includes('iks based') || lbl.includes('multidisciplinary') || lbl.includes('industry collab') || (lbl.includes('part of the') && lbl.includes('mou'))) {
+      return ['', 'YES', 'NO'];
+    }
+    if (lbl.includes('mention yes if')) {
+      return ['', 'YES', 'NO'];
+    }
+    if (lbl.includes('whether part of csr') || lbl.includes('is csr')) {
+      return ['', 'YES', 'NO'];
+    }
+
+    // 4. Focus: SKILL, KNOWLEDGE, BOTH
+    if (lbl.includes('skill, knowledge, both') || (lbl.includes('skill') && lbl.includes('knowledge') && lbl.includes('both'))) {
+      return ['', 'SKILL', 'KNOWLEDGE', 'BOTH'];
+    }
+
+    // 5. Status: Completed / Ongoing
+    if (lbl.includes('completed/ongoing') || lbl.includes('completed / ongoing')) {
+      return ['', 'Completed', 'Ongoing'];
+    }
+
+    // 6. Registered / Completed
+    if (lbl.includes('registered / completed') || lbl.includes('registered/completed')) {
+      return ['', 'Registered', 'Completed'];
+    }
+
+    // 7. Level (International/National/State/Institutional/Regional/University)
+    if (lbl.includes('international') && lbl.includes('national')) {
+      return ['', 'International', 'National', 'State', 'Regional', 'University', 'Institutional'];
+    }
+
+    // 8. Shift (I/II)
+    if (lbl.includes('shift (i/ii)') || k === 'shift') {
+      return ['', 'Shift I', 'Shift II'];
+    }
+
+    // 9. Government / Non-Government
+    if (lbl.includes('government/non-government') || lbl.includes('government / non-government')) {
+      return ['', 'Government', 'Non-Government'];
+    }
+
+    // 10. Books / Journal
+    if (lbl.includes('books/jounal') || lbl.includes('books/journal') || lbl.includes('books / journal')) {
+      return ['', 'Books', 'Journal'];
+    }
+
+    // 11. Gender
+    if (k === 'gender' || lbl === 'gender') {
+      return ['', 'Male', 'Female', 'Other'];
+    }
+
+    // 12. Status (Applied / Granted / Published / Registered)
+    if (lbl.includes('applied / granted') || lbl.includes('status (applied')) {
+      return ['', 'Applied', 'Granted', 'Published', 'Registered'];
+    }
+
+    // 13. PG / UG
+    if (lbl.includes('pg / ug') || lbl.includes('pg/ug')) {
+      return ['', 'UG', 'PG', 'PhD'];
+    }
+
+    // 14. Appointment Type (Aided/Coordinator/Secretary)
+    if (lbl.includes('aided/coordinator/secretary') || lbl.includes('appointment type')) {
+      return ['', 'Aided', 'Coordinator', 'Secretary', 'Professor of Practice', 'Hourly Basis'];
+    }
+
+    // 15. Stakeholder Type
+    if (lbl.includes('type of stakeholder') || lbl.includes('teachers/alumni/employers')) {
+      return ['', 'Teachers', 'Alumni', 'Employers', 'Industry', 'Entrepreneurs', 'Students'];
+    }
+
+    // 16. Nature of Place
+    if (lbl.includes('nature of the place') || lbl.includes('industry/company/institution')) {
+      return ['', 'Industry', 'Company', 'Institution', 'Educational Institution', 'Government Organization', 'NGO'];
+    }
+
+    // 17. Competitive Exams
+    if (lbl.includes('competitive exam') || lbl.includes('net/ set/ gate')) {
+      return ['', 'NET', 'SET', 'GATE', 'CAT', 'UPSC', 'TNPSC', 'JAM', 'Others'];
+    }
+
+    return null;
+  }
+
+  // ================= DATA MUTATION HELPERS =================
+  updateProfileField(fieldPath, value) {
+    const cardData = this.getCardData('part_a');
+    if (!cardData['PART-A']) cardData['PART-A'] = {};
+    if (!cardData['PART-A'].profile) cardData['PART-A'].profile = {};
+
+    const parts = fieldPath.split('.');
+    let curr = cardData['PART-A'].profile;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!curr[parts[i]]) curr[parts[i]] = {};
+      curr = curr[parts[i]];
+    }
+    curr[parts[parts.length - 1]] = value;
+    this.triggerAutoSave();
+  }
+
+  updateFacultyDetail(idx, field, value) {
+    const cardData = this.getCardData('part_a');
+    if (!cardData['PART-A']?.facultyDetails) return;
+    if (cardData['PART-A'].facultyDetails[idx]) {
+      cardData['PART-A'].facultyDetails[idx][field] = Number(value) || 0;
+      this.triggerAutoSave();
+      const row = cardData['PART-A'].facultyDetails[idx];
+      const totalEl = document.getElementById(`fac-total-${idx}`);
+      if (totalEl) totalEl.textContent = (Number(row.male) || 0) + (Number(row.female) || 0);
+    }
+  }
+
+  updateStudentDetail(idx, field, value) {
+    const cardData = this.getCardData('part_a');
+    if (!cardData['PART-A']?.studentDetails) return;
+    if (cardData['PART-A'].studentDetails[idx]) {
+      cardData['PART-A'].studentDetails[idx][field] = Number(value) || 0;
+      this.triggerAutoSave();
+      const row = cardData['PART-A'].studentDetails[idx];
+      const totalEl = document.getElementById(`stu-total-${idx}`);
+      if (totalEl) totalEl.textContent = (Number(row.male) || 0) + (Number(row.female) || 0) + (Number(row.otherGender) || 0);
+    }
+  }
+
+  updateTableCell(sheetKey, rowIdx, colKey, value) {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!Array.isArray(cardData[sheetKey])) cardData[sheetKey] = [];
+    if (cardData[sheetKey][rowIdx]) {
+      cardData[sheetKey][rowIdx][colKey] = value;
+      this.triggerAutoSave();
+    }
+  }
+
+  addTableRow(sheetKey) {
+    if (this.isSubmissionLocked()) {
+      alert('The submission deadline has expired. Data cannot be edited or added.');
+      return;
+    }
+    const card = this.getActiveCard();
+    const sheet = this.getActiveSheet();
+    if (!card || !sheet) return;
+    const cardData = this.getCardData(card.id);
+    if (!Array.isArray(cardData[sheetKey])) cardData[sheetKey] = [];
+
+    const newRow = {};
+    (sheet.columns || []).forEach(col => {
+      newRow[col.key] = (col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no') 
+        ? String(cardData[sheetKey].length + 1) 
+        : '';
+    });
+    cardData[sheetKey].push(newRow);
+    this.triggerAutoSave();
+    this.render(window.dataStore?.data);
+  }
+
+  deleteTableRow(sheetKey, rowIdx) {
+    if (this.isSubmissionLocked()) {
+      alert('The submission deadline has expired. Records cannot be deleted.');
+      return;
+    }
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!Array.isArray(cardData[sheetKey])) return;
+    if (confirm('Delete this data row?')) {
+      cardData[sheetKey].splice(rowIdx, 1);
+      cardData[sheetKey].forEach((r, idx) => {
+        if (r.sno !== undefined) r.sno = String(idx + 1);
+        if (r.s_no !== undefined) r.s_no = String(idx + 1);
+        if (r.sl_no !== undefined) r.sl_no = String(idx + 1);
       });
+      this.triggerAutoSave();
+      this.render(window.dataStore?.data);
+    }
+  }
+
+  // Multi-table sections (Sheet 1.2)
+  updateMultiTableCell(sheetKey, sectionId, rowIdx, colKey, value) {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]) cardData[sheetKey] = {};
+    if (!Array.isArray(cardData[sheetKey][sectionId])) cardData[sheetKey][sectionId] = [];
+    if (cardData[sheetKey][sectionId][rowIdx]) {
+      cardData[sheetKey][sectionId][rowIdx][colKey] = value;
+      this.triggerAutoSave();
+    }
+  }
+
+  addMultiTableRow(sheetKey, sectionId) {
+    const card = this.getActiveCard();
+    const sheet = this.getActiveSheet();
+    if (!card || !sheet) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]) cardData[sheetKey] = {};
+    if (!Array.isArray(cardData[sheetKey][sectionId])) cardData[sheetKey][sectionId] = [];
+
+    const sec = (sheet.sections || []).find(s => s.id === sectionId);
+    const newRow = {};
+    (sec?.columns || []).forEach(col => {
+      newRow[col.key] = col.key === 'sno' ? String(cardData[sheetKey][sectionId].length + 1) : '';
+    });
+    cardData[sheetKey][sectionId].push(newRow);
+    this.triggerAutoSave();
+    this.render(window.dataStore?.data);
+  }
+
+  deleteMultiTableRow(sheetKey, sectionId, rowIdx) {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]?.[sectionId]) return;
+    if (confirm('Delete this row?')) {
+      cardData[sheetKey][sectionId].splice(rowIdx, 1);
+      cardData[sheetKey][sectionId].forEach((r, idx) => {
+        if (r.sno !== undefined) r.sno = String(idx + 1);
+      });
+      this.triggerAutoSave();
+      this.render(window.dataStore?.data);
+    }
+  }
+
+  // Batch tables (Sheet 1.5, 1.6)
+  updateBatchTableCell(sheetKey, batchId, rowIdx, colKey, value) {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]) cardData[sheetKey] = {};
+    if (!Array.isArray(cardData[sheetKey][batchId])) cardData[sheetKey][batchId] = [];
+    if (cardData[sheetKey][batchId][rowIdx]) {
+      cardData[sheetKey][batchId][rowIdx][colKey] = value;
+      this.triggerAutoSave();
+    }
+  }
+
+  addBatchTableRow(sheetKey, batchId) {
+    const card = this.getActiveCard();
+    const sheet = this.getActiveSheet();
+    if (!card || !sheet) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]) cardData[sheetKey] = {};
+    if (!Array.isArray(cardData[sheetKey][batchId])) cardData[sheetKey][batchId] = [];
+
+    const newRow = {};
+    (sheet.columns || []).forEach(col => {
+      newRow[col.key] = col.key === 'sno' ? String(cardData[sheetKey][batchId].length + 1) : '';
+    });
+    cardData[sheetKey][batchId].push(newRow);
+    this.triggerAutoSave();
+    this.render(window.dataStore?.data);
+  }
+
+  deleteBatchTableRow(sheetKey, batchId, rowIdx) {
+    const card = this.getActiveCard();
+    if (!card) return;
+    const cardData = this.getCardData(card.id);
+    if (!cardData[sheetKey]?.[batchId]) return;
+    if (confirm('Delete this row?')) {
+      cardData[sheetKey][batchId].splice(rowIdx, 1);
+      cardData[sheetKey][batchId].forEach((r, idx) => {
+        if (r.sno !== undefined) r.sno = String(idx + 1);
+      });
+      this.triggerAutoSave();
+      this.render(window.dataStore?.data);
+    }
+  }
+
+  // ================= ADMIN QUESTION EDITORS =================
+  updateSchemaTitle(sheetKey, newTitle) {
+    if (!this.isAdmin()) return;
+    const sheet = this.getActiveSheet();
+    if (sheet && sheet.key === sheetKey) {
+      sheet.title = newTitle;
+      window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
+    }
+  }
+
+  updateSchemaInstruction(sheetKey, newInstruction) {
+    if (!this.isAdmin()) return;
+    const sheet = this.getActiveSheet();
+    if (sheet && sheet.key === sheetKey) {
+      sheet.instruction = newInstruction;
+      window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
+    }
+  }
+
+  updateSchemaColumnLabel(sheetKey, colKey, newLabel, sectionId = null) {
+    if (!this.isAdmin()) return;
+    const sheet = this.getActiveSheet();
+    if (!sheet) return;
+
+    if (sectionId) {
+      const sec = (sheet.sections || []).find(s => s.id === sectionId);
+      const col = (sec?.columns || []).find(c => c.key === colKey);
+      if (col) col.label = newLabel;
+    } else {
+      const col = (sheet.columns || []).find(c => c.key === colKey);
+      if (col) col.label = newLabel;
+    }
+    window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
+  }
+
+  addColumnToSchema(sheetKey, sectionId = null) {
+    if (!this.isAdmin()) return;
+    const colName = prompt('Enter new Question Column Title:');
+    if (!colName || !colName.trim()) return;
+
+    const sheet = this.getActiveSheet();
+    if (!sheet) return;
+
+    const colKey = 'col_' + Date.now();
+    const newCol = { key: colKey, label: colName.trim(), width: 'w-44' };
+
+    if (sectionId) {
+      const sec = (sheet.sections || []).find(s => s.id === sectionId);
+      if (sec) {
+        if (!sec.columns) sec.columns = [];
+        sec.columns.push(newCol);
+      }
+    } else {
+      if (!sheet.columns) sheet.columns = [];
+      sheet.columns.push(newCol);
     }
 
-    // Initialize lucide icons if available
+    window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
+    this.render(window.dataStore?.data);
+  }
+
+  deleteColumnFromSchema(sheetKey, colKey, sectionId = null) {
+    if (!this.isAdmin()) return;
+    if (!confirm('Are you sure you want to remove this question column from the template?')) return;
+
+    const sheet = this.getActiveSheet();
+    if (!sheet) return;
+
+    if (sectionId) {
+      const sec = (sheet.sections || []).find(s => s.id === sectionId);
+      if (sec && sec.columns) {
+        sec.columns = sec.columns.filter(c => c.key !== colKey);
+      }
+    } else {
+      if (sheet.columns) {
+        sheet.columns = sheet.columns.filter(c => c.key !== colKey);
+      }
+    }
+
+    window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
+    this.render(window.dataStore?.data);
+  }
+
+  // ================= MAIN RENDER PIPELINE =================
+  render(data) {
+    if (!this.container) return;
+
+    if (!this.activeCardId) {
+      this.renderCardsGalleryView(data);
+    } else {
+      this.renderActiveAttributeSheetsView(data);
+    }
+
     if (window.lucide) {
       lucide.createIcons();
     }
   }
 
-  renderNavTab(tabKey, label, icon, attrKey) {
-    const isActive = this.activeTab === tabKey;
-    const isAgendaOn = attrKey && window.dataStore && typeof window.dataStore.isAttributeEnabled === 'function'
-      ? window.dataStore.isAttributeEnabled(attrKey)
-      : true;
+  // ================= 1. CARDS GALLERY VIEW =================
+  renderCardsGalleryView(data) {
+    const cards = this.getMasterSchema();
+    const isAdmin = this.isAdmin();
+    const deptName = window.dataStore?.activeDepartment || 'Department';
 
-    let agendaBadge = '';
-    if (attrKey) {
-      if (isAgendaOn) {
-        agendaBadge = `<span class="ml-1 px-1 py-0.2 text-[9px] font-bold rounded bg-blue-100 text-blue-700 tracking-wider">★ AGENDA</span>`;
-      } else {
-        agendaBadge = `<span class="ml-1 px-1 py-0.2 text-[9px] font-medium rounded bg-slate-200 text-slate-500 tracking-wider">OFF</span>`;
-      }
-    }
-
-    const activeClasses = isActive 
-      ? 'bg-blue-600 text-white shadow-sm font-semibold' 
-      : (isAgendaOn 
-          ? 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200' 
-          : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200 opacity-80');
-
-    return `
-      <button type="button" onclick="formBuilder.switchTab('${tabKey}')" class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap transition ${activeClasses}">
-        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
-        <span>${label}</span>
-        ${agendaBadge}
-      </button>
-    `;
-  }
-
-  renderAgendaBanner(attrKey, title) {
-    if (!attrKey || !window.dataStore || typeof window.dataStore.isAttributeEnabled !== 'function') return '';
-    const isOn = window.dataStore.isAttributeEnabled(attrKey);
-    if (isOn) {
-      return `
-        <div class="mb-4 p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-800">
-          <span class="flex items-center gap-1.5 font-medium">
-            <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
-            <span><strong>${title}</strong> is active in the upcoming Academic Audit Review Meeting Agenda.</span>
-          </span>
-          <span class="px-2 py-0.5 rounded text-[10px] bg-blue-600 text-white font-bold tracking-wide uppercase">Meeting Focus</span>
-        </div>
-      `;
-    } else {
-      return `
-        <div class="mb-4 p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-800">
-          <span class="flex items-center gap-1.5 font-medium">
-            <i data-lucide="info" class="w-4 h-4 text-amber-600"></i>
-            <span><strong>${title}</strong> is currently unselected in the Admin Meeting Agenda. (Data is saved for records/archive).</span>
-          </span>
-          <span class="px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-bold tracking-wide uppercase">Archival Only</span>
-        </div>
-      `;
-    }
-  }
-
-  switchTab(tabKey) {
-    this.activeTab = tabKey;
-    const data = window.dataStore.data;
-    this.render(data);
-  }
-
-  resetActiveTab() {
-    this.render(window.dataStore.data);
-  }
-
-  renderActiveTabContent(data) {
-    if (this.activeTab === 'hub') {
-      return this.renderAttributeHub(data);
-    }
-    if (this.activeTab === 'complete_dossier') {
-      return this.renderCompleteDossierTab(data);
-    }
-
-    const contentHtml = (() => {
-      switch (this.activeTab) {
-        case 'profile':
-          return this.renderProfileTab(data.departmentInfo);
-      case 'activities':
-        return this.renderActivitiesTab(data.qualitativePresentation);
-      case 'att1':
-        return this.renderAtt1Tab(data.attributeI);
-      case 'att2':
-        return this.renderAtt2Tab(data.attributeII);
-      case 'att3':
-        return this.renderAtt3Tab(data.attributeIII);
-      case 'att4_7':
-        return this.renderAtt4_7Tab(data.attributeIV_VII);
-      case 'att5':
-        return this.renderAtt5Tab(data.attributeV);
-      case 'att6_8':
-        return this.renderAtt6_8Tab(data.attributeVI_VIII);
-      case 'outcomes':
-        return this.renderOutcomesTab(data.studentsOutcomes2026);
-      case 'att9':
-        return this.renderAtt9Tab(data.attributeIX);
-      case 'att10':
-        return this.renderAtt10Tab(data.attributeX);
-      case 'qualitative':
-        return this.renderQualitativeTab(data.qualitativePresentation);
-      case 'pillars':
-        return this.renderPillarsTab(data.qualitativePresentation.pillars);
-      case 'panel':
-        return this.renderPanelTab(data.panelReview);
-      default:
-        return this.renderProfileTab(data.departmentInfo);
-      }
-    })();
-
-    return this.renderAttributeActionBar(data) + contentHtml;
-  }
-
-
-  renderAttributeActionBar(data) {
-    const isLocked = window.dataStore ? window.dataStore.isDepartmentLocked() : false;
-    const deptName = data.departmentInfo?.departmentName || 'Department';
-
-    return `
-      <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm no-print">
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1.5 transition">
-            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-            <span>All Attributes Hub</span>
-          </button>
-          
-          <div class="flex items-center bg-white border border-slate-300 rounded-lg p-0.5 text-xs font-semibold">
-            <button type="button" onclick="formBuilder.setViewMode('edit')" class="px-2.5 py-1 rounded transition ${this.viewMode === 'edit' ? 'bg-blue-600 text-white font-bold' : 'text-slate-600 hover:text-slate-900'}">
-              Edit Mode
-            </button>
-            <button type="button" onclick="formBuilder.setViewMode('view')" class="px-2.5 py-1 rounded transition ${this.viewMode === 'view' ? 'bg-blue-600 text-white font-bold' : 'text-slate-600 hover:text-slate-900'}">
-              View Preview
-            </button>
-          </div>
-
-          ${isLocked ? `
-            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
-              <i data-lucide="lock" class="w-3 h-3"></i> Submission Locked
-            </span>
-          ` : `
-            <span class="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Editing Active
-            </span>
-          `}
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="formBuilder.saveCurrentData()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
-            <i data-lucide="save" class="w-3.5 h-3.5"></i>
-            <span>Save</span>
-          </button>
-          <button type="button" onclick="formBuilder.exportCurrentAttributeExcel()" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
-            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-            <span>Excel</span>
-          </button>
-          <button type="button" onclick="formBuilder.printCurrentAttributePdf()" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
-            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-            <span>PDF</span>
-          </button>
-          <button type="button" onclick="app.switchView('dashboard')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
-            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-            <span>Show Dashboard</span>
-          </button>
-        </div>
-      </div>
-
-      ${isLocked ? `
-        <div class="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2 font-medium">
-          <i data-lucide="lock" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
-          <span><strong>Submission Locked by IQAC Admin:</strong> This department has been locked for official evaluation. All fields are in read-only view. Contact IQAC to request editing unlock.</span>
-        </div>
-      ` : ''}
-    `;
-  }
-
-  renderAttributeHub(data) {
-    const dept = data.departmentInfo || {};
-    const deptName = dept.departmentName || 'Department';
-    const status = window.dataStore ? window.dataStore.getDepartmentSubmissionStatus(deptName) : { status: 'draft', is_locked: false };
-    const sch = dept.scholars || {};
-    const ftM = sch.fullTime?.male || 0;
-    const ftF = sch.fullTime?.female || 0;
-    const ptM = sch.partTime?.male || 0;
-    const ptF = sch.partTime?.female || 0;
-    const totalScholars = ftM + ftF + ptM + ptF;
-
-    const cards = [
-      {
-        key: 'profile',
-        attrId: 't1_scholars',
-        code: 'Table 1',
-        title: 'Department Profile & Research Scholars',
-        icon: 'building',
-        color: 'blue',
-        summary: `${totalScholars} Scholars (${ftM + ftF} FT, ${ptM + ptF} PT) • Estd ${dept.establishedYear || 'N/A'}`
-      },
-      {
-        key: 'att1',
-        attrId: 'att1',
-        code: 'Attribute I',
-        title: 'Curriculum Design & PTM',
-        icon: 'book-open',
-        color: 'emerald',
-        summary: `${(data.attributeI?.vac || []).length} VACs, ${(data.attributeI?.cc || []).length} CCs, ${data.attributeI?.ptm?.ptmCount || 0} PTMs`
-      },
-      {
-        key: 'att2',
-        attrId: 'att2',
-        code: 'Attribute II',
-        title: 'Faculty Resources & Excellence',
-        icon: 'users',
-        color: 'purple',
-        summary: `${data.attributeII?.newDegrees?.count || 0} New Degrees, ${data.attributeII?.netSet?.count || 0} NET/SET, ${data.attributeII?.abroadVisits?.count || 0} Abroad Visits`
-      },
-      {
-        key: 'att3',
-        attrId: 'att3',
-        code: 'Attribute III',
-        title: 'Infrastructure & Learning Resources',
-        icon: 'hard-drive',
-        color: 'indigo',
-        summary: `${(data.attributeIII?.purchasedEquipments || []).length} Procured Equipments, ${data.attributeIII?.departmentLibrary?.totalBooks || 0} Library Books`
-      },
-      {
-        key: 'att4_7',
-        attrId: 'att4_7',
-        code: 'Attribute IV & VII',
-        title: 'Grants, Seed Money & Endowments',
-        icon: 'indian-rupee',
-        color: 'emerald',
-        summary: `${(data.attributeIV_VII?.externalFunds || []).length} External Grants, ${(data.attributeIV_VII?.managementFunds || []).length} Management Grants`
-      },
-      {
-        key: 'att5',
-        attrId: 'att5',
-        code: 'Attribute V',
-        title: 'Teaching-Learning, MoUs & Linkages',
-        icon: 'laptop',
-        color: 'blue',
-        summary: `${data.attributeV?.mouCreated?.count || 0} New MoUs, ${data.attributeV?.linkages?.count || 0} Linkages, ${data.attributeV?.eContent?.count || 0} E-Contents`
-      },
-      {
-        key: 'att6_8',
-        attrId: 'att6_8',
-        code: 'Attribute VI & VIII',
-        title: 'Clubs, Exams & Student Awards',
-        icon: 'trophy',
-        color: 'amber',
-        summary: `${(data.attributeVI_VIII?.clubs || []).length} Clubs, ${(data.attributeVI_VIII?.studentAwards || []).length} Student Awards Won`
-      },
-      {
-        key: 'outcomes',
-        attrId: 't10_outcomes',
-        code: 'Table 10',
-        title: 'Student Outcomes (Batch 2026)',
-        icon: 'graduation-cap',
-        color: 'teal',
-        summary: `${data.studentsOutcomes2026?.ug?.strength || 0} UG, ${data.studentsOutcomes2026?.pg?.strength || 0} PG (${data.studentsOutcomes2026?.ug?.onCampus || 0} Placed On-Campus)`
-      },
-      {
-        key: 'att9',
-        attrId: 'att9',
-        code: 'Attribute IX',
-        title: 'Research, Publications & IPR',
-        icon: 'award',
-        color: 'rose',
-        summary: `${(data.attributeIX?.papersPublished?.scopus || 0) + (data.attributeIX?.papersPublished?.wos || 0)} Scopus/WoS Papers, ${(data.attributeIX?.patents?.applied || 0) + (data.attributeIX?.patents?.granted || 0)} Patents`
-      },
-      {
-        key: 'att10',
-        attrId: 'att10',
-        code: 'Attribute X',
-        title: 'Values, Green Campus & CSR',
-        icon: 'leaf',
-        color: 'emerald',
-        summary: `${(data.attributeX?.csrActivities || []).length} CSR Projects, 4 Green Pillars (Paperless, Solar, Water)`
-      },
-      {
-        key: 'activities',
-        attrId: 't2_activities',
-        code: 'Table 2',
-        title: 'Status of Activities Completed',
-        icon: 'check-square',
-        color: 'blue',
-        summary: `${(data.qualitativePresentation?.statusOfActivities?.basedOnAAA2025_2026 || []).length} ATR Action Items Completed`
-      },
-      {
-        key: 'qualitative',
-        attrId: null,
-        code: '30m Flow',
-        title: '30-Min Qualitative Presentation Flow',
-        icon: 'presentation',
-        color: 'purple',
-        summary: 'Signature Achievements, Uniqueness, 2 Flagship Best Practices, SWOC Matrix & Roadmap'
-      },
-      {
-        key: 'pillars',
-        attrId: null,
-        code: 'Pillars',
-        title: 'Crucial Academic Pillars',
-        icon: 'layers',
-        color: 'teal',
-        summary: 'PTM & Feedback, Teaching Innovations, Remedial Coaching & Competitive Exams'
-      },
-      {
-        key: 'panel',
-        attrId: null,
-        code: '15m Rubric',
-        title: '15-Min Panel Review & Evaluation',
-        icon: 'clipboard-check',
-        color: 'amber',
-        summary: `Assigned Grade: ${data.panelReview?.overallGrade || 'A++'} • 10 NAAC Criteria`
-      }
-    ];
-
-    return `
-      <div class="space-y-6">
-        <!-- Department Portal Banner -->
-        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+    this.container.innerHTML = `
+      <div class="w-full space-y-6 animate-fadeIn">
+        
+        <!-- Institutional Academic Light Header Banner -->
+        <div class="bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-amber-50/40 rounded-2xl p-6 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
           <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/30">
-                Department Data Hub
+            <div class="flex items-center flex-wrap gap-2 mb-2">
+              <span class="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                Active Academic Year: ${this.academicYear}
               </span>
-              <span class="text-xs text-blue-200 font-semibold">St. Joseph's College (Autonomous)</span>
+              <span class="text-xs text-blue-800 font-bold flex items-center gap-1">
+                <span>🏛️</span> St. Joseph's College (Autonomous), Tiruchirappalli
+              </span>
+              <span class="text-slate-300">•</span>
+              <span class="text-xs text-blue-900 font-extrabold bg-blue-100/70 px-2.5 py-0.5 rounded-md border border-blue-200/70">${deptName}</span>
             </div>
-            <h2 class="text-2xl font-black">${deptName}</h2>
-            <p class="text-xs text-blue-200 mt-1">
-              Select any attribute below to view, edit metrics, and download formatted Excel and PDF reports.
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-blue-950">
+              Annual Academic Audit (AAA) ${this.academicYear}
+            </h1>
+            <p class="text-xs text-slate-600 mt-1 max-w-4xl font-medium">
+              Institutional Quality Assurance Framework • Fill and update departmental records for Attributes 1 through 10 and Part-A aligned with NAAC Cycle IV criteria.
             </p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <button type="button" onclick="formBuilder.switchTab('complete_dossier')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2">
-              <i data-lucide="file-text" class="w-4 h-4"></i>
-              <span>Complete Department Dossier</span>
-            </button>
-            <button type="button" onclick="app.switchView('dashboard')" class="px-4 py-2 bg-white text-blue-950 hover:bg-blue-50 font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2">
-              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-              <span>Show Dashboard</span>
-            </button>
+          <div class="flex items-center flex-wrap gap-2">
+            <span class="text-xs px-3.5 py-2 bg-white text-blue-950 rounded-xl font-bold flex items-center gap-2 border border-blue-200 shadow-xs">
+              <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
+              <span>11 Academic Cards</span>
+            </span>
           </div>
         </div>
 
-        <!-- Quick Status & Action Strip -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-4">
-            <div>
-              <span class="text-slate-400 text-[10px] font-bold uppercase block">Submission Status</span>
-              <span class="font-bold text-slate-800 uppercase ${status.status === 'submitted' ? 'text-emerald-700' : 'text-amber-700'}">
-                ● ${status.status || 'Draft'}
-              </span>
+        ${this.renderDeadlineNoticeBanner()}
+
+        <!-- Role Access Banner -->
+        ${isAdmin ? `
+          <div class="bg-purple-50 border border-purple-200 rounded-xl px-5 py-3 flex items-center justify-between text-xs text-purple-900 shadow-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
+              <span class="font-bold">🛡️ IQAC Administrator Access:</span>
+              <span class="text-purple-700">Click any card to inspect or customize question text and columns for all departments.</span>
             </div>
-            <div class="border-l pl-4">
-              <span class="text-slate-400 text-[10px] font-bold uppercase block">Data Editing</span>
-              <span class="font-bold ${status.is_locked ? 'text-rose-600' : 'text-emerald-600'}">
-                ${status.is_locked ? '🔒 Locked for Review' : '🔓 Open for Editing'}
-              </span>
-            </div>
-            <div class="border-l pl-4 hidden sm:block">
-              <span class="text-slate-400 text-[10px] font-bold uppercase block">Last Synchronized</span>
-              <span class="font-medium text-slate-600 font-mono text-[11px]">
-                ${status.last_updated ? new Date(status.last_updated).toLocaleString() : 'Just now'}
-              </span>
-            </div>
+            <span class="px-2.5 py-0.5 rounded bg-purple-200 text-purple-900 font-bold text-[10px] uppercase tracking-wider">
+              Admin Edit Permitted
+            </span>
           </div>
-
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="formBuilder.submitDepartmentToIQAC()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-1.5">
-              <i data-lucide="send" class="w-3.5 h-3.5"></i>
-              <span>Submit to IQAC</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Attributes Directory Cards Grid -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center border-b pb-2">
-            <div>
-              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Standardized 10 Attributes Directory</h3>
-              <p class="text-[11px] text-slate-500">Click <strong>"Fill / Edit"</strong> to modify data, <strong>"View"</strong> to inspect, or download individual <strong>Excel</strong> and <strong>PDF</strong> files.</p>
+        ` : `
+          <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between text-xs text-blue-900 shadow-xs">
+            <div class="flex items-center gap-2">
+              <i data-lucide="lock" class="w-4 h-4 text-blue-600"></i>
+              <span class="font-bold">👤 Department Data Entry Mode (${deptName}):</span>
+              <span class="text-blue-700">Questions and headers are fixed. Open each card to fill and save your departmental audit records.</span>
             </div>
+            <span class="px-2.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] uppercase tracking-wider border border-blue-200">
+              Fill Data Only
+            </span>
           </div>
+        `}
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${cards.map(card => {
-              const isAgendaOn = card.attrId && window.dataStore ? window.dataStore.isAttributeEnabled(card.attrId) : true;
-              return `
-                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:border-blue-400 transition space-y-3 flex flex-col justify-between">
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">${card.code}</span>
-                      ${card.attrId ? (isAgendaOn 
-                        ? '<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider">★ In Agenda</span>' 
-                        : '<span class="px-2 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-500 uppercase tracking-wider">Archival</span>'
-                      ) : ''}
-                    </div>
+        <!-- Cards Grid with Exact Finished Count (e.g. 4/11) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
+          ${cards.map(card => {
+            const isPartA = card.id === 'part_a';
+            const { finishedCount, totalSheets, percentage } = this.getCompletionStats(card);
+            const isAllFinished = totalSheets > 0 && finishedCount === totalSheets;
 
-                    <div class="flex items-start gap-2.5">
-                      <span class="p-2 rounded-lg bg-${card.color}-50 text-${card.color}-600 mt-0.5">
-                        <i data-lucide="${card.icon}" class="w-4 h-4"></i>
-                      </span>
-                      <div>
-                        <h4 class="text-xs font-bold text-slate-900 leading-tight">${card.title}</h4>
-                        <p class="text-[11px] text-slate-500 mt-1 leading-snug">${card.summary}</p>
-                      </div>
-                    </div>
+            return `
+              <div class="bg-white rounded-2xl border ${isPartA ? 'border-amber-300 shadow-md ring-1 ring-amber-300/30' : 'border-slate-200 shadow-xs'} hover:shadow-lg hover:border-blue-500 transition-all duration-200 flex flex-col justify-between overflow-hidden group">
+                
+                <div class="p-5">
+                  <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider ${
+                      isPartA 
+                        ? 'bg-amber-100 text-amber-950 border border-amber-300' 
+                        : 'bg-blue-50 text-blue-900 border border-blue-200'
+                    }">
+                      ${card.cardCode}
+                    </span>
+                    
+                    <span class="text-[11px] font-bold ${isAllFinished ? 'text-emerald-700' : 'text-blue-700'} flex items-center gap-1">
+                      <i data-lucide="${isAllFinished ? 'check-circle' : 'file-spreadsheet'}" class="w-3.5 h-3.5 ${isAllFinished ? 'text-emerald-600' : 'text-blue-600'}"></i>
+                      <span>${finishedCount} / ${totalSheets} Finished</span>
+                    </span>
                   </div>
 
-                  <!-- 4 Action Buttons on Each Attribute Card -->
-                  <div class="grid grid-cols-4 gap-1.5 pt-3 border-t border-slate-100 text-[11px]">
-                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'edit')" class="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-center transition flex items-center justify-center gap-1 shadow-sm" title="Edit Form">
-                      <i data-lucide="edit" class="w-3 h-3"></i>
-                      <span>Fill</span>
-                    </button>
-                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'view')" class="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded text-center transition flex items-center justify-center gap-1" title="View Preview">
-                      <i data-lucide="eye" class="w-3 h-3"></i>
-                      <span>View</span>
-                    </button>
-                    <button type="button" onclick="ExcelExporter.exportAttributeToExcel('${card.key}', window.dataStore.data, '${deptName}')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded text-center border border-emerald-200 transition flex items-center justify-center gap-1" title="Download Excel">
-                      <i data-lucide="file-spreadsheet" class="w-3 h-3"></i>
-                      <span>XLS</span>
-                    </button>
-                    <button type="button" onclick="formBuilder.openAttribute('${card.key}', 'view'); window.print();" class="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded text-center border border-purple-200 transition flex items-center justify-center gap-1" title="Download PDF / Print">
-                      <i data-lucide="printer" class="w-3 h-3"></i>
-                      <span>PDF</span>
-                    </button>
+                  <h3 class="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition mb-1.5 flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg ${isPartA ? 'bg-amber-500 text-amber-950' : 'bg-blue-100 text-blue-700'} flex items-center justify-center font-bold shrink-0">
+                      <i data-lucide="${card.icon || 'file-text'}" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="line-clamp-1">${card.cardTitle}</span>
+                  </h3>
+
+                  <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2 mb-3">
+                    ${card.cardSubtitle}
+                  </p>
+
+                  <!-- Progress Bar -->
+                  <div class="space-y-1">
+                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                      <div class="h-full ${isAllFinished ? 'bg-emerald-500' : 'bg-blue-600'} transition-all duration-300" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold">
+                      <span>${percentage}% Finished</span>
+                      <span>${totalSheets} Total ${totalSheets === 1 ? 'Sheet' : 'Sheets'}</span>
+                    </div>
                   </div>
                 </div>
+
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-[10px] font-bold ${isAllFinished ? 'text-emerald-700' : (finishedCount > 0 ? 'text-blue-700' : 'text-slate-400')}">
+                    ${isAllFinished ? 'Completed' : (finishedCount > 0 ? `${finishedCount} of ${totalSheets} filled` : 'Pending entry')}
+                  </span>
+
+                  <button 
+                    type="button" 
+                    onclick="formBuilder.openCard('${card.id}')"
+                    class="px-3.5 py-1.5 ${isPartA ? 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-black' : 'bg-blue-600 hover:bg-blue-700 text-white font-bold'} text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 group-hover:translate-x-0.5"
+                  >
+                    <span>${isPartA ? 'Open Profile' : 'Fill Attribute'}</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+      </div>
+    `;
+  }
+
+  // ================= 2. ACTIVE ATTRIBUTE SHEETS VIEW (FULL WIDE) =================
+  renderActiveAttributeSheetsView(data) {
+    const card = this.getActiveCard();
+    if (!card) {
+      this.backToCards();
+      return;
+    }
+
+    const sheets = card.sheets || [];
+    const activeSheet = this.getActiveSheet() || sheets[0];
+    const isAdmin = this.isAdmin();
+    const deptName = window.dataStore?.activeDepartment || 'Department';
+    const cardData = this.getCardData(card.id);
+    const { finishedCount, totalSheets } = this.getCompletionStats(card);
+
+    this.container.innerHTML = `
+      <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
+        
+        <!-- Academic Royal Header Banner -->
+        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white px-6 py-5 border-b border-blue-950/40 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full shadow-xs">
+          <div class="flex items-center gap-3">
+            <button 
+              type="button" 
+              onclick="formBuilder.backToCards()" 
+              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl text-xs transition flex items-center gap-1.5 border border-slate-700 shrink-0 shadow-xs"
+              title="Return to Attributes Cards"
+            >
+              <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              <span>Back to Cards</span>
+            </button>
+
+            <div>
+              <div class="flex items-center flex-wrap gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">
+                  Annual Academic Audit (AAA) ${this.academicYear}
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-900 text-blue-200 border border-blue-700">
+                  ${card.cardCode}
+                </span>
+                <span class="text-xs text-blue-300 font-semibold">${deptName}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-xs text-emerald-400 font-bold">${finishedCount}/${totalSheets} Finished</span>
+              </div>
+              <h2 class="text-lg md:text-xl font-black tracking-tight flex items-center gap-2">
+                <span>${card.cardTitle}</span>
+              </h2>
+            </div>
+          </div>
+
+          <div class="flex items-center flex-wrap gap-2">
+            <span class="card-save-indicator text-xs px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-saved
+            </span>
+
+            <button type="button" onclick="formBuilder.saveCurrentSheetData('${activeSheet?.key}')" class="text-xs px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i>
+              <span>Save Sheet Data</span>
+            </button>
+
+            <button type="button" onclick="formBuilder.exportCurrentCardToExcel()" class="text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export (.xls)</span>
+            </button>
+          </div>
+        </div>
+
+        ${this.renderDeadlineNoticeBanner()}
+
+        <!-- Role Access Control Banner -->
+        ${isAdmin ? `
+          <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-ping"></span>
+              <span class="text-xs font-bold text-purple-900">IQAC Admin Mode:</span>
+              <span class="text-xs text-purple-700">Toggle question editing to customize question text, subtitles, and column headers.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="formBuilder.toggleAdminEditQuestionsMode()" class="text-xs px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition ${this.adminEditQuestionsMode ? 'bg-purple-600 text-white shadow-sm' : 'bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300'}">
+                <i data-lucide="${this.adminEditQuestionsMode ? 'check' : 'edit-3'}" class="w-3.5 h-3.5"></i>
+                <span>${this.adminEditQuestionsMode ? 'Done Editing Questions' : 'Edit Questions / Column Headers'}</span>
+              </button>
+              ${this.adminEditQuestionsMode ? `
+                <button type="button" onclick="formBuilder.saveQuestionSchema()" class="text-xs px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-1">
+                  <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Save Template
+                </button>
+                <button type="button" onclick="formBuilder.resetQuestionSchemaToDefault()" class="text-xs px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold rounded-lg transition flex items-center gap-1">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset to Excel
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        ` : `
+          <div class="bg-blue-50 border-b border-blue-200 px-6 py-2 flex items-center justify-between text-xs text-blue-900">
+            <div class="flex items-center gap-2">
+              <i data-lucide="lock" class="w-4 h-4 text-blue-600"></i>
+              <span class="font-bold">Department Data Entry Mode (${deptName}):</span>
+              <span class="text-blue-700">Questions are locked. Fill data into the fields below and click <strong>Save Sheet Data</strong> to save.</span>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-200">
+              Read-Only Questions
+            </span>
+          </div>
+        `}
+
+        <!-- Horizontal Sheets Navigation Tabs -->
+        ${sheets.length > 1 ? `
+          <div class="px-4 py-2 bg-slate-100/90 border-b border-slate-200 overflow-x-auto flex items-center gap-1 text-xs font-semibold scrollbar-thin w-full">
+            ${sheets.map(s => {
+              const isActive = s.key === this.activeSheetKey;
+              const sData = cardData[s.key];
+              let rowCount = 0;
+              if (Array.isArray(sData)) rowCount = sData.length;
+              else if (sData && typeof sData === 'object') {
+                Object.values(sData).forEach(v => { if (Array.isArray(v)) rowCount += v.length; });
+              }
+
+              return `
+                <button 
+                  type="button" 
+                  onclick="formBuilder.switchSheet('${s.key}')" 
+                  class="px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 whitespace-nowrap transition ${
+                    isActive 
+                      ? 'bg-blue-600 text-white font-black shadow-sm' 
+                      : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold'
+                  }"
+                >
+                  <i data-lucide="${s.type === 'profile' ? 'user-check' : 'table'}" class="w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-blue-600'}"></i>
+                  <span>${s.sheetName || s.key}</span>
+                  ${rowCount > 0 ? `
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-white/20 text-white font-bold' : 'bg-slate-100 text-slate-600 border border-slate-200 font-bold'}">
+                      ${rowCount}
+                    </span>
+                  ` : ''}
+                </button>
               `;
             }).join('')}
           </div>
+        ` : ''}
+
+        <!-- Active Sheet Content (Full Wide) -->
+        <div class="p-6 space-y-6 w-full">
+          ${activeSheet ? this.renderActiveSheetContent(activeSheet, cardData[activeSheet.key], isAdmin) : '<div class="text-slate-500">No sheet selected.</div>'}
         </div>
-      </div>
-    `;
-  }
 
-  renderCompleteDossierTab(data) {
-    const dept = data.departmentInfo || {};
-    const deptName = dept.departmentName || 'Department';
-    const sch = dept.scholars || {};
-    const ftM = sch.fullTime?.male || 0;
-    const ftF = sch.fullTime?.female || 0;
-    const ptM = sch.partTime?.male || 0;
-    const ptF = sch.partTime?.female || 0;
-    const totalScholars = ftM + ftF + ptM + ptF;
-
-    return `
-      <div class="space-y-6 max-w-5xl mx-auto">
-        <!-- Top Dossier Action Header -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 no-print">
+        <!-- Footer Bar with Dedicated Save Button and Quick Prev/Next Navigation -->
+        <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 w-full">
           <div class="flex items-center gap-2">
-            <button type="button" onclick="formBuilder.switchTab('hub')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1.5 transition">
-              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-              <span>Attributes Hub</span>
+            <button 
+              type="button" 
+              onclick="formBuilder.backToCards()" 
+              class="text-xs px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1.5 shadow-xs"
+            >
+              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              <span>All Cards</span>
             </button>
-            <span class="px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
-              Complete Department Audit Dossier
-            </span>
-          </div>
 
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="ExcelExporter.exportCompleteDepartmentToExcel(window.dataStore.data, '${deptName}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-              <span>Download Complete Excel (.xls)</span>
-            </button>
-            <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
-              <i data-lucide="printer" class="w-4 h-4"></i>
-              <span>Print Complete Dossier (PDF)</span>
-            </button>
-            <button type="button" onclick="formBuilder.submitDepartmentToIQAC()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1.5 transition">
-              <i data-lucide="send" class="w-4 h-4"></i>
-              <span>Submit to IQAC</span>
-            </button>
-            <button type="button" onclick="app.switchView('dashboard')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 transition">
-              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-              <span>Dashboard</span>
+            <button 
+              type="button" 
+              onclick="formBuilder.saveCurrentSheetData('${activeSheet?.key}')" 
+              class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl transition flex items-center gap-1.5 shadow-sm"
+            >
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span>Save ${activeSheet?.sheetName || 'Sheet'} Data</span>
             </button>
           </div>
+
+          ${sheets.length > 1 ? `
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="formBuilder.navigateSheet(-1)" class="text-xs px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-300 rounded-lg transition flex items-center gap-1">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
+              </button>
+              <span class="text-xs text-slate-500 font-medium">
+                ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
+              </span>
+              <button type="button" onclick="formBuilder.navigateSheet(1)" class="text-xs px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center gap-1">
+                Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          ` : '<div></div>'}
         </div>
 
-        <!-- Official Institutional Header for Print & Dossier -->
-        <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-2 border-t-8 border-t-blue-900">
-          <span class="text-xs uppercase tracking-widest font-black text-blue-950">Internal Quality Assurance Cell (IQAC)</span>
-          <h1 class="text-2xl font-black text-slate-900">St. Joseph's College (Autonomous), Tiruchirappalli</h1>
-          <h2 class="text-lg font-bold text-blue-700">Annual Academic and Administrative Audit (AAA) 2026 - 2027</h2>
-          <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-600">
-            <span><strong>Department:</strong> ${deptName}</span>
-            <span><strong>Head of Department:</strong> ${dept.hodName || 'Dr. HOD'}</span>
-            <span><strong>Established:</strong> ${dept.establishedYear || 'N/A'}</span>
-            <span><strong>Audit Grade:</strong> <strong class="text-purple-700 font-bold">${data.panelReview?.overallGrade || 'A++'}</strong></span>
-          </div>
-        </div>
-
-        <!-- Section 1: Research Scholars Matrix -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">1. Table 1: Research Scholars Matrix</h3>
-          <div class="grid grid-cols-4 gap-3 text-xs">
-            <div class="p-3 bg-slate-50 rounded border">Full-Time Male: <strong>${ftM}</strong></div>
-            <div class="p-3 bg-slate-50 rounded border">Full-Time Female: <strong>${ftF}</strong></div>
-            <div class="p-3 bg-slate-50 rounded border">Part-Time Male: <strong>${ptM}</strong></div>
-            <div class="p-3 bg-slate-50 rounded border">Part-Time Female: <strong>${ptF}</strong></div>
-            <div class="col-span-4 p-3 bg-blue-50 border border-blue-200 rounded font-bold text-blue-900 flex justify-between">
-              <span>Total Research Scholars:</span>
-              <span class="text-sm font-black font-mono">${totalScholars} Scholars</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: 10 Attributes High-Level Summary Matrix -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">2. Consolidated 10-Attribute Audit Matrix</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att I: Value Added & Certificate Courses:</span>
-              <strong class="text-slate-900">${(data.attributeI?.vac || []).length} VACs, ${(data.attributeI?.cc || []).length} CCs</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att II: Faculty Ph.D. / NET / SET:</span>
-              <strong class="text-slate-900">${data.attributeII?.netSet?.count || 0} Qualified</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att III: Lab Equipments Procured:</span>
-              <strong class="text-indigo-700 font-bold">${(data.attributeIII?.purchasedEquipments || []).length} items</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att III: Department Library Books:</span>
-              <strong class="text-purple-700 font-bold">${data.attributeIII?.departmentLibrary?.totalBooks || 0} books</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att IV & VII: External Grants Mobilized:</span>
-              <strong class="text-emerald-700 font-bold">${(data.attributeIV_VII?.externalFunds || []).length} Grants</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att V: Active MoUs & Linkages:</span>
-              <strong class="text-blue-700 font-bold">${data.attributeV?.mouCreated?.count || 0} new, ${data.attributeV?.linkages?.count || 0} linkages</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att VI & VIII: Clubs & Student Awards:</span>
-              <strong class="text-amber-700 font-bold">${(data.attributeVI_VIII?.clubs || []).length} clubs, ${(data.attributeVI_VIII?.studentAwards || []).length} awards</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Table 10: Student Placements (Batch 2026):</span>
-              <strong class="text-teal-700 font-bold">${data.studentsOutcomes2026?.ug?.onCampus || 0} UG On-Campus</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att IX: Scopus & WoS Research Papers:</span>
-              <strong class="text-purple-700 font-bold">${(data.attributeIX?.papersPublished?.scopus || 0) + (data.attributeIX?.papersPublished?.wos || 0)} papers</strong>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border flex justify-between">
-              <span>Att X: CSR Projects & Green Campus:</span>
-              <strong class="text-emerald-700 font-bold">${(data.attributeX?.csrActivities || []).length} CSR drives</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Committee Evaluation & Signatures -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 border-b pb-2">3. Audit Committee Endorsement & Sign-Off</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-2">
-            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
-              <span class="text-[10px] text-slate-500 uppercase block font-semibold">External Expert</span>
-              <span class="font-bold text-slate-800 block">${data.panelReview?.expertName || 'Prof. External Expert'}</span>
-              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
-              <span class="text-[10px] text-slate-500 uppercase block font-semibold">School Dean</span>
-              <span class="font-bold text-slate-800 block">${data.panelReview?.deanName || 'School Dean'}</span>
-              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
-              <span class="text-[10px] text-slate-500 uppercase block font-semibold">IQAC Coordinator</span>
-              <span class="font-bold text-slate-800 block">${data.panelReview?.iqacCoordinator || 'Dr. IQAC Coordinator'}</span>
-              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
-            </div>
-            <div class="p-3 bg-slate-50 rounded border text-center space-y-1">
-              <span class="text-[10px] text-slate-500 uppercase block font-semibold">Principal</span>
-              <span class="font-bold text-slate-800 block">${data.panelReview?.administratorName || 'Rev. Dr. Principal'}</span>
-              <div class="pt-8 border-t border-slate-300 text-[10px] text-slate-400">Signature</div>
-            </div>
-          </div>
-        </div>
       </div>
     `;
   }
 
-    // TAB 1: Department Profile & Table 1 Scholars Matrix
-  renderProfileTab(info) {
-    const scholars = info.scholars || { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
-    const ftM = scholars.fullTime?.male || 0;
-    const ftF = scholars.fullTime?.female || 0;
-    const ftTotal = ftM + ftF;
-    const ptM = scholars.partTime?.male || 0;
-    const ptF = scholars.partTime?.female || 0;
-    const ptTotal = ptM + ptF;
-    const maleTotal = ftM + ptM;
-    const femaleTotal = ftF + ptF;
-    const totalScholars = ftTotal + ptTotal || info.researchScholarsCount || 0;
-
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Department Profile & Institutional Identity</h3>
-            <p class="text-xs text-slate-500">Official identifiers for the Annual Academic Audit 2026 - 2027.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">questions.docx - Table 1</span>
-        </div>
-
-        ${this.renderAgendaBanner('t1_scholars', 'Table 1 - Research Scholars Profile')}
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Institution Name</label>
-            <input type="text" value="${info.collegeName || ''}" onchange="formBuilder.updateField('departmentInfo.collegeName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Accreditation / Status</label>
-            <input type="text" value="${info.accreditation || ''}" onchange="formBuilder.updateField('departmentInfo.accreditation', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Audit Academic Year</label>
-            <input type="text" value="${info.academicYear || '2026 - 2027'}" onchange="formBuilder.updateField('departmentInfo.academicYear', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Department Name</label>
-            <input type="text" value="${info.departmentName || ''}" onchange="formBuilder.updateField('departmentInfo.departmentName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom font-medium text-blue-900" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">School</label>
-            <input type="text" value="${info.school || ''}" onchange="formBuilder.updateField('departmentInfo.school', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Head of the Department (HOD)</label>
-            <input type="text" value="${info.hodName || ''}" onchange="formBuilder.updateField('departmentInfo.hodName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Audit Scheduled Date</label>
-            <input type="date" value="${info.auditDate || ''}" onchange="formBuilder.updateField('departmentInfo.auditDate', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Total Faculty Members</label>
-            <input type="number" value="${info.facultyCount || 0}" onchange="formBuilder.updateField('departmentInfo.facultyCount', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Total UG Students Enrolled</label>
-            <input type="number" value="${info.studentCountUG || 0}" onchange="formBuilder.updateField('departmentInfo.studentCountUG', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Total PG Students Enrolled</label>
-            <input type="number" value="${info.studentCountPG || 0}" onchange="formBuilder.updateField('departmentInfo.studentCountPG', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg form-input-custom" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Total Research Scholars (Table 1)</label>
-            <input type="number" readonly value="${totalScholars}" class="w-full text-xs px-3 py-2 border border-purple-300 rounded-lg bg-purple-50 font-bold text-purple-900 cursor-not-allowed" title="Auto-computed from Table 1 Scholars Matrix below" />
-          </div>
-        </div>
-
-        <!-- Table 1: Research Scholars Matrix (From Word Doc Table 1) -->
-        <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-200 mt-4">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-purple-950 flex items-center gap-1.5">
-                <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-600"></i>
-                Table 1: Research Scholars Matrix (FT & PT x Male & Female)
-              </h4>
-              <p class="text-[11px] text-slate-500">Official doctoral scholars enrollment distribution as required by IQAC AAA questionnaire.</p>
-            </div>
-            <span class="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded-lg shadow-sm">
-              Total: ${totalScholars} Scholars
-            </span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left bg-white rounded-lg border border-purple-200 overflow-hidden">
-              <thead class="bg-purple-100/70 text-purple-950 font-bold border-b border-purple-200">
-                <tr>
-                  <th class="p-2.5">Scholars Type</th>
-                  <th class="p-2.5 text-center">Male</th>
-                  <th class="p-2.5 text-center">Female</th>
-                  <th class="p-2.5 text-center font-black">Total</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-purple-100">
-                <tr>
-                  <td class="p-2.5 font-bold text-slate-700">FT (Full Time)</td>
-                  <td class="p-2.5 text-center">
-                    <input type="number" min="0" value="${scholars.fullTime?.male || 0}" onchange="formBuilder.updateScholarField('fullTime', 'male', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-blue-700" />
-                  </td>
-                  <td class="p-2.5 text-center">
-                    <input type="number" min="0" value="${scholars.fullTime?.female || 0}" onchange="formBuilder.updateScholarField('fullTime', 'female', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-purple-700" />
-                  </td>
-                  <td class="p-2.5 text-center font-black text-slate-800 bg-purple-50/40">${ftTotal}</td>
-                </tr>
-                <tr>
-                  <td class="p-2.5 font-bold text-slate-700">PT (Part Time)</td>
-                  <td class="p-2.5 text-center">
-                    <input type="number" min="0" value="${scholars.partTime?.male || 0}" onchange="formBuilder.updateScholarField('partTime', 'male', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-blue-700" />
-                  </td>
-                  <td class="p-2.5 text-center">
-                    <input type="number" min="0" value="${scholars.partTime?.female || 0}" onchange="formBuilder.updateScholarField('partTime', 'female', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 text-center border border-slate-300 rounded font-bold text-purple-700" />
-                  </td>
-                  <td class="p-2.5 text-center font-black text-slate-800 bg-purple-50/40">${ptTotal}</td>
-                </tr>
-                <tr class="bg-purple-100/60 font-black text-slate-900 border-t border-purple-200">
-                  <td class="p-2.5">Total</td>
-                  <td class="p-2.5 text-center text-blue-900">${maleTotal}</td>
-                  <td class="p-2.5 text-center text-purple-900">${femaleTotal}</td>
-                  <td class="p-2.5 text-center text-emerald-800 text-sm">${totalScholars}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3 mt-4">
-          <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"></i>
-          <div class="text-xs text-blue-900 leading-relaxed">
-            <span class="font-semibold">60-Minute Presentation Standard:</span>
-            First 15 minutes is strictly allocated for the Departmental Dashboard presentation covering numeric and graphical highlights across all Attributes. The subsequent 30 minutes is for deep-dive qualitative impact, followed by 15 minutes of panel interaction with Administrators, IQAC, School Dean, and External Expert.
-          </div>
-        </div>
-      </div>
-    `;
+  navigateSheet(direction) {
+    const card = this.getActiveCard();
+    if (!card || !card.sheets || card.sheets.length <= 1) return;
+    const currIdx = card.sheets.findIndex(s => s.key === this.activeSheetKey);
+    let nextIdx = currIdx + direction;
+    if (nextIdx < 0) nextIdx = card.sheets.length - 1;
+    if (nextIdx >= card.sheets.length) nextIdx = 0;
+    this.switchSheet(card.sheets[nextIdx].key);
   }
 
-  // TAB: Status of Activities Completed (Table 2 from Word Doc)
-  renderActivitiesTab(qual) {
-    if (!qual) qual = {};
-    if (!qual.statusOfActivities) {
-      qual.statusOfActivities = {
-        basedOnAAA2025_2026: [],
-        basedOnFacultyOrientation2026: []
-      };
+  // ================= SHEET RENDER DISPATCHER =================
+  renderActiveSheetContent(sheet, sheetData, isAdmin) {
+    const isEditQuestions = isAdmin && this.adminEditQuestionsMode;
+
+    switch (sheet.type) {
+      case 'profile':
+        return this.renderProfileSheet(sheet, sheetData, isEditQuestions);
+      case 'multi_table':
+        return this.renderMultiTableSheet(sheet, sheetData, isEditQuestions);
+      case 'batch_table':
+        return this.renderBatchTableSheet(sheet, sheetData, isEditQuestions);
+      case 'table':
+      default:
+        return this.renderStandardTableSheet(sheet, sheetData, isEditQuestions);
     }
-    const act = qual.statusOfActivities;
-    const listAAA = act.basedOnAAA2025_2026 || [];
-    const listFOP = act.basedOnFacultyOrientation2026 || [];
+  }
 
-    const completedAAA = listAAA.filter(x => x.status === 'Completed').length;
-    const completedFOP = listFOP.filter(x => x.status === 'Completed').length;
+  // Helper to render cell input or dropdown with NO placeholder
+  renderCellControl(val, onchangeCode, colLabel, colKey, isSno = false, sheetKey = '', rowIdx = 0) {
+    const isLocked = this.isSubmissionLocked();
 
+    if (isSno) {
+      return `
+        <input 
+          type="text" 
+          value="${val !== undefined ? val : ''}" 
+          class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded text-center font-bold text-slate-500 bg-slate-50 focus:outline-none"
+          readonly 
+        />
+      `;
+    }
+
+    // 1. Dropdown Column
+    const options = this.getDropdownOptions(colLabel, colKey);
+    if (options && Array.isArray(options)) {
+      const currentVal = String(val !== undefined ? val : '').trim().toUpperCase();
+      return `
+        <select 
+          onchange="${onchangeCode}" 
+          ${isLocked ? 'disabled' : ''}
+          class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition bg-white font-semibold text-slate-800 ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+        >
+          ${options.map(opt => `
+            <option value="${opt}" ${currentVal === opt.toUpperCase() ? 'selected' : ''}>
+              ${opt === '' ? '-- Select --' : opt}
+            </option>
+          `).join('')}
+        </select>
+      `;
+    }
+
+    // 2. Split Date Range (From - To) Calendar Inputs
+    if (this.isDateRangeColumn(colLabel, colKey)) {
+      const [fromDate, toDate] = this.parseDateRange(val);
+      return `
+        <div class="flex flex-col gap-1 w-full min-w-[200px]">
+          <div class="flex items-center gap-1.5 bg-slate-50 p-1 rounded border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 w-10 shrink-0">From:</span>
+            <input 
+              type="date" 
+              value="${fromDate}" 
+              ${isLocked ? 'disabled' : ''}
+              onchange="formBuilder.updateDateRangeCell('${sheetKey}', ${rowIdx}, '${colKey}', this.value, '${toDate}', 'from')"
+              class="w-full text-xs px-1.5 py-1 border border-slate-300 rounded font-mono bg-white focus:border-blue-500 focus:outline-none ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+            />
+          </div>
+          <div class="flex items-center gap-1.5 bg-slate-50 p-1 rounded border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 w-10 shrink-0">To:</span>
+            <input 
+              type="date" 
+              value="${toDate}" 
+              ${isLocked ? 'disabled' : ''}
+              onchange="formBuilder.updateDateRangeCell('${sheetKey}', ${rowIdx}, '${colKey}', '${fromDate}', this.value, 'to')"
+              class="w-full text-xs px-1.5 py-1 border border-slate-300 rounded font-mono bg-white focus:border-blue-500 focus:outline-none ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+            />
+          </div>
+        </div>
+      `;
+    }
+
+    // 3. Single Date Calendar Picker
+    if (this.isDateColumn(colLabel, colKey)) {
+      const dateVal = this.formatDateForInput(val);
+      return `
+        <input 
+          type="date" 
+          value="${dateVal}" 
+          ${isLocked ? 'disabled' : ''}
+          onchange="${onchangeCode}" 
+          class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded font-mono bg-white hover:border-slate-400 focus:border-blue-500 focus:outline-none transition text-slate-800 ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+        />
+      `;
+    }
+
+    // 4. Strict Numeric Input (Numbers Only, NO letters allowed)
+    if (this.isNumericColumn(colLabel, colKey)) {
+      return `
+        <input 
+          type="text" 
+          inputmode="numeric" 
+          pattern="[0-9.]*" 
+          value="${val !== undefined ? val : ''}" 
+          ${isLocked ? 'disabled' : ''}
+          onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46"
+          oninput="this.value = this.value.replace(/[^0-9.]/g, '')"
+          onchange="${onchangeCode}" 
+          class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded text-right font-mono bg-white hover:border-slate-400 focus:border-blue-500 focus:outline-none transition text-slate-800 ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+        />
+      `;
+    }
+
+    // 5. Standard Text Input with Sentence Case (First Letter Capital) & NO placeholder
     return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Status of Activities Completed</h3>
-            <p class="text-xs text-slate-500">Compliance and progress tracking based on previous audits and institutional commitments.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 2</span>
-        </div>
-
-        ${this.renderAgendaBanner('t2_activities', 'Table 2 - Status of Activities')}
-
-        <!-- Section A: Based on AAA 2025 - 2026 -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-                1. Based on AAA 2025 – 2026
-              </h4>
-              <p class="text-[11px] text-slate-500">Action taken on recommendations and commitments of the previous Academic Audit.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
-                ${completedAAA} / ${listAAA.length} Completed
-              </span>
-              <button type="button" onclick="formBuilder.addActivityRow('basedOnAAA2025_2026')" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
-              </button>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            ${listAAA.map((item, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-4">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Event / Activity</label>
-                  <input type="text" placeholder="Event / Activity name" value="${item.eventActivity || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'eventActivity', this.value)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Month & Year</label>
-                  <input type="text" placeholder="e.g. July 2026" value="${item.monthYear || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'monthYear', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Status</label>
-                  <select onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'status', this.value)" class="w-full text-xs p-1.5 border rounded font-bold ${item.status === 'Completed' ? 'text-emerald-700' : 'text-amber-700'}">
-                    <option value="Completed" ${item.status === 'Completed' ? 'selected' : ''}>Completed</option>
-                    <option value="Not Completed" ${item.status === 'Not Completed' ? 'selected' : ''}>Not Completed</option>
-                  </select>
-                </div>
-                <div class="md:col-span-3">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Remarks</label>
-                  <input type="text" placeholder="Remarks & tangible impact" value="${item.remarks || ''}" onchange="formBuilder.updateActivityItem('basedOnAAA2025_2026', ${idx}, 'remarks', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="md:col-span-1 text-right">
-                  <button type="button" onclick="formBuilder.removeActivityRow('basedOnAAA2025_2026', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-            ${listAAA.length === 0 ? '<div class="p-3 text-center text-xs text-slate-400 bg-white rounded border border-dashed">No activities listed yet. Click "+ Add Activity" above.</div>' : ''}
-          </div>
-        </div>
-
-        <!-- Section B: Based on Faculty Orientation Programme June 2026 -->
-        <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
-                <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
-                2. Based on Data provided during Faculty Orientation Programme – June 2026
-              </h4>
-              <p class="text-[11px] text-slate-500">Activities executed against commitments presented during the annual Faculty Orientation.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
-                ${completedFOP} / ${listFOP.length} Completed
-              </span>
-              <button type="button" onclick="formBuilder.addActivityRow('basedOnFacultyOrientation2026')" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
-              </button>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            ${listFOP.map((item, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-2 bg-white p-2.5 rounded-lg border border-blue-200 items-center">
-                <div class="md:col-span-4">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Event / Activity</label>
-                  <input type="text" placeholder="Event / Activity name" value="${item.eventActivity || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'eventActivity', this.value)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Month & Year</label>
-                  <input type="text" placeholder="e.g. August 2026" value="${item.monthYear || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'monthYear', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Status</label>
-                  <select onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'status', this.value)" class="w-full text-xs p-1.5 border rounded font-bold ${item.status === 'Completed' ? 'text-emerald-700' : 'text-amber-700'}">
-                    <option value="Completed" ${item.status === 'Completed' ? 'selected' : ''}>Completed</option>
-                    <option value="Not Completed" ${item.status === 'Not Completed' ? 'selected' : ''}>Not Completed</option>
-                  </select>
-                </div>
-                <div class="md:col-span-3">
-                  <label class="text-[10px] font-semibold text-slate-500 block md:hidden">Remarks</label>
-                  <input type="text" placeholder="Remarks & tangible impact" value="${item.remarks || ''}" onchange="formBuilder.updateActivityItem('basedOnFacultyOrientation2026', ${idx}, 'remarks', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="md:col-span-1 text-right">
-                  <button type="button" onclick="formBuilder.removeActivityRow('basedOnFacultyOrientation2026', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-            ${listFOP.length === 0 ? '<div class="p-3 text-center text-xs text-slate-400 bg-white rounded border border-dashed">No activities listed yet. Click "+ Add Activity" above.</div>' : ''}
-          </div>
-        </div>
-      </div>
+      <input 
+        type="text" 
+        value="${val !== undefined ? val : ''}" 
+        ${isLocked ? 'disabled' : ''}
+        oninput="this.value = this.value ? (this.value.charAt(0).toUpperCase() + this.value.slice(1)) : ''"
+        onchange="${onchangeCode}" 
+        style="text-transform: capitalize;"
+        class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded hover:border-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition bg-white text-slate-800 capitalize ${isLocked ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}"
+      />
     `;
   }
 
-  // TAB 2: Attribute I - Curriculum Design
-  renderAtt1Tab(att1) {
+  // ================= 1. SHEET: PART-A (PROFILE) =================
+  renderProfileSheet(sheet, sheetData, isEditQuestions) {
+    const prof = sheetData?.profile || sheet.profileQuestions || {};
+    const facRows = sheetData?.facultyDetails || sheet.facultyDetails?.rows || [];
+    const stuRows = sheetData?.studentDetails || sheet.studentDetails?.rows || [];
+
     return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+      <div class="space-y-6 w-full">
+        <!-- Sheet Header -->
+        <div class="border-b border-slate-200 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute I - Curriculum Design</h3>
-            <p class="text-xs text-slate-500">Value Added Courses (VAC), Certificate Courses (CC), Indian Knowledge Systems (IKS), Visits, Internships, and MOOCs.</p>
+            ${isEditQuestions ? `
+              <div class="space-y-2 mb-3">
+                <label class="block text-xs font-bold text-purple-900 uppercase">Edit Sheet Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-base font-bold px-3 py-1.5 border border-purple-300 rounded-lg bg-purple-50" />
+                <label class="block text-xs font-bold text-purple-900 uppercase">Edit Subtitle / Notice (Admin)</label>
+                <input type="text" value="${sheet.subtitle || ''}" onchange="formBuilder.updateSchemaInstruction('${sheet.key}', this.value)" class="w-full text-xs px-3 py-1.5 border border-purple-300 rounded-lg bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
+                  MANDATORY PROFILE
+                </span>
+                <span class="text-xs text-slate-400">Academic Year: ${this.academicYear}</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">${sheet.title}</h3>
+              <p class="text-xs text-rose-600 font-semibold mt-0.5">${sheet.subtitle || ''}</p>
+            `}
           </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 1 & 2</span>
+
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm self-start">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save Profile Data</span>
+          </button>
         </div>
 
-        ${this.renderAgendaBanner('attr1', 'Attribute I - Curriculum Design')}
-
-        <!-- 1. Value Added Courses (VAC) -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
-              1. Value Added Courses (VAC)
-            </h4>
-            <button type="button" onclick="formBuilder.addVacRow()" class="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add VAC
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${(att1.vac || []).map((vac, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-2">
-                  <input type="text" placeholder="Course Title" value="${vac.name || ''}" onchange="formBuilder.updateArrayItem('attributeI.vac', ${idx}, 'name', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                </div>
-                <div>
-                  <input type="number" placeholder="Enrolled" value="${vac.studentsEnrolled || 0}" onchange="formBuilder.updateArrayItem('attributeI.vac', ${idx}, 'studentsEnrolled', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" title="Students Enrolled" />
-                </div>
-                <div>
-                  <input type="number" placeholder="Fee ₹" value="${vac.feeCollected || 0}" onchange="formBuilder.updateArrayItem('attributeI.vac', ${idx}, 'feeCollected', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" title="Fee Collected" />
-                </div>
-                <div class="flex items-center gap-1">
-                  <input type="text" placeholder="Agencies Involved" value="${vac.agenciesInvolved || ''}" onchange="formBuilder.updateArrayItem('attributeI.vac', ${idx}, 'agenciesInvolved', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                  <button type="button" onclick="formBuilder.removeArrayItem('attributeI.vac', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- 2. Certificate Courses (CC) -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="file-badge" class="w-4 h-4 text-blue-600"></i>
-              2. Certificate Courses (CC)
-            </h4>
-            <button type="button" onclick="formBuilder.addCcRow()" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add CC
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${(att1.cc || []).map((cc, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-2">
-                  <input type="text" placeholder="Certificate Course Title" value="${cc.name || ''}" onchange="formBuilder.updateArrayItem('attributeI.cc', ${idx}, 'name', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                </div>
-                <div>
-                  <input type="number" placeholder="Enrolled" value="${cc.studentsEnrolled || 0}" onchange="formBuilder.updateArrayItem('attributeI.cc', ${idx}, 'studentsEnrolled', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                </div>
-                <div>
-                  <input type="number" placeholder="Fee ₹" value="${cc.feeCollected || 0}" onchange="formBuilder.updateArrayItem('attributeI.cc', ${idx}, 'feeCollected', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                </div>
-                <div class="flex items-center gap-1">
-                  <input type="text" placeholder="Agencies Involved" value="${cc.agenciesInvolved || ''}" onchange="formBuilder.updateArrayItem('attributeI.cc', ${idx}, 'agenciesInvolved', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-                  <button type="button" onclick="formBuilder.removeArrayItem('attributeI.cc', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- 3. Indian Knowledge Systems (IKS) & Field Visits -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-3 flex items-center gap-1.5">
-              <i data-lucide="compass" class="w-4 h-4 text-amber-600"></i>
-              3. IKS Activities (Indian Knowledge Systems)
-            </h4>
-            <div class="grid grid-cols-4 gap-2 mb-3">
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Seminar</label>
-                <input type="number" value="${att1.iks?.seminarCount || 0}" onchange="formBuilder.updateField('attributeI.iks.seminarCount', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Workshop</label>
-                <input type="number" value="${att1.iks?.workshopCount || 0}" onchange="formBuilder.updateField('attributeI.iks.workshopCount', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Field Visit</label>
-                <input type="number" value="${att1.iks?.fieldVisitCount || 0}" onchange="formBuilder.updateField('attributeI.iks.fieldVisitCount', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Benefitted</label>
-                <input type="number" value="${att1.iks?.studentsBenefitted || 0}" onchange="formBuilder.updateField('attributeI.iks.studentsBenefitted', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-600 font-medium mb-1">Details & Specific Highlights</label>
-              <textarea rows="2" onchange="formBuilder.updateField('attributeI.iks.details', this.value)" class="w-full text-xs p-2 border border-slate-300 rounded">${att1.iks?.details || ''}</textarea>
-            </div>
-          </div>
-
-          <!-- 4. Visits -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-1.5">
-              <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600"></i>
-              4. Visits (Industrial / Educational / Field Work)
-            </h4>
-            <div class="grid grid-cols-4 gap-2 mb-3">
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Industrial</label>
-                <input type="number" value="${att1.visits?.industrial || 0}" onchange="formBuilder.updateField('attributeI.visits.industrial', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Educational</label>
-                <input type="number" value="${att1.visits?.educational || 0}" onchange="formBuilder.updateField('attributeI.visits.educational', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Field Work</label>
-                <input type="number" value="${att1.visits?.fieldWork || 0}" onchange="formBuilder.updateField('attributeI.visits.fieldWork', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Field Visit</label>
-                <input type="number" value="${att1.visits?.fieldVisit || 0}" onchange="formBuilder.updateField('attributeI.visits.fieldVisit', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 mb-2">
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Students Participated</label>
-                <input type="number" value="${att1.visits?.studentsParticipated || 0}" onchange="formBuilder.updateField('attributeI.visits.studentsParticipated', parseInt(this.value)||0)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-600 font-medium">Class & Section</label>
-                <input type="text" value="${att1.visits?.classSec || ''}" onchange="formBuilder.updateField('attributeI.visits.classSec', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-              </div>
-            </div>
-            <div>
-              <input type="text" placeholder="Visit destinations & highlights" value="${att1.visits?.details || ''}" onchange="formBuilder.updateField('attributeI.visits.details', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Internship / Outside Curriculum Projects -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
-            <i data-lucide="briefcase" class="w-4 h-4 text-purple-600"></i>
-            5. Internships / Projects with Industries / Other Institutions (Outside Curriculum)
+        <!-- Section 1: Department Info Fields (NO placeholders) -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-4 flex items-center gap-2">
+            <i data-lucide="building" class="w-4 h-4 text-blue-600"></i>
+            Department Profile Information
           </h4>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-700 mb-1">Students Involved (Count)</label>
-              <input type="number" value="${att1.internships?.studentsInvolved || 0}" onchange="formBuilder.updateField('attributeI.internships.studentsInvolved', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" />
-            </div>
-            <div class="md:col-span-3">
-              <label class="block text-xs font-medium text-slate-700 mb-1">Industry Details & Organizations</label>
-              <input type="text" value="${att1.internships?.details || ''}" onchange="formBuilder.updateField('attributeI.internships.details', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" placeholder="Mention companies, research institutes, stipends..." />
-            </div>
-          </div>
-        </div>
-
-        <!-- 6. Parent Teacher Meetings (PTM) (Table 3 Row 7 from Word Doc) -->
-        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-              <i data-lucide="users" class="w-4 h-4 text-amber-600"></i>
-              6. Parent Teacher Meetings (PTM)
-            </h4>
-            <span class="text-[11px] text-amber-800 font-semibold">Table 3 Row 7</span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Number of PTMs</label>
-              <input type="number" min="0" value="${att1.ptm?.numberOfPTMs || 0}" onchange="formBuilder.updateField('attributeI.ptm.numberOfPTMs', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" />
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Department</label>
+              <input type="text" value="${prof.department || ''}" onchange="formBuilder.updateProfileField('department', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Number of Parents Participated</label>
-              <input type="number" min="0" value="${att1.ptm?.parentsParticipated || 0}" onchange="formBuilder.updateField('attributeI.ptm.parentsParticipated', parseInt(this.value)||0)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" />
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Shift</label>
+              <select onchange="formBuilder.updateProfileField('shift', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-semibold">
+                <option value="Shift I" ${prof.shift === 'Shift I' ? 'selected' : ''}>Shift I</option>
+                <option value="Shift II" ${prof.shift === 'Shift II' ? 'selected' : ''}>Shift II</option>
+                <option value="Shift I & Shift II" ${prof.shift === 'Shift I & Shift II' || !prof.shift ? 'selected' : ''}>Shift I & Shift II (Both)</option>
+              </select>
             </div>
             <div class="md:col-span-2">
-              <label class="block text-xs font-semibold text-slate-700 mb-1">PTM Progress / Feedback Highlights</label>
-              <input type="text" value="${att1.ptm?.details || ''}" onchange="formBuilder.updateField('attributeI.ptm.details', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg" placeholder="Mention mentoring outcomes, attendance review, parent feedback..." />
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Programmes Offered (UG, PG, PhD)</label>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">UG Programmes:</span>
+                  <input type="text" value="${prof.programmes?.ug || ''}" onchange="formBuilder.updateProfileField('programmes.ug', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">PG Programmes:</span>
+                  <input type="text" value="${prof.programmes?.pg || ''}" onchange="formBuilder.updateProfileField('programmes.pg', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">PhD Programmes:</span>
+                  <input type="text" value="${prof.programmes?.phd || ''}" onchange="formBuilder.updateProfileField('programmes.phd', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Name of the Head / Coordinator</label>
+              <input type="text" value="${prof.hodName || ''}" onchange="formBuilder.updateProfileField('hodName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium" />
             </div>
           </div>
         </div>
 
-        <!-- 7. MOOC Registrations and Completions (Table 4 from Word Doc) -->
-        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-3 flex items-center gap-1.5">
-            <i data-lucide="globe" class="w-4 h-4 text-blue-600"></i>
-            7. Students Registering / Completing MOOC (NPTEL / SWAYAM / Coursera - Table 4)
+        <!-- Section 2: Faculty Details Table -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+            Faculty Details
           </h4>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left bg-white rounded-lg overflow-hidden border border-slate-200">
-              <thead class="bg-slate-100 text-slate-700 font-semibold">
-                <tr>
-                  <th class="p-2.5 border-b">Programme</th>
-                  <th class="p-2.5 border-b">Total Students</th>
-                  <th class="p-2.5 border-b">Reg. Cycle I (July-Oct)</th>
-                  <th class="p-2.5 border-b">Reg. Cycle II (Nov-Apr)</th>
-                  <th class="p-2.5 border-b">Completed Cycle I</th>
-                  <th class="p-2.5 border-b">Completed Cycle II</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200">
-                <tr>
-                  <td class="p-2.5 font-bold text-slate-800">UG</td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.ug?.totalStudents || 0}" onchange="formBuilder.updateField('attributeI.moocs.ug.totalStudents', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.ug?.cycle1_registered || 0}" onchange="formBuilder.updateField('attributeI.moocs.ug.cycle1_registered', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.ug?.cycle2_registered || 0}" onchange="formBuilder.updateField('attributeI.moocs.ug.cycle2_registered', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.ug?.cycle1_completed || 0}" onchange="formBuilder.updateField('attributeI.moocs.ug.cycle1_completed', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.ug?.cycle2_completed || 0}" onchange="formBuilder.updateField('attributeI.moocs.ug.cycle2_completed', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                </tr>
-                <tr>
-                  <td class="p-2.5 font-bold text-slate-800">PG</td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.pg?.totalStudents || 0}" onchange="formBuilder.updateField('attributeI.moocs.pg.totalStudents', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.pg?.cycle1_registered || 0}" onchange="formBuilder.updateField('attributeI.moocs.pg.cycle1_registered', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.pg?.cycle2_registered || 0}" onchange="formBuilder.updateField('attributeI.moocs.pg.cycle2_registered', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.pg?.cycle1_completed || 0}" onchange="formBuilder.updateField('attributeI.moocs.pg.cycle1_completed', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                  <td class="p-2"><input type="number" value="${att1.moocs?.pg?.cycle2_completed || 0}" onchange="formBuilder.updateField('attributeI.moocs.pg.cycle2_completed', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // TAB 3: Attribute II - Faculty Resources
-  renderAtt2Tab(att2) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute II - Faculty Resources</h3>
-            <p class="text-xs text-slate-500">Qualifications, Editorial & Review, Professional bodies, Resource Persons, FDPs, Fellowships, and Abroad visits.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 3</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr2', 'Attribute II - Faculty Resources')}
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Degrees & NET/SET -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-slate-700">1. Higher Degrees & Eligibility</h4>
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-xs font-medium text-slate-700">Faculty Receiving New Degrees (Ph.D./PDF)</label>
-                <input type="number" value="${att2.newDegrees?.count || 0}" onchange="formBuilder.updateField('attributeII.newDegrees.count', parseInt(this.value)||0)" class="w-20 text-xs p-1 border rounded" />
-              </div>
-              <input type="text" placeholder="Details of faculty and degrees" value="${att2.newDegrees?.details || ''}" onchange="formBuilder.updateField('attributeII.newDegrees.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-xs font-medium text-slate-700">NET / SET / JRF / Others Qualified</label>
-                <input type="number" value="${att2.netSetJrf?.count || 0}" onchange="formBuilder.updateField('attributeII.netSetJrf.count', parseInt(this.value)||0)" class="w-20 text-xs p-1 border rounded" />
-              </div>
-              <input type="text" placeholder="Details of exam cleared" value="${att2.netSetJrf?.details || ''}" onchange="formBuilder.updateField('attributeII.netSetJrf.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <!-- Recognized Bodies & Research Journals -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-slate-700">2. Recognized Bodies & Editorial Roles</h4>
-            <div>
-              <label class="text-xs font-medium text-slate-700 block mb-1">Member in Recognized Bodies</label>
-              <div class="grid grid-cols-2 gap-2 mb-1">
-                <input type="number" placeholder="BoS Count" value="${att2.recognizedBodies?.bosCount || 0}" onchange="formBuilder.updateField('attributeII.recognizedBodies.bosCount', parseInt(this.value)||0)" class="text-xs p-1 border rounded" title="BoS Memberships" />
-                <input type="number" placeholder="External Audit Member Count" value="${att2.recognizedBodies?.externalAuditCount || 0}" onchange="formBuilder.updateField('attributeII.recognizedBodies.externalAuditCount', parseInt(this.value)||0)" class="text-xs p-1 border rounded" title="External Audit Members" />
-              </div>
-              <input type="text" placeholder="Details of universities / colleges" value="${att2.recognizedBodies?.details || ''}" onchange="formBuilder.updateField('attributeII.recognizedBodies.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-
-            <div>
-              <label class="text-xs font-medium text-slate-700 block mb-1">Contribution to Research Journals</label>
-              <div class="grid grid-cols-2 gap-2 mb-1">
-                <input type="number" placeholder="Reviewers Count" value="${att2.researchJournals?.reviewersCount || 0}" onchange="formBuilder.updateField('attributeII.researchJournals.reviewersCount', parseInt(this.value)||0)" class="text-xs p-1 border rounded" />
-                <input type="number" placeholder="Editors Count" value="${att2.researchJournals?.editorsCount || 0}" onchange="formBuilder.updateField('attributeII.researchJournals.editorsCount', parseInt(this.value)||0)" class="text-xs p-1 border rounded" />
-              </div>
-              <input type="text" placeholder="Journal titles" value="${att2.researchJournals?.details || ''}" onchange="formBuilder.updateField('attributeII.researchJournals.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Resource Person & Professional Bodies -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-          <h4 class="text-xs font-bold uppercase text-slate-700">3. Resource Person Engagements</h4>
-          <div class="grid grid-cols-5 gap-2">
-            <div>
-              <label class="text-[11px] block font-medium">International</label>
-              <input type="number" value="${att2.resourcePerson?.international || 0}" onchange="formBuilder.updateField('attributeII.resourcePerson.international', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">National</label>
-              <input type="number" value="${att2.resourcePerson?.national || 0}" onchange="formBuilder.updateField('attributeII.resourcePerson.national', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">State</label>
-              <input type="number" value="${att2.resourcePerson?.state || 0}" onchange="formBuilder.updateField('attributeII.resourcePerson.state', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Regional</label>
-              <input type="number" value="${att2.resourcePerson?.regional || 0}" onchange="formBuilder.updateField('attributeII.resourcePerson.regional', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Institutional</label>
-              <input type="number" value="${att2.resourcePerson?.institutional || 0}" onchange="formBuilder.updateField('attributeII.resourcePerson.institutional', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Mention Faculty served at International / National Level</label>
-            <input type="text" value="${att2.resourcePerson?.servedFacultyNames || ''}" onchange="formBuilder.updateField('attributeII.resourcePerson.servedFacultyNames', this.value)" class="w-full text-xs p-2 border rounded" placeholder="Faculty name, event title, host institution..." />
-          </div>
-        </div>
-
-        <!-- FDP & Industrial Training -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">4. Faculty Development Programmes (FDP)</h4>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-[11px] block text-slate-600">MMTTC / AICTE / UGC</label>
-                <input type="number" value="${att2.fdp?.mmttc_aicte_ugc || 0}" onchange="formBuilder.updateField('attributeII.fdp.mmttc_aicte_ugc', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block text-slate-600">Other Institutions</label>
-                <input type="number" value="${att2.fdp?.otherInstitutions || 0}" onchange="formBuilder.updateField('attributeII.fdp.otherInstitutions', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block text-slate-600">Through College FDC</label>
-                <input type="number" value="${att2.fdp?.throughFdc || 0}" onchange="formBuilder.updateField('attributeII.fdp.throughFdc', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block text-slate-600">Institutional Level</label>
-                <input type="number" value="${att2.fdp?.institutionalLevel || 0}" onchange="formBuilder.updateField('attributeII.fdp.institutionalLevel', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <input type="text" placeholder="FDP highlights / themes" value="${att2.fdp?.details || ''}" onchange="formBuilder.updateField('attributeII.fdp.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-
-          <!-- Industrial Training, Fellowships, Abroad -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">5. Industry Training & Abroad Visits</h4>
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[11px] text-slate-700 font-medium">Gone for Industrial Training</label>
-                <input type="number" value="${att2.industrialTraining?.count || 0}" onchange="formBuilder.updateField('attributeII.industrialTraining.count', parseInt(this.value)||0)" class="w-20 text-xs p-1 border rounded" />
-              </div>
-              <input type="text" placeholder="Sponsored by & Amount Sponsored" value="${att2.industrialTraining?.details || ''}" onchange="formBuilder.updateField('attributeII.industrialTraining.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[11px] text-slate-700 font-medium">Abroad Visits for Academic Purpose</label>
-                <input type="number" value="${att2.abroadVisits?.count || 0}" onchange="formBuilder.updateField('attributeII.abroadVisits.count', parseInt(this.value)||0)" class="w-20 text-xs p-1 border rounded" />
-              </div>
-              <input type="text" placeholder="Mention faculty names, countries visited" value="${att2.abroadVisits?.facultyNames || ''}" onchange="formBuilder.updateField('attributeII.abroadVisits.facultyNames', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Awards, Fellowships, Social Projects & MOOCs -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Awards from Recognized Agencies</label>
-            <input type="number" value="${att2.awards?.count || 0}" onchange="formBuilder.updateField('attributeII.awards.count', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded mb-1" />
-            <input type="text" placeholder="Details of awards" value="${att2.awards?.details || ''}" onchange="formBuilder.updateField('attributeII.awards.details', this.value)" class="w-full text-xs p-1 border rounded" />
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Fellowships (National / Int)</label>
-            <div class="flex gap-1 mb-1">
-              <input type="number" placeholder="Nat" value="${att2.fellowships?.national || 0}" onchange="formBuilder.updateField('attributeII.fellowships.national', parseInt(this.value)||0)" class="w-1/2 text-xs p-1 border rounded" />
-              <input type="number" placeholder="Int" value="${att2.fellowships?.international || 0}" onchange="formBuilder.updateField('attributeII.fellowships.international', parseInt(this.value)||0)" class="w-1/2 text-xs p-1 border rounded" />
-            </div>
-            <input type="text" placeholder="Details" value="${att2.fellowships?.details || ''}" onchange="formBuilder.updateField('attributeII.fellowships.details', this.value)" class="w-full text-xs p-1 border rounded" />
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Social Sector Projects</label>
-            <input type="number" value="${att2.socialSectorProjects?.count || 0}" onchange="formBuilder.updateField('attributeII.socialSectorProjects.count', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded mb-1" />
-            <input type="text" placeholder="Community / NGO project details" value="${att2.socialSectorProjects?.details || ''}" onchange="formBuilder.updateField('attributeII.socialSectorProjects.details', this.value)" class="w-full text-xs p-1 border rounded" />
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Faculty Enrolled in MOOC</label>
-            <div class="flex gap-1 mb-1">
-              <input type="number" placeholder="Reg" value="${att2.facultyMooc?.registered || 0}" onchange="formBuilder.updateField('attributeII.facultyMooc.registered', parseInt(this.value)||0)" class="w-1/2 text-xs p-1 border rounded" />
-              <input type="number" placeholder="Comp" value="${att2.facultyMooc?.completed || 0}" onchange="formBuilder.updateField('attributeII.facultyMooc.completed', parseInt(this.value)||0)" class="w-1/2 text-xs p-1 border rounded" />
-            </div>
-            <input type="text" placeholder="NPTEL/Coursera details" value="${att2.facultyMooc?.details || ''}" onchange="formBuilder.updateField('attributeII.facultyMooc.details', this.value)" class="w-full text-xs p-1 border rounded" />
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-
-  // TAB: Attribute III - Infrastructure & Learning Resources
-  renderAtt3Tab(att3) {
-    const safeAtt3 = att3 || {};
-    const equipments = safeAtt3.purchasedEquipments || [];
-    const library = safeAtt3.departmentLibrary || {
-      booksPurchased2026_2027: 0,
-      totalBooks: 0,
-      nationalJournalsPurchased2026_2027: 0,
-      internationalJournalsPurchased2026_2027: 0,
-      totalJournals: 0,
-      dailyFacultyFootfall: 0,
-      dailyStudentFootfall: 0
-    };
-
-    const totalEquipmentSpend = equipments.reduce((sum, item) => sum + (Number(item.amountINR) || 0), 0);
-
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute III - Infrastructure & Learning Resources</h3>
-            <p class="text-xs text-slate-500">Laboratory Equipment Purchases (3.1) and Department Library Resources & Footfall (3.2).</p>
-          </div>
-          <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">Templates_AAA_2026-2027 - Attribute-III</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr3', 'Attribute III - Infrastructure & Learning Resources')}
-
-        <!-- Quick Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-indigo-700 uppercase">Equipments Purchased</span>
-            <div class="text-xl font-bold text-indigo-900 mt-1">${equipments.length} <span class="text-xs font-normal text-indigo-600">items</span></div>
-          </div>
-          <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-blue-700 uppercase">Equipment Investment</span>
-            <div class="text-xl font-bold text-blue-900 mt-1">₹${(totalEquipmentSpend / 100000).toFixed(2)} <span class="text-xs font-normal text-blue-600">Lakhs</span></div>
-          </div>
-          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-emerald-700 uppercase">Dept Library Books</span>
-            <div class="text-xl font-bold text-emerald-900 mt-1">${library.totalBooks || 0} <span class="text-xs font-normal text-emerald-600">(+${library.booksPurchased2026_2027 || 0} new)</span></div>
-          </div>
-          <div class="bg-purple-50 border border-purple-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-purple-700 uppercase">Daily Library Footfall</span>
-            <div class="text-xl font-bold text-purple-900 mt-1">${(library.dailyFacultyFootfall || 0) + (library.dailyStudentFootfall || 0)} <span class="text-xs font-normal text-purple-600">visits/day</span></div>
-          </div>
-        </div>
-
-        <!-- Section 3.1: Purchased Equipments -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="hard-drive" class="w-4 h-4 text-indigo-600"></i>
-                3.1 Laboratory Equipment Purchased in A.Y. 2026-2027
-              </h4>
-              <p class="text-[11px] text-slate-500 mt-0.5">List of major equipment, software licenses, and research hardware procured.</p>
-            </div>
-            <button type="button" onclick="formBuilder.addFacilityRow()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Equipment
-            </button>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left text-slate-700">
-              <thead class="text-[11px] text-slate-600 uppercase bg-slate-200/70 border-b">
-                <tr>
-                  <th class="p-2">#</th>
-                  <th class="p-2">Lab / Facility Name</th>
-                  <th class="p-2">Equipment Name & Specs</th>
-                  <th class="p-2">Type</th>
-                  <th class="p-2">Date Purchased</th>
-                  <th class="p-2">Cost (₹)</th>
-                  <th class="p-2 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 bg-white">
-                ${equipments.length === 0 ? `
-                  <tr><td colspan="7" class="text-center py-4 text-slate-400 italic">No equipment entries recorded. Click 'Add Equipment' above to add.</td></tr>
-                ` : equipments.map((eq, idx) => `
-                  <tr>
-                    <td class="p-2 font-semibold text-slate-400">${idx + 1}</td>
-                    <td class="p-2">
-                      <input type="text" value="${eq.labName || ''}" placeholder="e.g. AI Research Lab" onchange="formBuilder.updateFacilityItem(${idx}, 'labName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                    </td>
-                    <td class="p-2">
-                      <input type="text" value="${eq.equipmentName || ''}" placeholder="Equipment / Model" onchange="formBuilder.updateFacilityItem(${idx}, 'equipmentName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                    </td>
-                    <td class="p-2">
-                      <select onchange="formBuilder.updateFacilityItem(${idx}, 'type', this.value)" class="w-full text-xs p-1.5 border rounded">
-                        <option value="Major Equipment" ${eq.type === 'Major Equipment' ? 'selected' : ''}>Major Equipment</option>
-                        <option value="Minor Equipment" ${eq.type === 'Minor Equipment' ? 'selected' : ''}>Minor Equipment</option>
-                        <option value="Software License" ${eq.type === 'Software License' ? 'selected' : ''}>Software License</option>
-                        <option value="Compute Server" ${eq.type === 'Compute Server' ? 'selected' : ''}>Compute Server</option>
-                        <option value="Other" ${eq.type === 'Other' ? 'selected' : ''}>Other</option>
-                      </select>
-                    </td>
-                    <td class="p-2">
-                      <input type="date" value="${eq.purchaseDate || ''}" onchange="formBuilder.updateFacilityItem(${idx}, 'purchaseDate', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                    </td>
-                    <td class="p-2">
-                      <input type="number" value="${eq.amountINR || 0}" onchange="formBuilder.updateFacilityItem(${idx}, 'amountINR', parseInt(this.value)||0)" class="w-28 text-xs p-1.5 border rounded font-mono font-medium" />
-                    </td>
-                    <td class="p-2 text-center">
-                      <button type="button" onclick="formBuilder.removeFacilityRow(${idx})" class="text-red-500 hover:text-red-700 p-1" title="Delete">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                      </button>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Section 3.2: Department Library -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-          <div class="border-b border-slate-200 pb-2">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-              <i data-lucide="book" class="w-4 h-4 text-purple-600"></i>
-              3.2 Department Library Resources & Usage
-            </h4>
-            <p class="text-[11px] text-slate-500 mt-0.5">Volumes, print journals, e-subscriptions, and average daily footfall.</p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Books & Volumes -->
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3">
-              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="book-marked" class="w-3.5 h-3.5 text-blue-600"></i>
-                Books & Titles
-              </span>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Purchased in 2026-2027</label>
-                  <input type="number" value="${library.booksPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('booksPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Total Books in Dept</label>
-                  <input type="number" value="${library.totalBooks || 0}" onchange="formBuilder.updateLibraryField('totalBooks', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Journals & Subscriptions -->
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3">
-              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="newspaper" class="w-3.5 h-3.5 text-emerald-600"></i>
-                Journals Subscribed
-              </span>
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">National New</label>
-                  <input type="number" value="${library.nationalJournalsPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('nationalJournalsPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Int'l New</label>
-                  <input type="number" value="${library.internationalJournalsPurchased2026_2027 || 0}" onchange="formBuilder.updateLibraryField('internationalJournalsPurchased2026_2027', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Total Journals</label>
-                  <input type="number" value="${library.totalJournals || 0}" onchange="formBuilder.updateLibraryField('totalJournals', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Daily Footfall -->
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3 md:col-span-2">
-              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="users" class="w-3.5 h-3.5 text-purple-600"></i>
-                Average Daily Footfall (Visits / Day)
-              </span>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Faculty Footfall</label>
-                  <input type="number" value="${library.dailyFacultyFootfall || 0}" onchange="formBuilder.updateLibraryField('dailyFacultyFootfall', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div>
-                  <label class="text-[11px] text-slate-500 block mb-1">Student Footfall</label>
-                  <input type="number" value="${library.dailyStudentFootfall || 0}" onchange="formBuilder.updateLibraryField('dailyStudentFootfall', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-    // TAB 4: Attribute 4 & 7 - Grants, Management Funds, Seed Money & Endowments
-  renderAtt4_7Tab(att4_7) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute 4 & 7 - Infrastructure & Resource Mobilization</h3>
-            <p class="text-xs text-slate-500">Funds from External Agencies, Management Grants, Seed Money, and Endowments.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 4</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr4', 'Attribute IV & VII - Grants & Seed Money')}
-
-        <!-- 1. External Funds -->
-        <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-xs font-bold uppercase text-emerald-900 flex items-center gap-1.5">
-              <i data-lucide="external-link" class="w-4 h-4 text-emerald-600"></i>
-              1. Funds Received from External Agencies (DST, SERB, AICTE, UGC, ICSSR, etc.)
-            </h4>
-            <button type="button" onclick="formBuilder.addExternalFundRow()" class="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add External Grant
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${(att4_7.externalFunds || []).map((fund, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div>
-                  <select onchange="formBuilder.updateArrayItem('attributeIV_VII.externalFunds', ${idx}, 'category', this.value)" class="w-full text-xs p-1.5 border rounded">
-                    <option value="Conduct of FDP/Conference/Seminar" ${fund.category?.includes('Conduct') ? 'selected' : ''}>FDP/Conf/Seminar</option>
-                    <option value="Research Projects" ${fund.category?.includes('Projects') ? 'selected' : ''}>Research Projects</option>
-                  </select>
-                </div>
-                <div>
-                  <input type="text" placeholder="Funding Agency" value="${fund.agency || ''}" onchange="formBuilder.updateArrayItem('attributeIV_VII.externalFunds', ${idx}, 'agency', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div>
-                  <input type="number" placeholder="Amount ₹" value="${fund.amount || 0}" onchange="formBuilder.updateArrayItem('attributeIV_VII.externalFunds', ${idx}, 'amount', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-emerald-800" />
-                </div>
-                <div>
-                  <input type="text" placeholder="Faculty Involved / PI" value="${fund.facultyInvolved || ''}" onchange="formBuilder.updateArrayItem('attributeIV_VII.externalFunds', ${idx}, 'facultyInvolved', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="flex justify-end">
-                  <button type="button" onclick="formBuilder.removeArrayItem('attributeIV_VII.externalFunds', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- 2. Management Funds -->
-        <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-xs font-bold uppercase text-blue-900 flex items-center gap-1.5">
-              <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
-              2. Funds Received from College Management
-            </h4>
-            <button type="button" onclick="formBuilder.addManagementFundRow()" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Management Grant
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${(att4_7.managementFunds || []).map((fund, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div>
-                  <select onchange="formBuilder.updateArrayItem('attributeIV_VII.managementFunds', ${idx}, 'category', this.value)" class="w-full text-xs p-1.5 border rounded">
-                    <option value="Conduct of FDP/Conference/Seminar" ${fund.category?.includes('Conduct') ? 'selected' : ''}>Conduct of FDP/Conf</option>
-                    <option value="Projects" ${fund.category === 'Projects' ? 'selected' : ''}>Projects Seed</option>
-                    <option value="Attending Conference/Workshop/Seminar" ${fund.category?.includes('Attending') ? 'selected' : ''}>Attending Conference</option>
-                  </select>
-                </div>
-                <div>
-                  <input type="number" placeholder="Amount ₹" value="${fund.amount || 0}" onchange="formBuilder.updateArrayItem('attributeIV_VII.managementFunds', ${idx}, 'amount', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-blue-800" />
-                </div>
-                <div>
-                  <input type="text" placeholder="Faculty Involved / Benefitted" value="${fund.facultyInvolved || ''}" onchange="formBuilder.updateArrayItem('attributeIV_VII.managementFunds', ${idx}, 'facultyInvolved', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="flex justify-end">
-                  <button type="button" onclick="formBuilder.removeArrayItem('attributeIV_VII.managementFunds', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- 3. Seed Money & Endowments -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-amber-900 flex items-center gap-1.5">
-              <i data-lucide="sprout" class="w-4 h-4 text-amber-600"></i>
-              3. Seed Money (Projects, Patents, Copyright)
-            </h4>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Projects ₹</label>
-                <input type="number" value="${att4_7.seedMoney?.projectsAmount || 0}" onchange="formBuilder.updateField('attributeIV_VII.seedMoney.projectsAmount', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Patents ₹</label>
-                <input type="number" value="${att4_7.seedMoney?.patentsAmount || 0}" onchange="formBuilder.updateField('attributeIV_VII.seedMoney.patentsAmount', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Copyright ₹</label>
-                <input type="number" value="${att4_7.seedMoney?.copyrightAmount || 0}" onchange="formBuilder.updateField('attributeIV_VII.seedMoney.copyrightAmount', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium mb-1">Details of Seed Support</label>
-              <input type="text" value="${att4_7.seedMoney?.details || ''}" onchange="formBuilder.updateField('attributeIV_VII.seedMoney.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="landmark" class="w-4 h-4 text-slate-600"></i>
-              4. Endowments Established (A.Y. 2026 - 2027)
-            </h4>
-            <div class="flex items-center gap-2">
-              <label class="text-xs font-medium text-slate-700">Endowments Count</label>
-              <input type="number" value="${att4_7.endowments?.count || 0}" onchange="formBuilder.updateField('attributeIV_VII.endowments.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium mb-1">Endowment Details (Title, Donor, Purpose, Corpus)</label>
-              <textarea rows="3" onchange="formBuilder.updateField('attributeIV_VII.endowments.details', this.value)" class="w-full text-xs p-2 border rounded">${att4_7.endowments?.details || ''}</textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // TAB 5: Attribute V - Learning and Teaching
-  renderAtt5Tab(att5) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute V - Learning and Teaching</h3>
-            <p class="text-xs text-slate-500">MoUs, Linkages, and Four-Quadrant E-Contents.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 5</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr5', 'Attribute V - Learning & Teaching')}
-
-        <div class="space-y-4">
-          <!-- New MoUs -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-bold text-slate-700 uppercase">1. MoU Created in A.Y. 2026-2027</label>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-600 font-medium">Count:</span>
-                <input type="number" value="${att5.mouCreated?.count || 0}" onchange="formBuilder.updateField('attributeV.mouCreated.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Activities conducted under new MoUs..." onchange="formBuilder.updateField('attributeV.mouCreated.activitiesConducted', this.value)" class="w-full text-xs p-2 border rounded">${att5.mouCreated?.activitiesConducted || ''}</textarea>
-          </div>
-
-          <!-- Previous Active MoUs -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-bold text-slate-700 uppercase">2. Previous Active MoUs</label>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-600 font-medium">Count:</span>
-                <input type="number" value="${att5.previousMous?.count || 0}" onchange="formBuilder.updateField('attributeV.previousMous.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Activities conducted in this A.Y. under previous MoUs..." onchange="formBuilder.updateField('attributeV.previousMous.activitiesConducted', this.value)" class="w-full text-xs p-2 border rounded">${att5.previousMous?.activitiesConducted || ''}</textarea>
-          </div>
-
-          <!-- Linkages -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-bold text-slate-700 uppercase">3. Linkages Created in A.Y. 2026-2027</label>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-600 font-medium">Count:</span>
-                <input type="number" value="${att5.linkages?.count || 0}" onchange="formBuilder.updateField('attributeV.linkages.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Activities conducted through industry/institutional linkages..." onchange="formBuilder.updateField('attributeV.linkages.activitiesConducted', this.value)" class="w-full text-xs p-2 border rounded">${att5.linkages?.activitiesConducted || ''}</textarea>
-          </div>
-
-          <!-- E-Content (Four Quadrant) -->
-          <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
-            <div class="flex items-center justify-between mb-2">
-              <div>
-                <label class="text-xs font-bold text-blue-900 uppercase">4. E-Contents (Four Quadrant) Created</label>
-                <p class="text-[11px] text-blue-700">Video, Text/E-book, Self-Assessment, Discussion forum.</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-blue-800 font-medium">Count:</span>
-                <input type="number" value="${att5.eContent?.count || 0}" onchange="formBuilder.updateField('attributeV.eContent.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Details of e-content modules created, LMS links, topics..." onchange="formBuilder.updateField('attributeV.eContent.details', this.value)" class="w-full text-xs p-2 border rounded">${att5.eContent?.details || ''}</textarea>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // TAB 6: Attribute VI & VIII - Extended Curricular
-  renderAtt6_8Tab(att6_8) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute VI & VIII - Extended Curricular Engagements</h3>
-            <p class="text-xs text-slate-500">Club Activities, Dual Programmes, Professional Chapters, Competitive Exams, and Awards.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 6 & 7</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr6', 'Attribute VI & VIII - Extension, Clubs & Awards')}
-
-        <!-- Clubs List -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="users-round" class="w-4 h-4 text-indigo-600"></i>
-              1. Department Clubs & Associations
-            </h4>
-            <button type="button" onclick="formBuilder.addClubRow()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Club
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${(att6_8.clubs || []).map((club, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-2">
-                  <input type="text" placeholder="Club Name" value="${club.clubName || ''}" onchange="formBuilder.updateArrayItem('attributeVI_VIII.clubs', ${idx}, 'clubName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div>
-                  <input type="number" placeholder="UG Count" value="${club.studentsUG || 0}" onchange="formBuilder.updateArrayItem('attributeVI_VIII.clubs', ${idx}, 'studentsUG', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" title="UG Students" />
-                </div>
-                <div>
-                  <input type="number" placeholder="PG Count" value="${club.studentsPG || 0}" onchange="formBuilder.updateArrayItem('attributeVI_VIII.clubs', ${idx}, 'studentsPG', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" title="PG Students" />
-                </div>
-                <div>
-                  <input type="text" placeholder="Activities conducted this A.Y." value="${club.activities || ''}" onchange="formBuilder.updateArrayItem('attributeVI_VIII.clubs', ${idx}, 'activities', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                </div>
-                <div class="flex justify-end">
-                  <button type="button" onclick="formBuilder.removeArrayItem('attributeVI_VIII.clubs', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- Degrees & Professional Chapters & Competitive Exams -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">2. Pursuing Other Degrees</h4>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-600 font-medium">Count:</span>
-              <input type="number" value="${att6_8.pursuingOtherDegrees?.count || 0}" onchange="formBuilder.updateField('attributeVI_VIII.pursuingOtherDegrees.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <textarea rows="2" placeholder="Details of add-on programmes..." onchange="formBuilder.updateField('attributeVI_VIII.pursuingOtherDegrees.details', this.value)" class="w-full text-xs p-2 border rounded">${att6_8.pursuingOtherDegrees?.details || ''}</textarea>
-          </div>
-
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">3. Student Chapters Established</h4>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-600 font-medium">Count:</span>
-              <input type="number" value="${att6_8.studentChapters?.count || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentChapters.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <textarea rows="2" placeholder="Professional chapter names (IEEE, CSI, ACM)..." onchange="formBuilder.updateField('attributeVI_VIII.studentChapters.details', this.value)" class="w-full text-xs p-2 border rounded">${att6_8.studentChapters?.details || ''}</textarea>
-          </div>
-
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">4. Competitive Exams</h4>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Appeared</label>
-                <input type="number" value="${att6_8.competitiveExams?.appeared || 0}" onchange="formBuilder.updateField('attributeVI_VIII.competitiveExams.appeared', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Qualified</label>
-                <input type="number" value="${att6_8.competitiveExams?.qualified || 0}" onchange="formBuilder.updateField('attributeVI_VIII.competitiveExams.qualified', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-emerald-700" />
-              </div>
-            </div>
-            <input type="text" placeholder="GATE, NET, UPSC, TNPSC details" value="${att6_8.competitiveExams?.details || ''}" onchange="formBuilder.updateField('attributeVI_VIII.competitiveExams.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-        </div>
-
-        <!-- Student Participation & Awards Breakdown -->
-        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 space-y-3">
-          <h4 class="text-xs font-bold uppercase text-amber-900 flex items-center gap-1.5">
-            <i data-lucide="trophy" class="w-4 h-4 text-amber-600"></i>
-            5. Students' Participation and Awards
-          </h4>
-          <div class="grid grid-cols-5 gap-2">
-            <div>
-              <label class="text-[11px] block font-medium">Sports</label>
-              <input type="number" value="${att6_8.studentParticipationAwards?.sports || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.sports', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Cultural</label>
-              <input type="number" value="${att6_8.studentParticipationAwards?.cultural || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.cultural', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">External Academic</label>
-              <input type="number" value="${att6_8.studentParticipationAwards?.externalAcademicEvents || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.externalAcademicEvents', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Extra-Curricular</label>
-              <input type="number" value="${att6_8.studentParticipationAwards?.extraCurricularEvents || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.extraCurricularEvents', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Co-Curricular</label>
-              <input type="number" value="${att6_8.studentParticipationAwards?.coCurricularEvents || 0}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.coCurricularEvents', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-700 block mb-1">Prizes, Championship Trophies & Recognition Details</label>
-            <input type="text" value="${att6_8.studentParticipationAwards?.details || ''}" onchange="formBuilder.updateField('attributeVI_VIII.studentParticipationAwards.details', this.value)" class="w-full text-xs p-2 border rounded" placeholder="State/National/Inter-collegiate award details..." />
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // TAB: Students Outcomes – 2026 Passed out (Table 10 from Word Doc)
-  renderOutcomesTab(outcomes) {
-    if (!outcomes) {
-      outcomes = {
-        ug: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
-        pg: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
-        phd: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 }
-      };
-    }
-
-    const ug = outcomes.ug || {};
-    const pg = outcomes.pg || {};
-    const phd = outcomes.phd || {};
-
-    const totalStrength = (ug.strength || 0) + (pg.strength || 0) + (phd.strength || 0);
-    const totalOnCampus = (ug.onCampus || 0) + (pg.onCampus || 0) + (phd.onCampus || 0);
-    const totalOffCampus = (ug.offCampus || 0) + (pg.offCampus || 0) + (phd.offCampus || 0);
-    const totalPlaced = totalOnCampus + totalOffCampus;
-    const totalHigherStudies = (ug.higherStudies || 0) + (pg.higherStudies || 0) + (phd.higherStudies || 0);
-    const totalEntrepreneur = (ug.entrepreneur || 0) + (pg.entrepreneur || 0) + (phd.entrepreneur || 0);
-    const totalOthers = (ug.others || 0) + (pg.others || 0) + (phd.others || 0);
-    const totalPositive = totalPlaced + totalHigherStudies + totalEntrepreneur;
-
-    const placementRate = totalStrength > 0 ? ((totalPlaced / totalStrength) * 100).toFixed(1) : '0.0';
-    const progressionRate = totalStrength > 0 ? ((totalPositive / totalStrength) * 100).toFixed(1) : '0.0';
-
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Students Outcomes – 2026 Passed out</h3>
-            <p class="text-xs text-slate-500">Graduating batch placement, higher education progression, entrepreneurship, and career pathways.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">questions.docx - Table 10</span>
-        </div>
-
-        ${this.renderAgendaBanner('t10_outcomes', 'Table 10 - Student Outcomes 2026')}
-
-        <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 block">Graduating Strength</span>
-            <span class="text-2xl font-black text-blue-900 block mt-1">${totalStrength}</span>
-            <span class="text-[11px] text-blue-700">UG (${ug.strength||0}) + PG (${pg.strength||0}) + PhD (${phd.strength||0})</span>
-          </div>
-          <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Total Placements</span>
-            <span class="text-2xl font-black text-emerald-900 block mt-1">${totalPlaced}</span>
-            <span class="text-[11px] text-emerald-700 font-semibold">${placementRate}% Placement Rate</span>
-          </div>
-          <div class="bg-purple-50 p-3.5 rounded-xl border border-purple-200">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-800 block">Higher Studies</span>
-            <span class="text-2xl font-black text-purple-900 block mt-1">${totalHigherStudies}</span>
-            <span class="text-[11px] text-purple-700 font-semibold">${totalStrength > 0 ? ((totalHigherStudies/totalStrength)*100).toFixed(1) : 0}% Progression</span>
-          </div>
-          <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">Startups / Entrepreneurs</span>
-            <span class="text-2xl font-black text-amber-900 block mt-1">${totalEntrepreneur}</span>
-            <span class="text-[11px] text-amber-700 font-semibold">${progressionRate}% Overall Positive</span>
-          </div>
-        </div>
-
-        <!-- Table 10 Input Matrix -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="graduation-cap" class="w-4 h-4 text-blue-600"></i>
-              Table 10: Students Outcomes – 2026 Passed out Breakdown
-            </h4>
-            <span class="text-xs text-slate-500 font-medium">Auto-calculates totals & success rates</span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-slate-100 text-slate-700 font-semibold border-b">
-                <tr>
-                  <th class="p-3">Programme</th>
-                  <th class="p-3 text-center">Batch Strength</th>
-                  <th class="p-3 text-center">On Campus</th>
-                  <th class="p-3 text-center">OFF Campus</th>
-                  <th class="p-3 text-center">Higher Studies</th>
-                  <th class="p-3 text-center">Entrepreneur</th>
-                  <th class="p-3 text-center">Others</th>
-                  <th class="p-3 text-center font-bold">Placed %</th>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white w-full">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <th class="p-2.5">Faculty Details / Category</th>
+                  <th class="p-2.5 w-28 text-center">Male</th>
+                  <th class="p-2.5 w-28 text-center">Female</th>
+                  <th class="p-2.5 w-28 text-center bg-slate-200/50">Total</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                ${['ug', 'pg', 'phd'].map(prog => {
-                  const pData = outcomes[prog] || {};
-                  const str = pData.strength || 0;
-                  const pl = (pData.onCampus || 0) + (pData.offCampus || 0);
-                  const pRate = str > 0 ? ((pl / str) * 100).toFixed(1) : '0.0';
-                  const label = prog === 'ug' ? 'UG (Undergraduate)' : (prog === 'pg' ? 'PG (Postgraduate)' : 'PhD (Doctoral)');
+                ${facRows.map((fr, idx) => {
+                  const m = Number(fr.male) || 0;
+                  const f = Number(fr.female) || 0;
                   return `
-                    <tr class="hover:bg-slate-50">
-                      <td class="p-3 font-bold text-slate-800">${label}</td>
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="p-2.5 font-medium text-slate-800">${fr.label}</td>
                       <td class="p-2 text-center">
-                        <input type="number" min="0" value="${str}" onchange="formBuilder.updateOutcomeField('${prog}', 'strength', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-slate-800" />
+                        <input type="number" min="0" value="${m}" onchange="formBuilder.updateFacultyDetail(${idx}, 'male', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700" />
                       </td>
                       <td class="p-2 text-center">
-                        <input type="number" min="0" value="${pData.onCampus || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'onCampus', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-blue-700" />
+                        <input type="number" min="0" value="${f}" onchange="formBuilder.updateFacultyDetail(${idx}, 'female', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-purple-700" />
                       </td>
-                      <td class="p-2 text-center">
-                        <input type="number" min="0" value="${pData.offCampus || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'offCampus', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-indigo-700" />
+                      <td id="fac-total-${idx}" class="p-2.5 text-center font-bold text-slate-900 bg-slate-50">
+                        ${m + f}
                       </td>
-                      <td class="p-2 text-center">
-                        <input type="number" min="0" value="${pData.higherStudies || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'higherStudies', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-purple-700" />
-                      </td>
-                      <td class="p-2 text-center">
-                        <input type="number" min="0" value="${pData.entrepreneur || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'entrepreneur', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-amber-700" />
-                      </td>
-                      <td class="p-2 text-center">
-                        <input type="number" min="0" value="${pData.others || 0}" onchange="formBuilder.updateOutcomeField('${prog}', 'others', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 text-center border rounded font-semibold text-slate-600" />
-                      </td>
-                      <td class="p-3 text-center font-bold text-emerald-700 bg-emerald-50/30">${pRate}%</td>
                     </tr>
                   `;
                 }).join('')}
-                <tr class="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
-                  <td class="p-3">Total Passed Out</td>
-                  <td class="p-3 text-center">${totalStrength}</td>
-                  <td class="p-3 text-center text-blue-800">${totalOnCampus}</td>
-                  <td class="p-3 text-center text-indigo-800">${totalOffCampus}</td>
-                  <td class="p-3 text-center text-purple-800">${totalHigherStudies}</td>
-                  <td class="p-3 text-center text-amber-800">${totalEntrepreneur}</td>
-                  <td class="p-3 text-center text-slate-700">${totalOthers}</td>
-                  <td class="p-3 text-center text-emerald-800 text-sm bg-emerald-100/50">${placementRate}%</td>
-                </tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-    `;
-  }
 
-  // TAB 7: Attribute IX - Research and Innovation
-  renderAtt9Tab(att9) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute IX - Research and Innovation Outcomes</h3>
-            <p class="text-xs text-slate-500">Ph.D. Conferred, Guides, Scholars, Papers, Books, Patents, Copyrights, and OER.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">questions.docx - Table 8</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr9', 'Attribute IX - Research, Publications & IPR')}
-
-        <!-- PhD Supervision & Research Scholars -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-700">1. Ph.D. Conferred</label>
-              <input type="number" value="${att9.phdConferred?.count || 0}" onchange="formBuilder.updateField('attributeIX.phdConferred.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <input type="text" placeholder="Names of scholars & guides" value="${att9.phdConferred?.details || ''}" onchange="formBuilder.updateField('attributeIX.phdConferred.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-700">2. New Guides Recognized</label>
-              <input type="number" value="${att9.newGuides?.count || 0}" onchange="formBuilder.updateField('attributeIX.newGuides.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <input type="text" placeholder="Recognized faculty names" value="${att9.newGuides?.details || ''}" onchange="formBuilder.updateField('attributeIX.newGuides.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-700">3. New Scholars Enrolled</label>
-              <input type="number" value="${att9.newScholars?.count || 0}" onchange="formBuilder.updateField('attributeIX.newScholars.count', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded" />
-            </div>
-            <input type="text" placeholder="Full-time & part-time scholars" value="${att9.newScholars?.details || ''}" onchange="formBuilder.updateField('attributeIX.newScholars.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-        </div>
-
-        <!-- Papers & Conferences -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Journal Papers -->
-          <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-blue-900 flex items-center gap-1.5">
-              <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
-              4. Papers Published in Journals
-            </h4>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Scopus</label>
-                <input type="number" value="${att9.papersPublished?.scopus || 0}" onchange="formBuilder.updateField('attributeIX.papersPublished.scopus', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-bold text-blue-800" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">WoS</label>
-                <input type="number" value="${att9.papersPublished?.wos || 0}" onchange="formBuilder.updateField('attributeIX.papersPublished.wos', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-bold text-indigo-800" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">UGC-CARE / Peer</label>
-                <input type="number" value="${att9.papersPublished?.ugcCare || 0}" onchange="formBuilder.updateField('attributeIX.papersPublished.ugcCare', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Citation index, average impact factor, notable publications..." onchange="formBuilder.updateField('attributeIX.papersPublished.details', this.value)" class="w-full text-xs p-2 border rounded">${att9.papersPublished?.details || ''}</textarea>
-          </div>
-
-          <!-- Conference Papers -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="mic" class="w-4 h-4 text-purple-600"></i>
-              5. Papers Presented in Conferences
-            </h4>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Indexed (IEEE/Springer/etc.)</label>
-                <input type="number" value="${att9.conferencesPresented?.indexed || 0}" onchange="formBuilder.updateField('attributeIX.conferencesPresented.indexed', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Non-Indexed</label>
-                <input type="number" value="${att9.conferencesPresented?.nonIndexed || 0}" onchange="formBuilder.updateField('attributeIX.conferencesPresented.nonIndexed', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <textarea rows="2" placeholder="Conferences, proceedings details..." onchange="formBuilder.updateField('attributeIX.conferencesPresented.details', this.value)" class="w-full text-xs p-2 border rounded">${att9.conferencesPresented?.details || ''}</textarea>
-          </div>
-        </div>
-
-        <!-- Books, Patents, Copyrights, OER -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Books -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700">6. Books & Book Chapters</h4>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Published (ISBN)</label>
-                <input type="number" value="${att9.books?.published || 0}" onchange="formBuilder.updateField('attributeIX.books.published', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Edited Books</label>
-                <input type="number" value="${att9.books?.edited || 0}" onchange="formBuilder.updateField('attributeIX.books.edited', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Chapters</label>
-                <input type="number" value="${att9.books?.chaptersContributed || 0}" onchange="formBuilder.updateField('attributeIX.books.chaptersContributed', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <input type="text" placeholder="Publishers, ISBN, book titles" value="${att9.books?.details || ''}" onchange="formBuilder.updateField('attributeIX.books.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-
-          <!-- Patents, Copyrights & OER -->
-          <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-emerald-900">7. IPR: Patents, Copyrights & OER</h4>
-            <div class="grid grid-cols-4 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Patents Appl.</label>
-                <input type="number" value="${att9.patents?.applied || 0}" onchange="formBuilder.updateField('attributeIX.patents.applied', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Patents Grant</label>
-                <input type="number" value="${att9.patents?.granted || 0}" onchange="formBuilder.updateField('attributeIX.patents.granted', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-bold text-emerald-700" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Copyrights</label>
-                <input type="number" value="${att9.copyrights?.count || 0}" onchange="formBuilder.updateField('attributeIX.copyrights.count', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-bold text-blue-700" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">OER</label>
-                <input type="number" value="${att9.oer?.count || 0}" onchange="formBuilder.updateField('attributeIX.oer.count', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-            </div>
-            <input type="text" placeholder="Patent titles, registration numbers, OER repositories" value="${att9.patents?.details || ''}" onchange="formBuilder.updateField('attributeIX.patents.details', this.value)" class="w-full text-xs p-1.5 border rounded" />
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-
-  // TAB: Attribute X - Institutional Values, Green Initiatives & CSR Extension
-  renderAtt10Tab(att10) {
-    const safeAtt10 = att10 || {};
-    const csrList = safeAtt10.csrActivities || [];
-    const sust = safeAtt10.sustainability || {
-      paperlessCIA: '',
-      solarEnergyUsage: '',
-      plasticFreeCampus: '',
-      rainwaterHarvesting: ''
-    };
-
-    const totalBeneficiaries = csrList.reduce((sum, item) => sum + (Number(item.studentsBenefited) || 0), 0);
-    const totalCsrFunds = csrList.reduce((sum, item) => sum + (Number(item.amountINR) || 0), 0);
-
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">Attribute X - Institutional Values, Green Initiatives & CSR Extension</h3>
-            <p class="text-xs text-slate-500">Corporate Social Responsibility (CSR), Environmental Sustainability, and Eco-friendly Best Practices.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">Templates_AAA_2026-2027 - Attribute-X</span>
-        </div>
-
-        ${this.renderAgendaBanner('attr10', 'Attribute X - Institutional Values, Green Initiatives & CSR')}
-
-        <!-- Quick Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-emerald-700 uppercase">Extension / CSR Events</span>
-            <div class="text-xl font-bold text-emerald-900 mt-1">${csrList.length} <span class="text-xs font-normal text-emerald-600">conducted</span></div>
-          </div>
-          <div class="bg-teal-50 border border-teal-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-teal-700 uppercase">Community Beneficiaries</span>
-            <div class="text-xl font-bold text-teal-900 mt-1">${totalBeneficiaries.toLocaleString()} <span class="text-xs font-normal text-teal-600">people</span></div>
-          </div>
-          <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-blue-700 uppercase">CSR Funds Mobilized</span>
-            <div class="text-xl font-bold text-blue-900 mt-1">₹${(totalCsrFunds / 100000).toFixed(2)} <span class="text-xs font-normal text-blue-600">Lakhs</span></div>
-          </div>
-          <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
-            <span class="text-[11px] font-semibold text-amber-700 uppercase">Green Pillars Tracked</span>
-            <div class="text-xl font-bold text-amber-900 mt-1">4 <span class="text-xs font-normal text-amber-600">Sustainability areas</span></div>
-          </div>
-        </div>
-
-        <!-- Section 10.1: Extension Activities & CSR -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-600"></i>
-                10.1 Extension Activities & CSR Collaborations in A.Y. 2026-2027
-              </h4>
-              <p class="text-[11px] text-slate-500 mt-0.5">Outreach, societal development, NGO partnerships, and CSR projects.</p>
-            </div>
-            <button type="button" onclick="formBuilder.addCsrRow()" class="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Activity
-            </button>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left text-slate-700">
-              <thead class="text-[11px] text-slate-600 uppercase bg-slate-200/70 border-b">
-                <tr>
-                  <th class="p-2">#</th>
-                  <th class="p-2">Activity / Initiative Title</th>
-                  <th class="p-2">Type</th>
-                  <th class="p-2">Collaborating Agency / Partner</th>
-                  <th class="p-2 text-center">Is CSR?</th>
-                  <th class="p-2">Beneficiaries</th>
-                  <th class="p-2">Funding (₹)</th>
-                  <th class="p-2 text-center">Action</th>
+        <!-- Section 3: Student Details Table -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-600"></i>
+            Student Details (Total No. of Students)
+          </h4>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white w-full">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <th class="p-2.5">Level</th>
+                  <th class="p-2.5 w-24 text-center">Male</th>
+                  <th class="p-2.5 w-24 text-center">Female</th>
+                  <th class="p-2.5 w-24 text-center">Other Gender</th>
+                  <th class="p-2.5 w-24 text-center">Other States</th>
+                  <th class="p-2.5 w-24 text-center">Other Countries</th>
+                  <th class="p-2.5 w-24 text-center bg-slate-200/50">Total</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200 bg-white">
-                ${csrList.length === 0 ? `
-                  <tr><td colspan="8" class="text-center py-4 text-slate-400 italic">No CSR or extension activities recorded. Click 'Add Activity' to record.</td></tr>
-                ` : csrList.map((c, idx) => `
-                  <tr>
-                    <td class="p-2 font-semibold text-slate-400">${idx + 1}</td>
-                    <td class="p-2">
-                      <input type="text" value="${c.activityName || ''}" placeholder="Activity Name" onchange="formBuilder.updateCsrItem(${idx}, 'activityName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                    </td>
-                    <td class="p-2">
-                      <select onchange="formBuilder.updateCsrItem(${idx}, 'type', this.value)" class="w-full text-xs p-1.5 border rounded">
-                        <option value="Extension Activity" ${c.type === 'Extension Activity' ? 'selected' : ''}>Extension Activity</option>
-                        <option value="CSR Project" ${c.type === 'CSR Project' ? 'selected' : ''}>CSR Project</option>
-                        <option value="Community Outreach" ${c.type === 'Community Outreach' ? 'selected' : ''}>Community Outreach</option>
-                        <option value="Environmental Drive" ${c.type === 'Environmental Drive' ? 'selected' : ''}>Environmental Drive</option>
-                      </select>
-                    </td>
-                    <td class="p-2">
-                      <input type="text" value="${c.collaboratingAgency || ''}" placeholder="Collaborating Agency / NGO" onchange="formBuilder.updateCsrItem(${idx}, 'collaboratingAgency', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                    </td>
-                    <td class="p-2 text-center">
-                      <input type="checkbox" ${c.isCSR ? 'checked' : ''} onchange="formBuilder.updateCsrItem(${idx}, 'isCSR', this.checked)" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" />
-                    </td>
-                    <td class="p-2">
-                      <input type="number" value="${c.studentsBenefited || 0}" onchange="formBuilder.updateCsrItem(${idx}, 'studentsBenefited', parseInt(this.value)||0)" class="w-20 text-xs p-1.5 border rounded font-medium" />
-                    </td>
-                    <td class="p-2">
-                      <input type="number" value="${c.amountINR || 0}" onchange="formBuilder.updateCsrItem(${idx}, 'amountINR', parseInt(this.value)||0)" class="w-24 text-xs p-1.5 border rounded font-mono font-medium" />
-                    </td>
-                    <td class="p-2 text-center">
-                      <button type="button" onclick="formBuilder.removeCsrRow(${idx})" class="text-red-500 hover:text-red-700 p-1" title="Delete">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                      </button>
-                    </td>
-                  </tr>
-                `).join('')}
+              <tbody class="divide-y divide-slate-100">
+                ${stuRows.map((sr, idx) => {
+                  const m = Number(sr.male) || 0;
+                  const f = Number(sr.female) || 0;
+                  const og = Number(sr.otherGender) || 0;
+                  const os = Number(sr.otherStates) || 0;
+                  const oc = Number(sr.otherCountries) || 0;
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="p-2.5 font-bold text-slate-800">${sr.programme}</td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${m}" onchange="formBuilder.updateStudentDetail(${idx}, 'male', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${f}" onchange="formBuilder.updateStudentDetail(${idx}, 'female', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-purple-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${og}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherGender', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${os}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherStates', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${oc}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherCountries', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td id="stu-total-${idx}" class="p-2.5 text-center font-bold text-slate-900 bg-slate-50">
+                        ${m + f + og}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Section 10.2: Green Campus & Sustainability Initiatives -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-          <div class="border-b border-slate-200 pb-2">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-              <i data-lucide="leaf" class="w-4 h-4 text-emerald-600"></i>
-              10.2 Green Campus & Institutional Values
-            </h4>
-            <p class="text-[11px] text-slate-500 mt-0.5">Four core sustainability dimensions practiced in the department.</p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
-              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
-                <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
-                Paperless Internal Assessments (CIA) & Operations
-              </label>
-              <textarea rows="2" placeholder="e.g. 100% digital submissions via Moodle LMS, digital grading rubrics..." onchange="formBuilder.updateGreenField('paperlessCIA', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.paperlessCIA || ''}</textarea>
-            </div>
-
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
-              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
-                <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>
-                Renewable & Solar Energy Usage
-              </label>
-              <textarea rows="2" placeholder="e.g. 35% power requirement powered by rooftop solar panels..." onchange="formBuilder.updateGreenField('solarEnergyUsage', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.solarEnergyUsage || ''}</textarea>
-            </div>
-
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
-              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
-                <i data-lucide="recycle" class="w-3.5 h-3.5 text-emerald-600"></i>
-                Plastic-Free Campus & Solid Waste Management
-              </label>
-              <textarea rows="2" placeholder="e.g. Strict ban on single-use plastics, electronic scrap recycling..." onchange="formBuilder.updateGreenField('plasticFreeCampus', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.plasticFreeCampus || ''}</textarea>
-            </div>
-
-            <div class="bg-white p-3.5 rounded-lg border border-slate-200">
-              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1">
-                <i data-lucide="droplet" class="w-3.5 h-3.5 text-cyan-600"></i>
-                Rainwater Harvesting & Water Conservation
-              </label>
-              <textarea rows="2" placeholder="e.g. Recharge wells, sensor taps, greywater recycling for gardens..." onchange="formBuilder.updateGreenField('rainwaterHarvesting', this.value)" class="w-full text-xs p-2 border rounded text-slate-800">${sust.rainwaterHarvesting || ''}</textarea>
-            </div>
-          </div>
+        <div class="pt-2 flex justify-end">
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Save Profile Data</span>
+          </button>
         </div>
       </div>
     `;
   }
 
-    // TAB 8: 30-Min Presentation Content Flow
-  renderQualitativeTab(qual) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">30-Minute Qualitative & Impact Presentation Flow</h3>
-            <p class="text-xs text-slate-500">Structured narrative for the presentation following the 15-minute dashboard.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">Phase 2: 30 Minutes</span>
-        </div>
+  // ================= 2. STANDARD TABLE SHEETS =================
+  renderStandardTableSheet(sheet, sheetData, isEditQuestions) {
+    const rows = Array.isArray(sheetData) ? sheetData : (sheet.rows || []);
+    const columns = sheet.columns || [];
 
-        <!-- 1. Signature Achievements & Verifiable Impact -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <div>
-              <h4 class="text-xs font-bold uppercase text-slate-700">1. Signature Achievements & Verifiable Impact (A.Y. 2026 - 2027)</h4>
-              <p class="text-[11px] text-slate-500">Highlight quantifiable breakthroughs with verifiable institutional evidence.</p>
-            </div>
-            <button type="button" onclick="formBuilder.addSignatureAchievementRow()" class="text-xs px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Achievement
+    return `
+      <div class="space-y-4 w-full">
+        <!-- Sheet Title & Instructions -->
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div class="flex-1">
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Question Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Instruction / Note (Admin)</label>
+                <input type="text" value="${sheet.instruction || sheet.note || ''}" onchange="formBuilder.updateSchemaInstruction('${sheet.key}', this.value)" class="w-full text-xs px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+                ${sheet.note ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">${sheet.note}</span>` : ''}
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">${sheet.title}</h3>
+              ${sheet.instruction ? `<p class="text-xs text-slate-500 mt-0.5">${sheet.instruction}</p>` : ''}
+            `}
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            ${isEditQuestions ? `
+              <button type="button" onclick="formBuilder.addColumnToSchema('${sheet.key}')" class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Question Column
+              </button>
+            ` : ''}
+            
+            <button type="button" onclick="formBuilder.addTableRow('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Data Row
+            </button>
+
+            <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> Save Sheet Data
             </button>
           </div>
-          <div class="space-y-2">
-            ${(qual.signatureAchievements || []).map((item, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-2">
-                  <input type="text" placeholder="Achievement Headline" value="${item.title || ''}" onchange="formBuilder.updateArrayItem('qualitativePresentation.signatureAchievements', ${idx}, 'title', this.value)" class="w-full text-xs p-1.5 border rounded font-semibold text-slate-800" />
-                </div>
-                <div class="md:col-span-3 flex items-center gap-1">
-                  <input type="text" placeholder="Verifiable Impact & Evidence" value="${item.impact || ''}" onchange="formBuilder.updateArrayItem('qualitativePresentation.signatureAchievements', ${idx}, 'impact', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                  <button type="button" onclick="formBuilder.removeArrayItem('qualitativePresentation.signatureAchievements', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </div>
+
+        <!-- Table Container (Full Wide) -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs max-h-[650px] scrollbar-thin w-full">
+          <table class="w-full min-w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 shadow-xs">
+              <tr>
+                ${columns.map(col => `
+                  <th class="p-2.5 font-bold text-slate-700 whitespace-nowrap ${col.width || 'w-44'}">
+                    ${isEditQuestions ? `
+                      <div class="space-y-1">
+                        <input type="text" value="${col.label}" onchange="formBuilder.updateSchemaColumnLabel('${sheet.key}', '${col.key}', this.value)" class="w-full text-xs p-1 border border-purple-300 rounded font-bold bg-purple-50" title="Edit Question Header" />
+                        <button type="button" onclick="formBuilder.deleteColumnFromSchema('${sheet.key}', '${col.key}')" class="text-[10px] text-red-600 hover:underline">Remove Col</button>
+                      </div>
+                    ` : `
+                      <span>${col.label}</span>
+                    `}
+                  </th>
+                `).join('')}
+                <th class="p-2.5 font-bold text-slate-700 w-12 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${rows.length === 0 ? `
+                <tr>
+                  <td colspan="${columns.length + 1}" class="p-8 text-center text-slate-400 font-medium">
+                    No data rows entered yet. Click <strong>+ Add Data Row</strong> above to begin filling this sheet.
+                  </td>
+                </tr>
+              ` : rows.map((row, rIdx) => `
+                <tr class="hover:bg-slate-50/70 transition">
+                  ${columns.map(col => {
+                    const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+                    const onchangeCode = `formBuilder.updateTableCell('${sheet.key}', ${rIdx}, '${col.key}', this.value)`;
+                    return `
+                      <td class="p-1.5 ${col.width || 'w-44'}">
+                        ${this.renderCellControl(row[col.key], onchangeCode, col.label, col.key, isSno, sheet.key, rIdx)}
+                      </td>
+                    `;
+                  }).join('')}
+                  <td class="p-1.5 text-center">
+                    <button type="button" onclick="formBuilder.deleteTableRow('${sheet.key}', ${rIdx})" title="Delete Row" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between">
+          <span class="text-xs text-slate-500 font-medium">${rows.length} ${rows.length === 1 ? 'row' : 'rows'} entered</span>
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save ${sheet.sheetName || 'Sheet'} Data</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ================= 3. MULTI-TABLE SHEET (SHEET 1.2) =================
+  renderMultiTableSheet(sheet, sheetData, isEditQuestions) {
+    const sections = sheet.sections || [];
+
+    return `
+      <div class="space-y-8 w-full">
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div>
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Sheet Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">${sheet.title}</h3>
+            `}
+          </div>
+
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save Sheet Data</span>
+          </button>
+        </div>
+
+        ${sections.map(sec => {
+          const rows = (sheetData && Array.isArray(sheetData[sec.id])) ? sheetData[sec.id] : (sec.rows || []);
+          const columns = sec.columns || [];
+
+          return `
+            <div class="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-4 w-full">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <i data-lucide="bookmark" class="w-4 h-4 text-blue-600"></i>
+                  ${sec.title}
+                </h4>
+                <div class="flex items-center gap-2">
+                  ${isEditQuestions ? `
+                    <button type="button" onclick="formBuilder.addColumnToSchema('${sheet.key}', '${sec.id}')" class="text-xs px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm">
+                      <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Column
+                    </button>
+                  ` : ''}
+                  <button type="button" onclick="formBuilder.addMultiTableRow('${sheet.key}', '${sec.id}')" class="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Row
                   </button>
                 </div>
               </div>
-            `).join('')}
-          </div>
-        </div>
 
-        <!-- 2. Uniqueness of the Department -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <h4 class="text-xs font-bold uppercase text-slate-700 mb-1">2. Uniqueness of the Department (Distinctive Identity)</h4>
-          <p class="text-[11px] text-slate-500 mb-2">What sets this department apart in pedagogy, research, outreach, or student ethos?</p>
-          <textarea rows="3" onchange="formBuilder.updateField('qualitativePresentation.uniqueness', this.value)" class="w-full text-xs p-2.5 border rounded leading-relaxed">${qual.uniqueness || ''}</textarea>
-        </div>
-
-        <!-- 3. Status of Activities Completed based on AAA 2025 – 2026 (ATR) -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <div>
-              <h4 class="text-xs font-bold uppercase text-slate-700">3. Action Taken Report (ATR) based on AAA 2025 – 2026</h4>
-              <p class="text-[11px] text-slate-500">Status of compliance on previous audit panel recommendations.</p>
+              <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs max-h-[500px] scrollbar-thin w-full">
+                <table class="w-full min-w-full text-left text-xs border-collapse">
+                  <thead class="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 shadow-xs">
+                    <tr>
+                      ${columns.map(col => `
+                        <th class="p-2.5 font-bold text-slate-700 whitespace-nowrap ${col.width || 'w-44'}">
+                          ${isEditQuestions ? `
+                            <div class="space-y-1">
+                              <input type="text" value="${col.label}" onchange="formBuilder.updateSchemaColumnLabel('${sheet.key}', '${col.key}', this.value, '${sec.id}')" class="w-full text-xs p-1 border border-purple-300 rounded font-bold bg-purple-50" title="Edit Question Header" />
+                              <button type="button" onclick="formBuilder.deleteColumnFromSchema('${sheet.key}', '${col.key}', '${sec.id}')" class="text-[10px] text-red-600 hover:underline">Remove Col</button>
+                            </div>
+                          ` : `
+                            <span>${col.label}</span>
+                          `}
+                        </th>
+                      `).join('')}
+                      <th class="p-2.5 font-bold text-slate-700 w-12 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${rows.length === 0 ? `
+                      <tr>
+                        <td colspan="${columns.length + 1}" class="p-8 text-center text-slate-400 font-medium">
+                          No records in this section yet. Click <strong>+ Add Row</strong> to enter data.
+                        </td>
+                      </tr>
+                    ` : rows.map((row, rIdx) => `
+                      <tr class="hover:bg-slate-50/70 transition">
+                        ${columns.map(col => {
+                          const isSno = col.key === 'sno';
+                          const onchangeCode = `formBuilder.updateMultiTableCell('${sheet.key}', '${sec.id}', ${rIdx}, '${col.key}', this.value)`;
+                          return `
+                            <td class="p-1.5 ${col.width || 'w-44'}">
+                              ${this.renderCellControl(row[col.key], onchangeCode, col.label, col.key, isSno, sheet.key, rIdx)}
+                            </td>
+                          `;
+                        }).join('')}
+                        <td class="p-1.5 text-center">
+                          <button type="button" onclick="formBuilder.deleteMultiTableRow('${sheet.key}', '${sec.id}', ${rIdx})" title="Delete Row" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <button type="button" onclick="formBuilder.addAtrRow()" class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Recommendation
+          `;
+        }).join('')}
+
+        <div class="pt-2 flex justify-end">
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save ${sheet.sheetName || 'Sheet'} Data</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ================= 4. BATCH TABLE SHEETS (1.5 & 1.6) =================
+  renderBatchTableSheet(sheet, sheetData, isEditQuestions) {
+    const batches = sheet.batches || [];
+    const columns = sheet.columns || [];
+
+    return `
+      <div class="space-y-8 w-full">
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div>
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Sheet Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">${sheet.title}</h3>
+            `}
+          </div>
+
+          <div class="flex items-center gap-2">
+            ${isEditQuestions ? `
+              <button type="button" onclick="formBuilder.addColumnToSchema('${sheet.key}')" class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Question Column
+              </button>
+            ` : ''}
+            <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i>
+              <span>Save Sheet Data</span>
             </button>
           </div>
-          <div class="space-y-2">
-            ${(qual.statusAAA2025_2026 || []).map((atr, idx) => `
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 items-center">
-                <div class="md:col-span-2">
-                  <input type="text" placeholder="Previous Recommendation" value="${atr.recommendation || ''}" onchange="formBuilder.updateArrayItem('qualitativePresentation.statusAAA2025_2026', ${idx}, 'recommendation', this.value)" class="w-full text-xs p-1.5 border rounded font-medium" />
-                </div>
-                <div>
-                  <select onchange="formBuilder.updateArrayItem('qualitativePresentation.statusAAA2025_2026', ${idx}, 'status', this.value)" class="w-full text-xs p-1.5 border rounded font-semibold ${atr.status === 'Fully Completed' ? 'text-emerald-700' : 'text-amber-700'}">
-                    <option value="Fully Completed" ${atr.status === 'Fully Completed' ? 'selected' : ''}>Fully Completed</option>
-                    <option value="In Progress" ${atr.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-                    <option value="Partially Completed" ${atr.status === 'Partially Completed' ? 'selected' : ''}>Partially Completed</option>
-                  </select>
-                </div>
-                <div class="md:col-span-2 flex items-center gap-1">
-                  <input type="text" placeholder="Measurable Evidence / Action Taken" value="${atr.evidence || ''}" onchange="formBuilder.updateArrayItem('qualitativePresentation.statusAAA2025_2026', ${idx}, 'evidence', this.value)" class="w-full text-xs p-1.5 border rounded" />
-                  <button type="button" onclick="formBuilder.removeArrayItem('qualitativePresentation.statusAAA2025_2026', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
+        </div>
+
+        ${batches.map(bat => {
+          const rows = (sheetData && Array.isArray(sheetData[bat.id])) ? sheetData[bat.id] : (bat.rows || []);
+
+          return `
+            <div class="bg-slate-50/70 p-5 rounded-2xl border border-slate-200 space-y-4 w-full">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i>
+                  ${bat.name}
+                </h4>
+                <button type="button" onclick="formBuilder.addBatchTableRow('${sheet.key}', '${bat.id}')" class="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Student
+                </button>
               </div>
-            `).join('')}
-          </div>
-        </div>
 
-        <!-- 4. Best Practices (NAAC Format) -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-center mb-3">
-            <div>
-              <h4 class="text-xs font-bold uppercase text-slate-700">4. Best Practices of the Department (Institutional NAAC Format)</h4>
-              <p class="text-[11px] text-slate-500">Provide Title, Objectives, Context, The Practice, and Evidence of Success.</p>
-            </div>
-            <button type="button" onclick="formBuilder.addBestPracticeRow()" class="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Best Practice
-            </button>
-          </div>
-          <div class="space-y-4">
-            ${(qual.bestPractices || []).map((bp, idx) => `
-              <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
-                <div class="flex justify-between items-center border-b pb-2">
-                  <input type="text" placeholder="Best Practice Title" value="${bp.title || ''}" onchange="formBuilder.updateArrayItem('qualitativePresentation.bestPractices', ${idx}, 'title', this.value)" class="w-3/4 text-xs font-bold text-slate-800 p-1.5 border rounded" />
-                  <button type="button" onclick="formBuilder.removeArrayItem('qualitativePresentation.bestPractices', ${idx})" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded">Remove</button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div>
-                    <label class="text-[10px] uppercase font-bold text-slate-500">Objectives of the Practice</label>
-                    <textarea rows="2" onchange="formBuilder.updateArrayItem('qualitativePresentation.bestPractices', ${idx}, 'objectives', this.value)" class="w-full text-xs p-1.5 border rounded">${bp.objectives || ''}</textarea>
-                  </div>
-                  <div>
-                    <label class="text-[10px] uppercase font-bold text-slate-500">The Context</label>
-                    <textarea rows="2" onchange="formBuilder.updateArrayItem('qualitativePresentation.bestPractices', ${idx}, 'context', this.value)" class="w-full text-xs p-1.5 border rounded">${bp.context || ''}</textarea>
-                  </div>
-                  <div>
-                    <label class="text-[10px] uppercase font-bold text-slate-500">The Practice</label>
-                    <textarea rows="2" onchange="formBuilder.updateArrayItem('qualitativePresentation.bestPractices', ${idx}, 'practice', this.value)" class="w-full text-xs p-1.5 border rounded">${bp.practice || ''}</textarea>
-                  </div>
-                  <div>
-                    <label class="text-[10px] uppercase font-bold text-slate-500">Evidence of Success</label>
-                    <textarea rows="2" onchange="formBuilder.updateArrayItem('qualitativePresentation.bestPractices', ${idx}, 'evidence', this.value)" class="w-full text-xs p-1.5 border rounded">${bp.evidence || ''}</textarea>
-                  </div>
-                </div>
+              <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs max-h-[500px] scrollbar-thin w-full">
+                <table class="w-full min-w-full text-left text-xs border-collapse">
+                  <thead class="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 shadow-xs">
+                    <tr>
+                      ${columns.map(col => `
+                        <th class="p-2.5 font-bold text-slate-700 whitespace-nowrap ${col.width || 'w-44'}">
+                          ${isEditQuestions ? `
+                            <div class="space-y-1">
+                              <input type="text" value="${col.label}" onchange="formBuilder.updateSchemaColumnLabel('${sheet.key}', '${col.key}', this.value)" class="w-full text-xs p-1 border border-purple-300 rounded font-bold bg-purple-50" title="Edit Question Header" />
+                              <button type="button" onclick="formBuilder.deleteColumnFromSchema('${sheet.key}', '${col.key}')" class="text-[10px] text-red-600 hover:underline">Remove Col</button>
+                            </div>
+                          ` : `
+                            <span>${col.label}</span>
+                          `}
+                        </th>
+                      `).join('')}
+                      <th class="p-2.5 font-bold text-slate-700 w-12 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${rows.length === 0 ? `
+                      <tr>
+                        <td colspan="${columns.length + 1}" class="p-8 text-center text-slate-400 font-medium">
+                          No students added for ${bat.name} yet. Click <strong>+ Add Student</strong> to add entries.
+                        </td>
+                      </tr>
+                    ` : rows.map((row, rIdx) => `
+                      <tr class="hover:bg-slate-50/70 transition">
+                        ${columns.map(col => {
+                          const isSno = col.key === 'sno';
+                          const onchangeCode = `formBuilder.updateBatchTableCell('${sheet.key}', '${bat.id}', ${rIdx}, '${col.key}', this.value)`;
+                          return `
+                            <td class="p-1.5 ${col.width || 'w-44'}">
+                              ${this.renderCellControl(row[col.key], onchangeCode, col.label, col.key, isSno, sheet.key, rIdx)}
+                            </td>
+                          `;
+                        }).join('')}
+                        <td class="p-1.5 text-center">
+                          <button type="button" onclick="formBuilder.deleteBatchTableRow('${sheet.key}', '${bat.id}', ${rIdx})" title="Delete Row" class="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
               </div>
-            `).join('')}
-          </div>
-        </div>
+            </div>
+          `;
+        }).join('')}
 
-        <!-- 5. SWOC Analysis Matrix -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <h4 class="text-xs font-bold uppercase text-slate-700 mb-3">5. SWOC Analysis (Strengths, Weaknesses, Opportunities, Challenges)</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg">
-              <label class="text-xs font-bold text-emerald-900 block mb-1">Strengths (1 per line)</label>
-              <textarea rows="4" onchange="formBuilder.updateLinesArray('qualitativePresentation.swoc.strengths', this.value)" class="w-full text-xs p-2 border border-emerald-300 rounded">${(qual.swoc?.strengths || []).join('\n')}</textarea>
-            </div>
-            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-lg">
-              <label class="text-xs font-bold text-amber-900 block mb-1">Weaknesses (1 per line)</label>
-              <textarea rows="4" onchange="formBuilder.updateLinesArray('qualitativePresentation.swoc.weaknesses', this.value)" class="w-full text-xs p-2 border border-amber-300 rounded">${(qual.swoc?.weaknesses || []).join('\n')}</textarea>
-            </div>
-            <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-lg">
-              <label class="text-xs font-bold text-blue-900 block mb-1">Opportunities (1 per line)</label>
-              <textarea rows="4" onchange="formBuilder.updateLinesArray('qualitativePresentation.swoc.opportunities', this.value)" class="w-full text-xs p-2 border border-blue-300 rounded">${(qual.swoc?.opportunities || []).join('\n')}</textarea>
-            </div>
-            <div class="p-3 bg-red-50/70 border border-red-200 rounded-lg">
-              <label class="text-xs font-bold text-red-900 block mb-1">Challenges (1 per line)</label>
-              <textarea rows="4" onchange="formBuilder.updateLinesArray('qualitativePresentation.swoc.challenges', this.value)" class="w-full text-xs p-2 border border-red-300 rounded">${(qual.swoc?.challenges || []).join('\n')}</textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- 6. Future Plans -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <h4 class="text-xs font-bold uppercase text-slate-700 mb-3">6. Future Strategic Roadmap</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="text-xs font-bold text-slate-800 block mb-1">Short-Term Plans (Next 1 Year, 1 per line)</label>
-              <textarea rows="3" onchange="formBuilder.updateLinesArray('qualitativePresentation.futurePlans.shortTerm', this.value)" class="w-full text-xs p-2 border rounded">${(qual.futurePlans?.shortTerm || []).join('\n')}</textarea>
-            </div>
-            <div>
-              <label class="text-xs font-bold text-slate-800 block mb-1">Long-Term Plans (3 to 5 Years, 1 per line)</label>
-              <textarea rows="3" onchange="formBuilder.updateLinesArray('qualitativePresentation.futurePlans.longTerm', this.value)" class="w-full text-xs p-2 border rounded">${(qual.futurePlans?.longTerm || []).join('\n')}</textarea>
-            </div>
-          </div>
+        <div class="pt-2 flex justify-end">
+          <button type="button" onclick="formBuilder.saveCurrentSheetData('${sheet.key}')" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save ${sheet.sheetName || 'Sheet'} Data</span>
+          </button>
         </div>
       </div>
     `;
   }
 
-  // TAB 9: Crucial Academic Pillars
-  renderPillarsTab(pillars) {
+  // ================= SUBMISSION LOCK & DEADLINE CHECK =================
+  isSubmissionLocked() {
+    if (this.isAdmin()) return false;
+    if (window.dataStore && typeof window.dataStore.isDeadlinePassed === 'function') {
+      if (window.dataStore.isDeadlinePassed()) return true;
+    }
+    const activeDept = window.dataStore?.activeDepartment;
+    if (activeDept && window.dataStore && typeof window.dataStore.isDepartmentLocked === 'function') {
+      if (window.dataStore.isDepartmentLocked(activeDept)) return true;
+    }
+    return false;
+  }
+
+  renderDeadlineNoticeBanner() {
+    const isLocked = this.isSubmissionLocked();
+    const formatted = window.dataStore ? window.dataStore.formatDeadlineForDisplay() : 'Not Configured';
+
     return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+      <div class="rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${
+        isLocked 
+          ? 'bg-red-50 border border-red-300 text-red-900' 
+          : 'bg-amber-50 border border-amber-300 text-amber-950'
+      }">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg ${isLocked ? 'bg-red-600 text-white' : 'bg-amber-500 text-slate-950'} flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <i data-lucide="${isLocked ? 'lock' : 'calendar-clock'}" class="w-4 h-4"></i>
+          </div>
           <div>
-            <h3 class="text-base font-semibold text-slate-800">Crucial Departmental Academic Pillars</h3>
-            <p class="text-xs text-slate-500">PTM, Stakeholder Feedback, TL Innovations, Assessment Process, Remedial Teaching, Student Support, Competitive Exams, and Sustainability.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">Core Quality Pillars</span>
-        </div>
-
-        <!-- 1. PTM & 2. Feedback -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- PTM -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="users" class="w-4 h-4 text-blue-600"></i>
-              1. Parent-Teacher Meetings (PTM)
-            </h4>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Meetings Conducted</label>
-                <input type="number" value="${pillars?.ptm?.meetingsConducted || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.ptm.meetingsConducted', parseInt(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Attendance %</label>
-                <input type="number" step="0.1" value="${pillars?.ptm?.parentAttendancePercentage || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.ptm.parentAttendancePercentage', parseFloat(this.value)||0)" class="w-full text-xs p-1.5 border rounded" />
-              </div>
+            <div class="flex items-center flex-wrap gap-2">
+              <span class="font-black uppercase tracking-wider text-[11px]">Submission Deadline:</span>
+              <span class="font-black underline">${formatted}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                isLocked 
+                  ? 'bg-red-200 text-red-900' 
+                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+              }">
+                ${isLocked ? '🚨 LOCKED (READ-ONLY)' : '🟢 OPEN FOR DATA ENTRY'}
+              </span>
             </div>
-            <div>
-              <label class="text-[11px] block font-medium">Meeting Dates</label>
-              <input type="text" value="${pillars?.ptm?.dates || ''}" onchange="formBuilder.updateField('qualitativePresentation.pillars.ptm.dates', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Key Feedback & Discussion</label>
-              <textarea rows="2" onchange="formBuilder.updateField('qualitativePresentation.pillars.ptm.keyFeedback', this.value)" class="w-full text-xs p-1.5 border rounded">${pillars?.ptm?.keyFeedback || ''}</textarea>
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Action Taken</label>
-              <input type="text" value="${pillars?.ptm?.actionTaken || ''}" onchange="formBuilder.updateField('qualitativePresentation.pillars.ptm.actionTaken', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <!-- Stakeholder Feedback -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="message-square" class="w-4 h-4 text-emerald-600"></i>
-              2. Stakeholder Feedback (Rating out of 5.0)
-            </h4>
-            <div class="grid grid-cols-4 gap-2">
-              <div>
-                <label class="text-[11px] block font-medium">Students</label>
-                <input type="number" step="0.1" max="5" value="${pillars?.feedback?.studentRating || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.feedback.studentRating', parseFloat(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-blue-700" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Parents</label>
-                <input type="number" step="0.1" max="5" value="${pillars?.feedback?.parentRating || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.feedback.parentRating', parseFloat(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-blue-700" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Alumni</label>
-                <input type="number" step="0.1" max="5" value="${pillars?.feedback?.alumniRating || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.feedback.alumniRating', parseFloat(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-blue-700" />
-              </div>
-              <div>
-                <label class="text-[11px] block font-medium">Employers</label>
-                <input type="number" step="0.1" max="5" value="${pillars?.feedback?.employerRating || 0}" onchange="formBuilder.updateField('qualitativePresentation.pillars.feedback.employerRating', parseFloat(this.value)||0)" class="w-full text-xs p-1.5 border rounded font-semibold text-blue-700" />
-              </div>
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Action Taken Report (ATR) on Feedback</label>
-              <textarea rows="4" onchange="formBuilder.updateField('qualitativePresentation.pillars.feedback.actionTakenReport', this.value)" class="w-full text-xs p-2 border rounded leading-relaxed">${pillars?.feedback?.actionTakenReport || ''}</textarea>
-            </div>
+            <p class="text-[11px] ${isLocked ? 'text-red-700' : 'text-amber-800'} mt-0.5">
+              ${isLocked 
+                ? 'The submission cutoff has passed. Attribute data is locked in read-only mode and cannot be edited or deleted.' 
+                : 'Please ensure all sheets are completed and saved before the deadline cutoff.'}
+            </p>
           </div>
         </div>
-
-        <!-- 3. TL Innovations & 4. Assessment Process -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Teaching-Learning -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="book" class="w-4 h-4 text-purple-600"></i>
-              3. Teaching-Learning (TL) Innovations
-            </h4>
-            <div>
-              <label class="text-[11px] block font-medium">Pedagogical Innovations (Flipped, Blended, Experiential)</label>
-              <textarea rows="3" onchange="formBuilder.updateField('qualitativePresentation.pillars.teachingLearning.innovations', this.value)" class="w-full text-xs p-2 border rounded">${pillars?.teachingLearning?.innovations || ''}</textarea>
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">ICT Tools / Platforms Used</label>
-              <input type="text" value="${pillars?.teachingLearning?.ictToolsUsed || ''}" onchange="formBuilder.updateField('qualitativePresentation.pillars.teachingLearning.ictToolsUsed', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <!-- Assessment Process -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="check-circle" class="w-4 h-4 text-indigo-600"></i>
-              4. Assessment Process (Ass P.)
-            </h4>
-            <div>
-              <label class="text-[11px] block font-medium">CIA Reforms & Bloom's Taxonomy Mapping</label>
-              <textarea rows="4" onchange="formBuilder.updateField('qualitativePresentation.pillars.assessmentProcess.reforms', this.value)" class="w-full text-xs p-2 border rounded leading-relaxed">${pillars?.assessmentProcess?.reforms || ''}</textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Remedial & 6. Student Support -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Remedial -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="life-buoy" class="w-4 h-4 text-amber-600"></i>
-              5. Remedial Teaching (Slow / Advanced Learners)
-            </h4>
-            <div>
-              <label class="text-[11px] block font-medium">Remedial Strategy & Peer Mentoring</label>
-              <textarea rows="2" onchange="formBuilder.updateField('qualitativePresentation.pillars.remedialTeaching.strategy', this.value)" class="w-full text-xs p-2 border rounded">${pillars?.remedialTeaching?.strategy || ''}</textarea>
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Measurable Impact / Pass % Improvement</label>
-              <input type="text" value="${pillars?.remedialTeaching?.impact || ''}" onchange="formBuilder.updateField('qualitativePresentation.pillars.remedialTeaching.impact', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <!-- Student Support -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="heart" class="w-4 h-4 text-rose-600"></i>
-              6. Student Support & Development
-            </h4>
-            <div class="flex items-center gap-2">
-              <label class="text-[11px] font-medium">Faculty Mentoring Ratio:</label>
-              <input type="text" value="${pillars?.studentSupport?.mentoringRatio || '1:20'}" onchange="formBuilder.updateField('qualitativePresentation.pillars.studentSupport.mentoringRatio', this.value)" class="w-28 text-xs p-1 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">Scholarships, Wellness & Career Support Measures</label>
-              <textarea rows="2" onchange="formBuilder.updateField('qualitativePresentation.pillars.studentSupport.supportMeasures', this.value)" class="w-full text-xs p-2 border rounded">${pillars?.studentSupport?.supportMeasures || ''}</textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- 7. Guidance for Competitive Exams & 8. Sustainability -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <i data-lucide="target" class="w-4 h-4 text-teal-600"></i>
-              7. Guidance for Competitive Examinations
-            </h4>
-            <textarea rows="3" placeholder="Coaching sessions, GATE/NET circles, civil service guidance..." onchange="formBuilder.updateField('qualitativePresentation.pillars.guidanceCompExam.initiatives', this.value)" class="w-full text-xs p-2 border rounded">${pillars?.guidanceCompExam?.initiatives || ''}</textarea>
-          </div>
-
-          <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 space-y-2">
-            <h4 class="text-xs font-bold uppercase text-emerald-900 flex items-center gap-1.5">
-              <i data-lucide="leaf" class="w-4 h-4 text-emerald-600"></i>
-              8. Sustainability & Green Initiatives
-            </h4>
-            <textarea rows="3" placeholder="Paperless exams, e-waste handling, green computing, energy saving..." onchange="formBuilder.updateField('qualitativePresentation.pillars.sustainability.initiatives', this.value)" class="w-full text-xs p-2 border rounded">${pillars?.sustainability?.initiatives || ''}</textarea>
-          </div>
-        </div>
+        
+        ${this.isAdmin() ? `
+          <span class="text-[11px] px-2.5 py-1 bg-purple-100 text-purple-900 border border-purple-300 rounded-lg font-bold self-start sm:self-auto">
+            🛡️ Admin Override Active
+          </span>
+        ` : ''}
       </div>
     `;
   }
 
-  // TAB 10: 15-Min Panel Review Rubric
-  renderPanelTab(panel) {
-    return `
-      <div class="space-y-6">
-        <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h3 class="text-base font-semibold text-slate-800">15-Minute Panel Review & Evaluation Rubric</h3>
-            <p class="text-xs text-slate-500">Record scores and recommendations from Administrators, IQAC, School Dean, and External Expert.</p>
-          </div>
-          <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">Phase 3: 15 Minutes</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-slate-700">Audit Panel Committee Members</h4>
-            <div>
-              <label class="text-[11px] block font-medium">External Academic Expert</label>
-              <input type="text" value="${panel.expertName || ''}" onchange="formBuilder.updateField('panelReview.expertName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">School Dean</label>
-              <input type="text" value="${panel.deanName || ''}" onchange="formBuilder.updateField('panelReview.deanName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">IQAC Coordinator</label>
-              <input type="text" value="${panel.iqacCoordinator || ''}" onchange="formBuilder.updateField('panelReview.iqacCoordinator', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-            <div>
-              <label class="text-[11px] block font-medium">College Administrator / Principal</label>
-              <input type="text" value="${panel.administratorName || ''}" onchange="formBuilder.updateField('panelReview.administratorName', this.value)" class="w-full text-xs p-1.5 border rounded" />
-            </div>
-          </div>
-
-          <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200 space-y-3">
-            <h4 class="text-xs font-bold uppercase text-blue-900">Scoring Rubric (Rating 1 to 5)</h4>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Curriculum (Att I)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.curriculum || 5}" onchange="formBuilder.updateField('panelReview.scores.curriculum', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Faculty (Att II)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.faculty || 5}" onchange="formBuilder.updateField('panelReview.scores.faculty', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Grants & Seed (Att 4&7)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.resources || 4}" onchange="formBuilder.updateField('panelReview.scores.resources', parseInt(this.value)||4)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>TL & MoUs (Att V)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.learningTeaching || 5}" onchange="formBuilder.updateField('panelReview.scores.learningTeaching', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Clubs & Awards (Att VI)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.extendedCurricular || 5}" onchange="formBuilder.updateField('panelReview.scores.extendedCurricular', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Research & IPR (Att IX)</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.research || 5}" onchange="formBuilder.updateField('panelReview.scores.research', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>Presentation Quality</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.presentationQuality || 5}" onchange="formBuilder.updateField('panelReview.scores.presentationQuality', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-              <div class="flex justify-between items-center bg-white p-1.5 rounded border">
-                <span>AAA 2025-26 Compliance</span>
-                <input type="number" min="1" max="5" value="${panel.scores?.complianceAAA || 5}" onchange="formBuilder.updateField('panelReview.scores.complianceAAA', parseInt(this.value)||5)" class="w-12 text-center border rounded" />
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between pt-2 border-t">
-              <span class="text-xs font-bold text-slate-800">Overall Assigned Grade:</span>
-              <select onchange="formBuilder.updateField('panelReview.overallGrade', this.value)" class="text-xs font-bold p-1.5 border rounded bg-white text-blue-900">
-                <option value="A++" ${panel.overallGrade === 'A++' ? 'selected' : ''}>A++ (Outstanding)</option>
-                <option value="A+" ${panel.overallGrade === 'A+' ? 'selected' : ''}>A+ (Excellent)</option>
-                <option value="A" ${panel.overallGrade === 'A' ? 'selected' : ''}>A (Very Good)</option>
-                <option value="B++" ${panel.overallGrade === 'B++' ? 'selected' : ''}>B++ (Good)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200">
-            <label class="text-xs font-bold uppercase text-emerald-900 block mb-1">Key Commendations by External Expert & IQAC</label>
-            <textarea rows="4" onchange="formBuilder.updateField('panelReview.commendations', this.value)" class="w-full text-xs p-2.5 border border-emerald-300 rounded leading-relaxed">${panel.commendations || ''}</textarea>
-          </div>
-          <div class="bg-amber-50/40 p-4 rounded-xl border border-amber-200">
-            <label class="text-xs font-bold uppercase text-amber-900 block mb-1">Actionable Recommendations for A.Y. 2027 - 2028</label>
-            <textarea rows="4" onchange="formBuilder.updateField('panelReview.recommendations', this.value)" class="w-full text-xs p-2.5 border border-amber-300 rounded leading-relaxed">${panel.recommendations || ''}</textarea>
-          </div>
-        </div>
-      </div>
-    `;
+  // ================= DATE & NUMERIC HELPERS =================
+  isDateRangeColumn(label, key = '') {
+    const lbl = (label || '').toLowerCase();
+    const k = (key || '').toLowerCase();
+    return k.includes('datesfromto') || k.includes('from_to') || k.includes('fromto') ||
+           (lbl.includes('from') && lbl.includes('to')) || lbl.includes('period from');
   }
 
-  // Field Helpers & Real-time Updaters
-  updateField(path, value) {
-    const data = window.dataStore.data;
-    const parts = path.split('.');
-    let current = data;
-    for (let i = 0; i < parts.length - 1; i++) {
-      if (!current[parts[i]]) current[parts[i]] = {};
-      current = current[parts[i]];
+  isDateColumn(label, key = '') {
+    if (this.isDateRangeColumn(label, key)) return false;
+    const lbl = (label || '').toLowerCase();
+    const k = (key || '').toLowerCase();
+    return k.includes('date') || lbl.includes('date') || lbl.includes('(dd.mm.yyyy)') || lbl.includes('dd/mm/yyyy');
+  }
+
+  isNumericColumn(label, key = '') {
+    const lbl = (label || '').toLowerCase();
+    const k = (key || '').toLowerCase();
+
+    // Never numeric for registration numbers, codes, references
+    if (k.includes('reg') || k.includes('code') || k.includes('phone') || k.includes('ref') || k.includes('isbn') || k.includes('issn') || k.includes('pan')) {
+      return false;
     }
-    current[parts[parts.length - 1]] = value;
-    window.dataStore.saveCurrentData();
-    this.showSaveIndicator();
-  }
-
-  updateArrayItem(arrayPath, index, field, value) {
-    const data = window.dataStore.data;
-    const parts = arrayPath.split('.');
-    let arr = data;
-    for (const part of parts) {
-      arr = arr[part];
+    if (lbl.includes('reg') || lbl.includes('code') || lbl.includes('phone')) {
+      return false;
     }
-    if (arr && arr[index]) {
-      arr[index][field] = value;
-      window.dataStore.saveCurrentData();
-      this.showSaveIndicator();
+
+    return (
+      k.includes('benefitted') || lbl.includes('benefitted') ||
+      k.includes('durationdays') || lbl.includes('duration (days)') || lbl.includes('no. of days') || lbl.includes('no of days') || lbl.includes('in days') ||
+      k.includes('stipend') || lbl.includes('stipend') ||
+      k.includes('credits') || lbl.includes('credits') ||
+      k.includes('pct') || k.includes('percent') || lbl.includes('%') || lbl.includes('percentage') ||
+      lbl.includes('number of') || lbl.includes('no. of') || lbl.includes('no of') ||
+      k.includes('amount') || lbl.includes('amount') || lbl.includes('lakhs') ||
+      lbl.includes('footfall') || lbl.includes('marks') ||
+      lbl.includes('male') || lbl.includes('female') ||
+      lbl.includes('other states') || lbl.includes('other countries')
+    );
+  }
+
+  formatDateForInput(val) {
+    if (!val || typeof val !== 'string') return '';
+    const s = val.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const m1 = s.match(/^(\d{1,2})[\.\/-](\d{1,2})[\.\/-](\d{4})$/);
+    if (m1) {
+      return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`;
     }
-  }
-
-  updateLinesArray(path, textValue) {
-    const lines = textValue.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    this.updateField(path, lines);
-  }
-
-  removeArrayItem(arrayPath, index) {
-    const data = window.dataStore.data;
-    const parts = arrayPath.split('.');
-    let arr = data;
-    for (const part of parts) {
-      arr = arr[part];
+    const m2 = s.match(/^(\d{4})[\.\/-](\d{1,2})[\.\/-](\d{1,2})$/);
+    if (m2) {
+      return `${m2[1]}-${m2[2].padStart(2, '0')}-${m2[3].padStart(2, '0')}`;
     }
-    if (arr && arr.length > index) {
-      arr.splice(index, 1);
-      window.dataStore.saveCurrentData();
-      this.render(data);
+    return '';
+  }
+
+  parseDateRange(val) {
+    if (!val || typeof val !== 'string') return ['', ''];
+    const cleaned = val.trim();
+    if (cleaned.includes(' to ')) {
+      const parts = cleaned.split(' to ').map(s => s.trim());
+      return [this.formatDateForInput(parts[0]), this.formatDateForInput(parts[1])];
     }
-  }
-
-  addVacRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeI.vac) data.attributeI.vac = [];
-    data.attributeI.vac.push({ name: '', count: 1, studentsEnrolled: 0, feeCollected: 0, agenciesInvolved: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addCcRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeI.cc) data.attributeI.cc = [];
-    data.attributeI.cc.push({ name: '', count: 1, studentsEnrolled: 0, feeCollected: 0, agenciesInvolved: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addExternalFundRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeIV_VII.externalFunds) data.attributeIV_VII.externalFunds = [];
-    data.attributeIV_VII.externalFunds.push({ category: 'Conduct of FDP/Conference/Seminar', agency: '', amount: 0, facultyInvolved: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addManagementFundRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeIV_VII.managementFunds) data.attributeIV_VII.managementFunds = [];
-    data.attributeIV_VII.managementFunds.push({ category: 'Conduct of FDP/Conference/Seminar', amount: 0, facultyInvolved: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addClubRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeVI_VIII.clubs) data.attributeVI_VIII.clubs = [];
-    data.attributeVI_VIII.clubs.push({ clubName: '', studentsUG: 0, studentsPG: 0, activities: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addSignatureAchievementRow() {
-    const data = window.dataStore.data;
-    if (!data.qualitativePresentation.signatureAchievements) data.qualitativePresentation.signatureAchievements = [];
-    data.qualitativePresentation.signatureAchievements.push({ title: '', impact: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addAtrRow() {
-    const data = window.dataStore.data;
-    if (!data.qualitativePresentation.statusAAA2025_2026) data.qualitativePresentation.statusAAA2025_2026 = [];
-    data.qualitativePresentation.statusAAA2025_2026.push({ recommendation: '', status: 'Fully Completed', evidence: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  addBestPracticeRow() {
-    const data = window.dataStore.data;
-    if (!data.qualitativePresentation.bestPractices) data.qualitativePresentation.bestPractices = [];
-    data.qualitativePresentation.bestPractices.push({ title: '', objectives: '', context: '', practice: '', evidence: '', resourcesRequired: '' });
-    window.dataStore.saveCurrentData();
-    this.render(data);
-  }
-
-  updateScholarField(type, gender, val) {
-    const data = window.dataStore.data;
-    if (!data.departmentInfo) data.departmentInfo = {};
-    if (!data.departmentInfo.scholars) {
-      data.departmentInfo.scholars = { fullTime: { male: 0, female: 0 }, partTime: { male: 0, female: 0 } };
+    if (cleaned.includes(' - ')) {
+      const parts = cleaned.split(' - ').map(s => s.trim());
+      return [this.formatDateForInput(parts[0]), this.formatDateForInput(parts[1])];
     }
-    if (!data.departmentInfo.scholars[type]) data.departmentInfo.scholars[type] = { male: 0, female: 0 };
-    data.departmentInfo.scholars[type][gender] = val;
-
-    const ftM = data.departmentInfo.scholars.fullTime?.male || 0;
-    const ftF = data.departmentInfo.scholars.fullTime?.female || 0;
-    const ptM = data.departmentInfo.scholars.partTime?.male || 0;
-    const ptF = data.departmentInfo.scholars.partTime?.female || 0;
-    data.departmentInfo.researchScholarsCount = ftM + ftF + ptM + ptF;
-
-    window.dataStore.saveCurrentData();
-    window.dataStore.notify();
-    this.render(data);
+    return [this.formatDateForInput(cleaned), ''];
   }
 
-  updateOutcomeField(prog, metric, val) {
-    const data = window.dataStore.data;
-    if (!data.studentsOutcomes2026) data.studentsOutcomes2026 = {};
-    if (!data.studentsOutcomes2026[prog]) data.studentsOutcomes2026[prog] = {};
-    data.studentsOutcomes2026[prog][metric] = val;
-    window.dataStore.saveCurrentData();
-    window.dataStore.notify();
-    this.render(data);
-  }
-
-  addActivityRow(category) {
-    const data = window.dataStore.data;
-    if (!data.qualitativePresentation) data.qualitativePresentation = {};
-    if (!data.qualitativePresentation.statusOfActivities) {
-      data.qualitativePresentation.statusOfActivities = { basedOnAAA2025_2026: [], basedOnFacultyOrientation2026: [] };
+  updateDateRangeCell(sheetKey, rowIdx, colKey, val1, val2, changedField) {
+    if (this.isSubmissionLocked()) {
+      alert('Submissions are locked. Cannot edit data.');
+      return;
     }
-    if (!data.qualitativePresentation.statusOfActivities[category]) {
-      data.qualitativePresentation.statusOfActivities[category] = [];
+    let combined = '';
+    if (changedField === 'from') {
+      combined = val2 ? `${val1} to ${val2}` : val1;
+    } else {
+      combined = val1 ? `${val1} to ${val2}` : val2;
     }
-    data.qualitativePresentation.statusOfActivities[category].push({
-      eventActivity: '',
-      monthYear: '',
-      status: 'Completed',
-      remarks: ''
-    });
-    window.dataStore.saveCurrentData();
-    window.dataStore.notify();
-    this.render(data);
+    this.updateTableCell(sheetKey, rowIdx, colKey, combined);
   }
 
-  removeActivityRow(category, index) {
-    const data = window.dataStore.data;
-    if (data.qualitativePresentation?.statusOfActivities?.[category]) {
-      data.qualitativePresentation.statusOfActivities[category].splice(index, 1);
-      window.dataStore.saveCurrentData();
-      window.dataStore.notify();
-      this.render(data);
-    }
-  }
-
-  updateActivityItem(category, index, field, val) {
-    const data = window.dataStore.data;
-    if (data.qualitativePresentation?.statusOfActivities?.[category]?.[index]) {
-      data.qualitativePresentation.statusOfActivities[category][index][field] = val;
-      window.dataStore.saveCurrentData();
-      this.showSaveIndicator();
-    }
-  }
-
-  addFacilityRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeIII) data.attributeIII = {};
-    if (!data.attributeIII.purchasedEquipments) data.attributeIII.purchasedEquipments = [];
-    data.attributeIII.purchasedEquipments.push({
-      labName: '',
-      equipmentName: '',
-      type: 'Major Equipment',
-      purchaseDate: new Date().toISOString().split('T')[0],
-      amountINR: 0
-    });
-    window.dataStore.saveCurrentData();
-    window.dataStore.notify();
-    this.render(data);
-  }
-
-  removeFacilityRow(index) {
-    const data = window.dataStore.data;
-    if (data.attributeIII?.purchasedEquipments) {
-      data.attributeIII.purchasedEquipments.splice(index, 1);
-      window.dataStore.saveCurrentData();
-      window.dataStore.notify();
-      this.render(data);
-    }
-  }
-
-  updateFacilityItem(index, field, val) {
-    const data = window.dataStore.data;
-    if (data.attributeIII?.purchasedEquipments?.[index]) {
-      data.attributeIII.purchasedEquipments[index][field] = val;
-      window.dataStore.saveCurrentData();
-      this.showSaveIndicator();
-    }
-  }
-
-  updateLibraryField(field, val) {
-    const data = window.dataStore.data;
-    if (!data.attributeIII) data.attributeIII = {};
-    if (!data.attributeIII.departmentLibrary) data.attributeIII.departmentLibrary = {};
-    data.attributeIII.departmentLibrary[field] = val;
-    window.dataStore.saveCurrentData();
-    this.showSaveIndicator();
-  }
-
-  addCsrRow() {
-    const data = window.dataStore.data;
-    if (!data.attributeX) data.attributeX = {};
-    if (!data.attributeX.csrActivities) data.attributeX.csrActivities = [];
-    data.attributeX.csrActivities.push({
-      activityName: '',
-      type: 'Extension Activity',
-      collaboratingAgency: '',
-      isCSR: true,
-      studentsBenefited: 0,
-      amountINR: 0
-    });
-    window.dataStore.saveCurrentData();
-    window.dataStore.notify();
-    this.render(data);
-  }
-
-  removeCsrRow(index) {
-    const data = window.dataStore.data;
-    if (data.attributeX?.csrActivities) {
-      data.attributeX.csrActivities.splice(index, 1);
-      window.dataStore.saveCurrentData();
-      window.dataStore.notify();
-      this.render(data);
-    }
-  }
-
-  updateCsrItem(index, field, val) {
-    const data = window.dataStore.data;
-    if (data.attributeX?.csrActivities?.[index]) {
-      data.attributeX.csrActivities[index][field] = val;
-      window.dataStore.saveCurrentData();
-      this.showSaveIndicator();
-    }
-  }
-
-  updateGreenField(field, val) {
-    const data = window.dataStore.data;
-    if (!data.attributeX) data.attributeX = {};
-    if (!data.attributeX.sustainability) data.attributeX.sustainability = {};
-    data.attributeX.sustainability[field] = val;
-    window.dataStore.saveCurrentData();
-    this.showSaveIndicator();
-  }
-
-  showSaveIndicator() {
-    const ind = document.getElementById('save-indicator');
-    if (ind) {
-      ind.classList.remove('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
-      ind.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
-      ind.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Saving...`;
-      setTimeout(() => {
-        ind.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
-        ind.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
-        ind.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Auto-saved`;
-      }, 500);
-    }
-  }
 }
-
-window.FormBuilder = FormBuilder;

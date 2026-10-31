@@ -6,7 +6,7 @@ class AdminDashboard {
     this.departments = [];
     this.overview = {};
     this.statusFilter = 'all';
-    this.activeTab = 'sub_control'; // 'sub_control', 'overview', 'attribute_matrix', 'faculty_tracker'
+    this.activeTab = 'access_control'; // 'sub_control', 'overview', 'attribute_matrix', 'faculty_tracker'
     this.selectedAttributeForMatrix = 'att9'; // Default to Research
     this.facultySearchQuery = '';
     this.facultyDeptFilter = 'all';
@@ -158,13 +158,34 @@ class AdminDashboard {
 
   syncLocalLockStates() {
     if (!window.dataStore) return;
-    this.departments.forEach(dept => {
-      const status = window.dataStore.getDepartmentSubmissionStatus(dept.name);
-      if (status) {
-        if (status.is_locked !== undefined) dept.is_locked = status.is_locked;
-        if (status.status) dept.status = status.status;
+    // Sync with dynamic users DB
+    if (typeof window.dataStore.getUsersDB === 'function') {
+      const db = window.dataStore.getUsersDB();
+      if (db && Array.isArray(db.departments) && db.departments.length > 0) {
+        this.departments = db.departments.map(d => ({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          school: d.school,
+          hod_name: d.hod_name,
+          status: d.status || 'draft',
+          is_locked: d.is_locked || false,
+          last_updated: d.last_updated || '2026-10-31 10:00',
+          metrics: d.metrics || { publications: 20, grants_lakhs: 10.0, patents: 1, vac_cc: 2, mooc_pct: '80%', scholars: 12, placement_pct: '75%', equipments_count: 2, equipments_lakhs: 15.0, library_books: 1500, library_footfall: 80, csr_events: 2, csr_funds_lakhs: 2.0 },
+          evaluation: d.evaluation || { grade: null, score: null }
+        }));
       }
-    });
+    }
+
+    if (typeof window.dataStore.getDepartmentSubmissionStatus === 'function') {
+      this.departments.forEach(dept => {
+        const status = window.dataStore.getDepartmentSubmissionStatus(dept.name);
+        if (status) {
+          if (status.is_locked !== undefined) dept.is_locked = status.is_locked;
+          if (status.status) dept.status = status.status;
+        }
+      });
+    }
   }
 
   switchAdminTab(tabKey) {
@@ -254,7 +275,7 @@ class AdminDashboard {
       window.dataStore.switchDepartment(deptName);
     }
     if (window.app) {
-      window.app.switchView('presentation');
+      window.app.switchView('form');
     }
   }
 
@@ -272,7 +293,7 @@ class AdminDashboard {
       window.dataStore.switchDepartment(deptName);
     }
     if (window.app) {
-      window.app.switchView('panel');
+      window.app.switchView('form');
     }
   }
 
@@ -309,20 +330,25 @@ class AdminDashboard {
 
     this.container.innerHTML = `
       <div class="space-y-6">
-        <!-- Admin Central Header -->
-        <div class="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Admin Academic Central Header -->
+        <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-amber-50/40 rounded-2xl p-6 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
           <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wide">
+            <div class="flex items-center flex-wrap gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wide">
                 IQAC Central Admin Console
               </span>
-              <span class="text-xs text-blue-200">St. Joseph's College (Autonomous)</span>
+              <span class="px-3 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-900 border border-blue-200 tracking-wide">
+                Active Year of Form: 2026–2027
+              </span>
+              <span class="text-xs text-blue-800 font-bold flex items-center gap-1">
+                <span>🏛️</span> St. Joseph's College (Autonomous)
+              </span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight">
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-blue-950">
               Annual Academic Audit (AAA) 2026-2027 Admin Command Center
             </h1>
-            <p class="text-xs text-blue-200 mt-1">
-              Submission control, college-wide macro benchmarks, cross-department attribute analytics, and faculty contributions directory.
+            <p class="text-xs text-slate-600 mt-1 font-medium">
+              Institutional executive oversight, department user access control, academic benchmark analytics, and faculty contributions directory.
             </p>
           </div>
 
@@ -345,12 +371,17 @@ class AdminDashboard {
           </div>
         </div>
 
+        <!-- Submission Deadline Controller Banner -->
+        ${this.renderDeadlineControllerBanner()}
+
         <!-- Admin Module Navigation Tabs -->
         <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-2">
+          ${this.renderAdminNavTab('access_control', 'Department & Admin Access Hub', 'key')}
           ${this.renderAdminNavTab('sub_control', 'Department Submissions & Control', 'check-square')}
           ${this.renderAdminNavTab('overview', 'Institutional Overview & Macro KPIs', 'bar-chart-3')}
           ${this.renderAdminNavTab('attribute_matrix', 'Dept-Wise Attribute Analytics & Charts', 'table-properties')}
           ${this.renderAdminNavTab('faculty_tracker', 'Faculty-Wise Contribution Tracker', 'users')}
+          ${this.renderAdminNavTab('attr1_editor', 'Attribute Cards & Questionnaire Editor (Admin)', 'layout-grid')}
         </div>
 
         <!-- Active Admin View Content -->
@@ -361,7 +392,7 @@ class AdminDashboard {
     `;
 
     if (window.lucide) {
-      lucide.createIcons();
+      if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
     }
   }
 
@@ -381,6 +412,8 @@ class AdminDashboard {
 
   renderActiveTabContent() {
     switch (this.activeTab) {
+      case 'access_control':
+        return this.renderAccessManagementTab();
       case 'sub_control':
         return this.renderSubmissionsControlTab();
       case 'overview':
@@ -389,6 +422,8 @@ class AdminDashboard {
         return this.renderAttributeMatrixTab();
       case 'faculty_tracker':
         return this.renderFacultyTrackerTab();
+      case 'attr1_editor':
+        return this.renderAttribute1EditorTab();
       default:
         return this.renderSubmissionsControlTab();
     }
@@ -542,7 +577,7 @@ class AdminDashboard {
           <div class="flex items-center gap-2">
             <button type="button" onclick="adminDashboard.launchMeetingForDept('${dept.name}')" class="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition">
               <i data-lucide="play-circle" class="w-4 h-4"></i>
-              <span>Launch 60m Meeting Deck</span>
+              <span>Open Attribute Forms</span>
             </button>
             <button type="button" onclick="adminDashboard.openDashboardForDept('${dept.name}')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold rounded-lg border border-blue-200 flex items-center gap-1.5 transition">
               <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
@@ -550,7 +585,7 @@ class AdminDashboard {
             </button>
             <button type="button" onclick="adminDashboard.openRubricForDept('${dept.name}')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold rounded-lg border border-amber-200 flex items-center gap-1.5 transition">
               <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
-              <span>15m Panel Rubric</span>
+              <span>Audit Forms</span>
             </button>
           </div>
 
@@ -804,7 +839,7 @@ class AdminDashboard {
                 <td class="p-2.5 font-mono">${d.metrics.library_books || 1500} books</td>
                 <td class="p-2.5 font-mono text-purple-700 font-bold">${d.metrics.library_footfall || 80} visits/day</td>
                 <td class="p-2.5 text-center">
-                  <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Present</button>
+                  <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Open Form</button>
                 </td>
               </tr>
             `).join('')}
@@ -835,7 +870,7 @@ class AdminDashboard {
                 <td class="p-2.5">${d.code === 'physics' ? 'DST-SERB, CSIR' : (d.code === 'cs' ? 'DST-FIST, AICTE' : 'ICSSR, Management')}</td>
                 <td class="p-2.5 font-mono text-blue-700 font-semibold">₹ 2.50 L</td>
                 <td class="p-2.5 text-center">
-                  <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Present</button>
+                  <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Open Form</button>
                 </td>
               </tr>
             `).join('')}
@@ -866,7 +901,7 @@ class AdminDashboard {
               <td class="p-2.5 font-mono font-bold text-amber-700">${d.metrics.patents || 0}</td>
               <td class="p-2.5 font-mono text-indigo-700 font-bold">${d.metrics.scholars || 14} scholars</td>
               <td class="p-2.5 text-center">
-                <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Present</button>
+                <button type="button" onclick="adminDashboard.launchMeetingForDept('${d.name}')" class="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-[11px] font-bold">Open Form</button>
               </td>
             </tr>
           `).join('')}
@@ -1220,7 +1255,7 @@ class AdminDashboard {
       </div>
     `;
     document.body.appendChild(modal);
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
   }
 
   saveNewDepartment(form) {
@@ -1381,7 +1416,7 @@ class AdminDashboard {
     `;
 
     document.body.appendChild(modal);
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
   }
 
   closeAgendaConfigModal() {
@@ -1488,6 +1523,624 @@ class AdminDashboard {
       window.app.renderCurrentView();
     }
   }
-}
 
-window.adminDashboard = new AdminDashboard('admin-container');
+  // TAB 5: ATTRIBUTE CARDS & QUESTIONNAIRE TEMPLATE MANAGER (ADMIN ONLY)
+  renderAttribute1EditorTab() {
+    const cards = window.dataStore && typeof window.dataStore.getAllCardsSchema === 'function'
+      ? window.dataStore.getAllCardsSchema()
+      : (window.ALL_ATTRIBUTES_CARDS_SCHEMA || []);
+
+    return `
+      <div class="space-y-6">
+        <!-- Banner -->
+        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 text-slate-950 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-950 text-amber-400">
+                Admin Questionnaire Command
+              </span>
+              <span class="text-xs font-semibold text-amber-950">PART-A & Attributes 1 to 10</span>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-slate-950">
+              Master Questionnaire & Attribute Cards Manager
+            </h2>
+            <p class="text-xs text-amber-950 font-medium mt-1">
+              Rule: Question text, instructions, and column headers are exclusively editable by Admin. Department accounts can only fill data into these cards.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="formBuilder.backToCards(); app.switchView('form');" class="px-4 py-2 bg-slate-950 hover:bg-slate-900 text-amber-400 font-black rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              <span>View Attribute Cards Gallery</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Attribute Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${cards.map((card) => {
+            const isPartA = card.id === 'part_a';
+            const sheetCount = card.sheets?.length || 0;
+
+            return `
+              <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-amber-400 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${isPartA ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
+                      ${card.cardCode}
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-semibold">
+                      ${sheetCount} ${sheetCount === 1 ? 'Sheet' : 'Sheets'}
+                    </span>
+                  </div>
+                  <h3 class="text-sm font-bold text-slate-800 line-clamp-2 flex items-center gap-1.5">
+                    <i data-lucide="${card.icon || 'file-text'}" class="w-4 h-4 text-blue-600 shrink-0"></i>
+                    <span>${card.cardTitle}</span>
+                  </h3>
+                  <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                    ${card.cardSubtitle}
+                  </p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                    <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> Standardized
+                  </span>
+                  <button type="button" onclick="formBuilder.openCard('${card.id}'); formBuilder.adminEditQuestionsMode = true; app.switchView('form');" class="text-xs px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg transition flex items-center gap-1">
+                    <i data-lucide="edit-3" class="w-3 h-3"></i> Edit Questions
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+
+  // ================= SUBMISSION DEADLINE CONTROLLER =================
+  renderDeadlineControllerBanner() {
+    const deadline = window.dataStore ? window.dataStore.getSubmissionDeadline() : '2027-02-28T23:59';
+    const isPassed = window.dataStore ? window.dataStore.isDeadlinePassed() : false;
+    const formatted = window.dataStore ? window.dataStore.formatDeadlineForDisplay() : deadline;
+
+    return `
+      <div class="bg-white rounded-2xl border ${isPassed ? 'border-red-300 ring-2 ring-red-400/20' : 'border-amber-300 ring-2 ring-amber-400/20'} p-5 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl ${isPassed ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'} flex items-center justify-center font-bold text-lg shrink-0">
+              <i data-lucide="${isPassed ? 'lock' : 'clock'}" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center flex-wrap gap-2 mb-1">
+                <span class="text-xs font-black uppercase tracking-wider text-slate-800">
+                  Audit Data Entry Deadline:
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black ${isPassed ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">
+                  ${isPassed ? '🚨 Deadline Expired (Data Entry Locked for Departments)' : '🟢 Active • Departments Can Enter Data'}
+                </span>
+              </div>
+              <p class="text-xs text-slate-600">
+                Current Cutoff: <strong class="text-slate-900">${formatted}</strong>. After this date and time, department users cannot edit, add, or delete any records.
+              </p>
+            </div>
+          </div>
+
+          <!-- Deadline Date-Time Editor Form -->
+          <div class="flex items-center flex-wrap gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <label class="text-[11px] font-bold text-slate-600">Set New Cutoff:</label>
+            <input 
+              type="datetime-local" 
+              id="admin-deadline-input" 
+              value="${deadline}" 
+              class="text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-mono text-slate-800 focus:border-blue-500 focus:outline-none"
+            />
+            <button 
+              type="button" 
+              onclick="adminDashboard.saveSubmissionDeadline()" 
+              class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1.5"
+            >
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span>Save Deadline</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  saveSubmissionDeadline() {
+    const input = document.getElementById('admin-deadline-input');
+    if (!input || !input.value) {
+      alert('Please select a valid date and time for the submission deadline.');
+      return;
+    }
+    if (window.dataStore) {
+      window.dataStore.setSubmissionDeadline(input.value);
+      alert(`Submission deadline updated to: ${window.dataStore.formatDeadlineForDisplay()}\n\nDepartments will be locked from editing after this time.`);
+      this.render();
+      if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
+    }
+  }
+
+  // ================= 1. DEPARTMENT & ADMIN ACCESS MANAGEMENT TAB =================
+  renderAccessManagementTab() {
+    const usersDB = window.dataStore ? window.dataStore.getUsersDB() : { departments: [], admins: [] };
+    const departments = usersDB.departments || [];
+    const admins = usersDB.admins || [];
+
+    return `
+      <div class="space-y-8 animate-fadeIn">
+        
+        <!-- ================= SECTION A: DEPARTMENT ACCESS ================= -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">
+                  Section A
+                </span>
+                <h2 class="text-base sm:text-lg font-black tracking-tight">Department Access & Credentials Hub</h2>
+              </div>
+              <p class="text-xs text-blue-200">
+                Manage department user accounts, assign login User IDs & passwords, reset credentials, and toggle audit data locking.
+              </p>
+            </div>
+            <span class="px-3 py-1 bg-white/10 rounded-xl text-xs font-bold border border-white/20 whitespace-nowrap">
+              ${departments.length} Departments Configured
+            </span>
+          </div>
+
+          <div class="p-6 space-y-6">
+            
+            <!-- Form to Add New Department User -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-1.5">
+                <i data-lucide="user-plus" class="w-4 h-4 text-blue-600"></i>
+                <span>Create New Department User Account</span>
+              </h3>
+
+              <form onsubmit="adminDashboard.handleCreateDepartment(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Department Name *</label>
+                  <input 
+                    type="text" 
+                    id="new-dept-name" 
+                    required 
+                    placeholder="e.g. PG & Research Dept of Statistics"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none capitalize"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">User ID / Dept Code *</label>
+                  <input 
+                    type="text" 
+                    id="new-dept-code" 
+                    required 
+                    placeholder="e.g. stats"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-mono focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Initial Password *</label>
+                  <input 
+                    type="text" 
+                    id="new-dept-pass" 
+                    required 
+                    value="sjc123"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-mono focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">School</label>
+                  <select id="new-dept-school" class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none font-semibold">
+                    <option value="School of Computing Sciences">School of Computing Sciences</option>
+                    <option value="School of Management Studies">School of Management Studies</option>
+                    <option value="School of Physical Sciences">School of Physical Sciences</option>
+                    <option value="School of Chemical Sciences">School of Chemical Sciences</option>
+                    <option value="School of Biological Sciences">School of Biological Sciences</option>
+                    <option value="School of Languages">School of Languages</option>
+                    <option value="School of Social Sciences">School of Social Sciences</option>
+                  </select>
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+                  <button 
+                    type="submit" 
+                    class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add Department</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Departments Accounts Table -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                    <th class="p-3 w-12 text-center">#</th>
+                    <th class="p-3">User ID (Login Code)</th>
+                    <th class="p-3">Department Name</th>
+                    <th class="p-3">School / HOD</th>
+                    <th class="p-3">Login Password</th>
+                    <th class="p-3 text-center">Data Lock Status</th>
+                    <th class="p-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${departments.map((dept, idx) => {
+                    const isLocked = dept.is_locked || false;
+                    return `
+                      <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
+                        <td class="p-3 font-mono font-bold text-blue-700">
+                          <span class="px-2 py-1 rounded bg-blue-50 border border-blue-200">${dept.code}</span>
+                        </td>
+                        <td class="p-3">
+                          <span class="font-bold text-slate-900">${dept.name}</span>
+                        </td>
+                        <td class="p-3 text-slate-600">
+                          <div class="font-semibold text-slate-800">${dept.school || '—'}</div>
+                          <div class="text-[11px] text-slate-500">${dept.hod_name ? 'HOD: ' + dept.hod_name : ''}</div>
+                        </td>
+                        <td class="p-3">
+                          <div class="flex items-center gap-1.5 font-mono">
+                            <span id="pass-dept-${dept.code}" class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-bold">
+                              ••••••••
+                            </span>
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.togglePasswordVisibility('pass-dept-${dept.code}', '${dept.password}')" 
+                              title="Show / Hide Password" 
+                              class="p-1 text-slate-500 hover:text-slate-800 rounded"
+                            >
+                              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            </button>
+                          </div>
+                        </td>
+                        <td class="p-3 text-center">
+                          <button 
+                            type="button" 
+                            onclick="adminDashboard.toggleDeptLock('${dept.code}')" 
+                            class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition ${
+                              isLocked 
+                                ? 'bg-red-100 text-red-800 border border-red-300 hover:bg-red-200' 
+                                : 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                            }"
+                          >
+                            ${isLocked ? '🔒 Locked' : '🔓 Unlocked'}
+                          </button>
+                        </td>
+                        <td class="p-3 text-center">
+                          <div class="flex items-center justify-center gap-1">
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.openEditDepartmentModal('${dept.code}')" 
+                              title="Edit Department Details" 
+                              class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+                            >
+                              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.openChangeDeptPasswordModal('${dept.code}')" 
+                              title="Change Password" 
+                              class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg transition"
+                            >
+                              <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.handleDeleteDepartment('${dept.code}')" 
+                              title="Delete Department" 
+                              class="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition"
+                            >
+                              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- ================= SECTION B: ADMINISTRATOR ACCESS ================= -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-900 to-slate-900 text-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">
+                  Section B
+                </span>
+                <h2 class="text-base sm:text-lg font-black tracking-tight">Administrator Logins & Privileges</h2>
+              </div>
+              <p class="text-xs text-purple-200">
+                Create and manage IQAC administrative accounts, assign roles, reset admin passwords, and authorize platform officers.
+              </p>
+            </div>
+            <span class="px-3 py-1 bg-white/10 rounded-xl text-xs font-bold border border-white/20 whitespace-nowrap">
+              ${admins.length} Administrators Active
+            </span>
+          </div>
+
+          <div class="p-6 space-y-6">
+            
+            <!-- Form to Add New Admin User -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-1.5">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-purple-600"></i>
+                <span>Create New Administrator Account</span>
+              </h3>
+
+              <form onsubmit="adminDashboard.handleCreateAdmin(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Full Name & Title *</label>
+                  <input 
+                    type="text" 
+                    id="new-admin-name" 
+                    required 
+                    placeholder="e.g. Dr. K. Premkumar"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Admin User ID *</label>
+                  <input 
+                    type="text" 
+                    id="new-admin-user" 
+                    required 
+                    placeholder="e.g. admin_premkumar"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-mono focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Password *</label>
+                  <input 
+                    type="text" 
+                    id="new-admin-pass" 
+                    required 
+                    value="admin123"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-mono focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div class="flex items-end">
+                  <button 
+                    type="submit" 
+                    class="w-full py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <i data-lucide="user-check" class="w-4 h-4"></i>
+                    <span>Create Administrator</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Administrators Table -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                    <th class="p-3 w-12 text-center">#</th>
+                    <th class="p-3">Admin User ID</th>
+                    <th class="p-3">Full Name & Designation</th>
+                    <th class="p-3">Role / Privileges</th>
+                    <th class="p-3">Password</th>
+                    <th class="p-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${admins.map((adm, idx) => {
+                    const isRoot = adm.username.toLowerCase() === 'admin';
+                    return `
+                      <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
+                        <td class="p-3 font-mono font-bold text-purple-800">
+                          <span class="px-2 py-1 rounded bg-purple-50 border border-purple-200">${adm.username}</span>
+                        </td>
+                        <td class="p-3">
+                          <span class="font-bold text-slate-900">${adm.name}</span>
+                        </td>
+                        <td class="p-3">
+                          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200">
+                            ${adm.role || 'IQAC Admin'}
+                          </span>
+                        </td>
+                        <td class="p-3">
+                          <div class="flex items-center gap-1.5 font-mono">
+                            <span id="pass-admin-${adm.username}" class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 font-bold">
+                              ••••••••
+                            </span>
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.togglePasswordVisibility('pass-admin-${adm.username}', '${adm.password}')" 
+                              title="Show / Hide Password" 
+                              class="p-1 text-slate-500 hover:text-slate-800 rounded"
+                            >
+                              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            </button>
+                          </div>
+                        </td>
+                        <td class="p-3 text-center">
+                          <div class="flex items-center justify-center gap-1">
+                            <button 
+                              type="button" 
+                              onclick="adminDashboard.openChangeAdminPasswordModal('${adm.username}')" 
+                              title="Change Password" 
+                              class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg transition"
+                            >
+                              <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                            </button>
+                            ${!isRoot ? `
+                              <button 
+                                type="button" 
+                                onclick="adminDashboard.handleDeleteAdmin('${adm.username}')" 
+                                title="Delete Admin" 
+                                class="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg transition"
+                              >
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                              </button>
+                            ` : `
+                              <span class="text-[10px] text-slate-400 font-semibold px-2">Root Account</span>
+                            `}
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  // ================= PASSWORD TOGGLE & HANDLERS =================
+  togglePasswordVisibility(elementId, plainPassword) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    if (el.textContent.trim() === '••••••••') {
+      el.textContent = plainPassword;
+      el.classList.remove('text-slate-800');
+      el.classList.add('text-blue-700');
+    } else {
+      el.textContent = '••••••••';
+      el.classList.remove('text-blue-700');
+      el.classList.add('text-slate-800');
+    }
+  }
+
+  handleCreateDepartment(event) {
+    event.preventDefault();
+    const name = document.getElementById('new-dept-name')?.value;
+    const code = document.getElementById('new-dept-code')?.value;
+    const password = document.getElementById('new-dept-pass')?.value;
+    const school = document.getElementById('new-dept-school')?.value;
+
+    try {
+      if (window.dataStore) {
+        window.dataStore.addDepartmentUser({ name, code, password, school });
+        alert(`Department "${name}" (User ID: ${code}) created successfully!`);
+        this.render();
+        if (window.app) window.app.refreshDeptDropdown();
+      }
+    } catch (e) {
+      alert(`Error creating department: ${e.message}`);
+    }
+  }
+
+  handleCreateAdmin(event) {
+    event.preventDefault();
+    const name = document.getElementById('new-admin-name')?.value;
+    const username = document.getElementById('new-admin-user')?.value;
+    const password = document.getElementById('new-admin-pass')?.value;
+
+    try {
+      if (window.dataStore) {
+        window.dataStore.addAdminUser({ name, username, password, role: 'IQAC Administrator' });
+        alert(`Admin account "${username}" created successfully!`);
+        this.render();
+      }
+    } catch (e) {
+      alert(`Error creating admin: ${e.message}`);
+    }
+  }
+
+  openEditDepartmentModal(code) {
+    const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
+    const dept = (db.departments || []).find(d => d.code === code);
+    if (!dept) return;
+
+    const newName = prompt('Edit Department Name:', dept.name);
+    if (newName === null) return;
+    const newSchool = prompt('Edit School:', dept.school || '');
+    const newHod = prompt('Edit HOD Name:', dept.hod_name || '');
+
+    window.dataStore.updateDepartmentUser(code, {
+      name: (newName || dept.name).trim(),
+      school: (newSchool !== null ? newSchool : dept.school).trim(),
+      hod_name: (newHod !== null ? newHod : dept.hod_name).trim()
+    });
+
+    alert(`Department ${code} updated successfully!`);
+    this.render();
+    if (window.app) window.app.refreshDeptDropdown();
+  }
+
+  openChangeDeptPasswordModal(code) {
+    const newPass = prompt(`Enter new password for Department "${code}":`);
+    if (newPass && newPass.trim()) {
+      window.dataStore.updateDepartmentUser(code, { password: newPass.trim() });
+      alert(`Password for Department "${code}" updated successfully!`);
+      this.render();
+    }
+  }
+
+  openChangeAdminPasswordModal(username) {
+    const newPass = prompt(`Enter new password for Admin "${username}":`);
+    if (newPass && newPass.trim()) {
+      window.dataStore.updateAdminUser(username, { password: newPass.trim() });
+      alert(`Password for Admin "${username}" updated successfully!`);
+      this.render();
+    }
+  }
+
+  handleDeleteDepartment(code) {
+    if (confirm(`Are you sure you want to delete department account "${code}"?\nThis cannot be undone.`)) {
+      try {
+        window.dataStore.deleteDepartmentUser(code);
+        alert(`Department "${code}" deleted successfully.`);
+        this.render();
+        if (window.app) window.app.refreshDeptDropdown();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+  }
+
+  handleDeleteAdmin(username) {
+    if (confirm(`Are you sure you want to delete admin account "${username}"?`)) {
+      try {
+        window.dataStore.deleteAdminUser(username);
+        alert(`Admin account "${username}" deleted successfully.`);
+        this.render();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+  }
+
+  toggleDeptLock(code) {
+    const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
+    const dept = (db.departments || []).find(d => d.code === code);
+    if (!dept) return;
+
+    const newLockState = !dept.is_locked;
+    window.dataStore.updateDepartmentUser(code, { is_locked: newLockState });
+    window.dataStore.setDepartmentSubmissionStatus(dept.name, newLockState ? 'submitted' : 'draft', newLockState);
+
+    alert(`Department "${dept.name}" data submission has been ${newLockState ? 'LOCKED (Read-Only)' : 'UNLOCKED (Open for editing)'}.`);
+    this.render();
+    if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
+  }
+
+}

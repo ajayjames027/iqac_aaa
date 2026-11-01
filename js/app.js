@@ -127,15 +127,15 @@ class App {
         }
       }
 
-      // Update Nav Buttons for Light Sidebar
+      // Update Nav Buttons for Palette Theme Sidebar
       const btn = document.getElementById(`nav-btn-${v}`);
       if (btn) {
         if (v === viewName) {
-          btn.classList.remove('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900', 'text-slate-300', 'hover:bg-slate-800');
-          btn.classList.add('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
+          btn.classList.remove('text-slate-700', 'hover:text-[#26648E]', 'hover:bg-white', 'bg-white/80', 'border-slate-200');
+          btn.classList.add('bg-[#26648E]', 'text-white', 'font-bold', 'shadow-md', 'shadow-[#26648E]/25', 'border-[#26648E]');
         } else {
-          btn.classList.remove('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
-          btn.classList.add('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900', 'font-semibold');
+          btn.classList.remove('bg-[#26648E]', 'text-white', 'font-bold', 'shadow-md', 'shadow-[#26648E]/25', 'border-[#26648E]', 'bg-blue-600');
+          btn.classList.add('text-slate-700', 'hover:text-[#26648E]', 'hover:bg-white', 'bg-white/80', 'border', 'border-slate-200', 'shadow-2xs', 'font-semibold');
         }
       }
     });

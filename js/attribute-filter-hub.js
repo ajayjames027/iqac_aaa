@@ -195,22 +195,19 @@ class AttributeFilterHub {
       <div class="w-full space-y-6 animate-fadeIn">
         
         <!-- Header Banner with Light Academic Theme -->
-        <div class="bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-amber-50/40 rounded-2xl p-6 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
           <div>
             <div class="flex items-center flex-wrap gap-2 mb-2">
-              <span class="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+              <span class="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#53D2DC]/20 text-[#136168] border border-[#53D2DC]/50">
                 Data Explorer & Filter Hub
               </span>
-              <span class="text-xs text-blue-800 font-bold flex items-center gap-1">
-                <span>🎓</span> St. Joseph's College (Autonomous) • AAA 2026–2027
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] tracking-wide">
+                Active Year: 2026–2027
               </span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-blue-950">
-              Cross-Department Attribute Data Explorer
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
+              Department Attribute Data Explorer
             </h1>
-            <p class="text-xs text-slate-600 mt-1 max-w-4xl font-medium">
-              Filter, search, cross-reference, and audit records entered by departments across all 10 attributes and Part-A.
-            </p>
           </div>
 
           <div class="flex items-center flex-wrap gap-2">
@@ -667,7 +664,7 @@ class AttributeFilterHub {
   exportFilteredToExcel() {
     const records = this.getFilteredRecords();
     if (!records || records.length === 0) {
-      alert('No matching records to export.');
+      window.showToast('No matching records to export.', 'warning', 3000, 'Export Notice');
       return;
     }
 

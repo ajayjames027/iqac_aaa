@@ -16,134 +16,103 @@
 
   <!-- Custom Stylesheet with Academic Light Palette -->
   <link rel="stylesheet" href="css/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>" />
+  <link rel="icon" type="image/png" href="assets/weblogo.png" />
 </head>
-<body class="bg-[#f8fafc] text-slate-800 antialiased min-h-screen flex">
+<body class="bg-white text-slate-800 antialiased min-h-screen flex bg-[#f8fafc]">
 
-  <!-- ================= 1. ACADEMIC LIGHT-THEMED LEFT SIDEBAR ================= -->
-  <aside id="app-sidebar" class="w-72 bg-white text-slate-800 shrink-0 flex flex-col justify-between border-r border-slate-200 transition-all duration-300 z-50 sticky top-0 h-screen overflow-y-auto shadow-sm">
-    <div class="p-5 space-y-5">
+  <!-- ================= 1. DISTINCT LIGHT-TINTED LEFT SIDEBAR WITH PALETTE THEME ================= -->
+  <aside id="app-sidebar" class="w-72 bg-[#f0f5f9] text-slate-800 shrink-0 flex flex-col justify-between border-r border-[#4F8FC0]/25 transition-all duration-300 z-50 sticky top-0 h-screen overflow-y-auto shadow-xs">
+    <div class="p-5 space-y-6">
       
-      <!-- Institutional Academic Crest & Header -->
-      <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 text-amber-400 flex items-center justify-center font-black shadow-md text-base shrink-0 border-2 border-amber-400/50 crest-ring">
-          <div class="text-center leading-tight">
-            <span class="text-xs block font-bold text-amber-300">🎓</span>
-            <span class="text-[11px] font-black tracking-wider text-amber-400">SJC</span>
-          </div>
+      <!-- Institutional Logo & Header (Vertical Stack: Small Logo on Top, Details Below) -->
+      <div class="bg-white rounded-2xl p-4 border border-[#4F8FC0]/25 shadow-2xs flex flex-col items-center text-center transition hover:shadow-xs">
+        <!-- Small Logo inside a neat radius rectangle box -->
+        <div class="w-12 h-14 rounded-xl bg-gradient-to-b from-[#f0f5f9] via-white to-[#FFE3B3]/25 border border-[#4F8FC0]/30 flex items-center justify-center p-1.5 shadow-2xs mb-2.5">
+          <img src="assets/weblogo.png" alt="St. Joseph's College Crest" class="h-10 w-auto object-contain drop-shadow-xs" />
         </div>
-        <div class="min-w-0">
-          <h1 class="text-sm font-black text-slate-900 tracking-tight leading-tight truncate">
+        <!-- College Details Below -->
+        <div class="w-full">
+          <h1 class="text-sm font-black text-[#26648E] tracking-tight leading-snug">
             St. Joseph's College
           </h1>
-          <p class="text-[10px] text-blue-700 font-extrabold uppercase tracking-wider truncate">
-            Autonomous • Tiruchirappalli
+          <p class="text-[11px] font-bold text-slate-700">
+            (Autonomous)
           </p>
-          <div class="flex items-center gap-1.5 mt-0.5">
-            <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300/80">
-              NAAC A++
+          <p class="text-[10px] text-[#4F8FC0] font-extrabold uppercase tracking-wider mt-0.5">
+            Estd. 1844 • Tiruchirappalli
+          </p>
+          <div class="mt-2 flex items-center justify-center gap-1.5">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs">
+              AAA 2026–2027
             </span>
-            <span class="text-[9px] text-slate-500 font-medium truncate">
-              Estd. 1844
-            </span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#53D2DC] shadow-2xs"></span>
           </div>
-        </div>
-      </div>
-
-      <!-- User Session Profile Card -->
-      <div class="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 rounded-xl p-3 border border-blue-100/80 flex items-center justify-between gap-2 shadow-2xs">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/10 text-blue-700 border border-blue-200/80 flex items-center justify-center font-bold shrink-0">
-            <i data-lucide="graduation-cap" class="w-4 h-4 text-blue-700"></i>
-          </div>
-          <div class="min-w-0">
-            <div id="user-name-label" class="text-xs font-bold text-slate-900 truncate">Admin</div>
-            <span id="user-role-badge" class="px-2 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200">
-              IQAC Admin
-            </span>
-          </div>
-        </div>
-        <button type="button" onclick="authManager.showLoginModal()" title="Switch Account / Login" class="p-1.5 text-slate-500 hover:text-blue-700 rounded-lg hover:bg-blue-100/60 transition">
-          <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-
-      <!-- Department Selector (Clean box without "Viewing Department:" label) -->
-      <div id="dept-switcher-container">
-        <div class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 transition shadow-2xs">
-          <i data-lucide="building" class="w-4 h-4 text-blue-600 shrink-0"></i>
-          <select id="dept-switcher-select" onchange="app.onDeptChanged(this.value)" class="bg-transparent text-xs font-bold text-slate-800 outline-none w-full truncate cursor-pointer">
-            <!-- Dynamically populated -->
-          </select>
         </div>
       </div>
 
       <!-- Navigation Menu Items -->
       <div class="space-y-1.5">
-        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 pb-1 flex items-center justify-between">
-          <span>Academic Modules</span>
-          <span class="text-[9px] text-blue-600 font-bold">AAA 2026-27</span>
+        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 pb-1">
+          Navigation Modules
         </div>
 
         <!-- 1. Attribute Forms (1 to 10) -->
-        <button id="nav-btn-form" type="button" onclick="app.switchView('form')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-bold text-white bg-blue-600 shadow-sm">
-          <i data-lucide="book-open" class="w-4 h-4 text-amber-300"></i>
+        <button id="nav-btn-form" type="button" onclick="app.switchView('form')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-bold text-white bg-[#26648E] shadow-md shadow-[#26648E]/25 border border-[#26648E]">
+          <i data-lucide="book-open" class="w-4 h-4 text-[#53D2DC]"></i>
           <span>Attribute Forms (1-10)</span>
         </button>
 
         <!-- 2. Data Filter & Explorer Hub -->
-        <button id="nav-btn-filter" type="button" onclick="app.switchView('filter')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-          <i data-lucide="filter" class="w-4 h-4 text-indigo-600"></i>
+        <button id="nav-btn-filter" type="button" onclick="app.switchView('filter')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-700 hover:text-[#26648E] hover:bg-white bg-white/80 border border-slate-200 shadow-2xs">
+          <i data-lucide="filter" class="w-4 h-4 text-[#4F8FC0]"></i>
           <span>Data Filter & Explorer</span>
-          <span class="ml-auto px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700">New</span>
         </button>
 
         <!-- 3. Admin & Access Hub -->
-        <button id="nav-btn-admin" type="button" onclick="app.switchView('admin')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-          <i data-lucide="shield-check" class="w-4 h-4 text-purple-600"></i>
+        <button id="nav-btn-admin" type="button" onclick="app.switchView('admin')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-700 hover:text-[#26648E] hover:bg-white bg-white/80 border border-slate-200 shadow-2xs">
+          <i data-lucide="shield-check" class="w-4 h-4 text-[#26648E]"></i>
           <span>Admin & Access Hub</span>
         </button>
 
         <!-- 4. College Analytics (15m Dashboard) -->
-        <button id="nav-btn-dashboard" type="button" onclick="app.switchView('dashboard')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+        <button id="nav-btn-dashboard" type="button" onclick="app.switchView('dashboard')" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-2.5 transition text-xs font-semibold text-slate-700 hover:text-[#26648E] hover:bg-white bg-white/80 border border-slate-200 shadow-2xs">
           <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600"></i>
           <span>College Analytics (15m)</span>
         </button>
       </div>
 
-      <!-- Submission Deadline Widget in Light Sidebar -->
-      <div id="sidebar-deadline-widget" class="bg-gradient-to-r from-amber-50 to-orange-50/60 rounded-xl p-3 border border-amber-200/80 space-y-1 shadow-2xs">
-        <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
-          <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-700"></i>
-          <span>Audit Cutoff Deadline</span>
+      <!-- Submission Deadline Widget in Sidebar -->
+      <div id="sidebar-deadline-widget" class="bg-white rounded-xl p-3 border border-[#4F8FC0]/25 space-y-1 shadow-2xs">
+        <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#4F8FC0]">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-[#26648E]"></i>
+          <span>Submission Deadline</span>
         </div>
-        <div id="sidebar-deadline-text" class="text-[11px] font-bold text-slate-800 font-mono">
+        <div id="sidebar-deadline-text" class="text-xs font-extrabold text-[#26648E] font-mono">
           <!-- Populated dynamically -->
         </div>
       </div>
 
     </div>
 
-    <!-- Bottom Sidebar Actions (Logout & Accreditation Footer) -->
-    <div class="p-5 border-t border-slate-100 space-y-3">
+    <!-- Bottom Sidebar Actions (Logout & Minimal Footer) -->
+    <div class="p-5 border-t border-slate-200 space-y-2">
       <button type="button" onclick="authManager.logout()" class="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
         <i data-lucide="log-out" class="w-4 h-4"></i>
-        <span>Logout Session</span>
+        <span>Logout</span>
       </button>
 
-      <div class="text-[10px] text-slate-400 text-center font-medium leading-relaxed">
-        Internal Quality Assurance Cell<br />
-        <span class="text-blue-700 font-semibold">St. Joseph's College (Autonomous)</span>
+      <div class="text-[10px] text-slate-400 text-center font-medium">
+        IQAC • St. Joseph's College
       </div>
     </div>
   </aside>
 
 
   <!-- ================= 2. MAIN ACADEMIC WORKSPACE ================= -->
-  <div class="flex-1 flex flex-col min-w-0 transition-all duration-300">
+  <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-[#f8fafc]">
     
     <!-- Top Action Bar with Floating Blinking Sidebar Toggle Button -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-xs">
+    <header class="bg-white border-b border-[#4F8FC0]/20 sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between shadow-2xs">
       
       <!-- Blinking / Glowing Hide-Show Toggle Button -->
       <div class="flex items-center gap-3">
@@ -152,31 +121,20 @@
           type="button" 
           onclick="app.toggleSidebar()" 
           title="Toggle Left Menu Sidebar"
-          class="sidebar-blink-btn px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 shadow-md transition transform active:scale-95 cursor-pointer ring-2 ring-amber-400/50"
+          class="sidebar-blink-btn px-3 py-1.5 bg-[#FFE3B3] hover:bg-[#ffe0a3] text-[#26648E] font-black rounded-xl text-xs flex items-center gap-2 shadow-sm transition transform active:scale-95 cursor-pointer border border-[#fedba0] ring-2 ring-[#53D2DC]/60"
         >
-          <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-4 h-4 text-slate-950"></i>
+          <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-4 h-4 text-[#26648E]"></i>
           <span id="sidebar-toggle-text">Hide Menu</span>
         </button>
 
-        <div class="hidden sm:flex items-center gap-2">
-          <span class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-50 text-blue-900 border border-blue-200 flex items-center gap-1.5">
-            <i data-lucide="award" class="w-3.5 h-3.5 text-amber-500"></i>
-            <span>Annual Academic Audit (AAA) 2026–2027</span>
-          </span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-            NAAC Cycle IV
-          </span>
-        </div>
+        <span class="text-xs font-extrabold text-[#26648E] tracking-tight">
+          Annual Academic Audit (AAA) 2026–2027
+        </span>
       </div>
 
-      <!-- Right Header Actions -->
-      <div class="flex items-center gap-3">
-        <div id="top-active-dept-pill" class="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 hidden md:flex shadow-2xs">
-          <i data-lucide="building" class="w-3.5 h-3.5 text-blue-600"></i>
-          <span id="top-dept-name">Department</span>
-        </div>
-
-        <button type="button" onclick="window.print()" title="Print / Export PDF" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition border border-slate-200">
+      <!-- Right Header Actions: Print -->
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="window.print()" title="Print / Export PDF" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition border border-slate-200">
           <i data-lucide="printer" class="w-4 h-4"></i>
         </button>
       </div>
@@ -207,9 +165,9 @@
 
     </main>
 
-    <!-- Institutional Footer -->
-    <footer class="bg-white border-t border-slate-200 px-4 py-3 text-center text-xs text-slate-500">
-      Internal Quality Assurance Cell (IQAC) • St. Joseph's College (Autonomous), Tiruchirappalli — AAA 2026-2027
+    <!-- Minimal Institutional Footer -->
+    <footer class="bg-slate-50 border-t border-slate-200 px-4 py-2.5 text-center text-xs text-slate-500">
+      Internal Quality Assurance Cell (IQAC) • St. Joseph's College (Autonomous), Tiruchirappalli
     </footer>
 
   </div>
@@ -220,6 +178,7 @@
   <script src="js/attribute1-schema.js"></script>
   <script src="js/excel-exporter.js"></script>
   <script src="js/data-store.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/admin-dashboard.js"></script>
   <script src="js/attribute-filter-hub.js"></script>

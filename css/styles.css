@@ -1,14 +1,12 @@
-/* IQAC Annual Academic Audit (AAA) 2026-2027 - Academic Light Theme Stylesheet */
+/* IQAC Annual Academic Audit (AAA) 2026-2027 - Academic Palette Theme */
 :root {
-  --primary-navy: #1e3a8a;
-  --primary-blue: #2563eb;
-  --primary-oxford: #1e40af;
-  --academic-gold: #d97706;
-  --academic-amber: #f59e0b;
-  --academic-emerald: #059669;
-  --academic-cream: #fffbeb;
-  --academic-canvas: #f8fafc;
-  --academic-border: #e2e8f0;
+  --color-primary: #26648E;    /* Deep Classic Ocean / Academic Blue */
+  --color-secondary: #4F8FC0;  /* Soft Cerulean / Slate Blue */
+  --color-cyan: #53D2DC;       /* Vibrant Cyan / Turquoise Accent */
+  --color-peach: #FFE3B3;      /* Warm Cream / Soft Champagne Peach */
+  --color-bg-page: #f8fafc;
+  --color-bg-sidebar: #f0f5f9;
+  --color-border: rgba(79, 143, 192, 0.25);
 }
 
 body {
@@ -18,7 +16,7 @@ body {
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
-  background-image: radial-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(79, 143, 192, 0.05) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -28,88 +26,108 @@ body {
   height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f0f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c3d7e8;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #4F8FC0;
 }
 
 /* Academic Card & Container Styles */
 .academic-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(79, 143, 192, 0.25);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px 0 rgba(38, 100, 142, 0.05), 0 1px 2px -1px rgba(38, 100, 142, 0.05);
   transition: all 0.2s ease-in-out;
 }
 .academic-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border-color: #4F8FC0;
+  box-shadow: 0 4px 10px -1px rgba(38, 100, 142, 0.12);
 }
 
 /* Academic Header Banners */
 .academic-banner {
-  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fffbeb 100%);
-  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, rgba(38, 100, 142, 0.08) 0%, rgba(79, 143, 192, 0.08) 50%, rgba(255, 227, 179, 0.25) 100%);
+  border: 1px solid rgba(79, 143, 192, 0.35);
   border-radius: 1rem;
 }
 
 /* Academic Badges */
-.badge-gold {
-  background-color: #fef3c7;
-  color: #78350f;
-  border: 1px solid #fde68a;
+.badge-peach {
+  background-color: #FFE3B3;
+  color: #26648E;
+  border: 1px solid #fedba0;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
+.badge-cyan {
+  background-color: rgba(83, 210, 220, 0.18);
+  color: #125e64;
+  border: 1px solid rgba(83, 210, 220, 0.45);
+  font-weight: 800;
+}
+
 .badge-blue {
-  background-color: #eff6ff;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  background-color: rgba(79, 143, 192, 0.12);
+  color: #26648E;
+  border: 1px solid rgba(79, 143, 192, 0.3);
   font-weight: 800;
 }
 
-.badge-emerald {
-  background-color: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-  font-weight: 800;
-}
-
-/* Glowing Blinking Menu Toggle Button */
+/* Glowing Blinking Menu Toggle Button with vibrant Cyan / Peach glow */
 @keyframes academicBlinkGlow {
   0%, 100% {
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.9), 0 0 4px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 14px rgba(83, 210, 220, 0.8), 0 0 4px rgba(255, 227, 179, 0.9);
     transform: scale(1);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 5px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 4px rgba(83, 210, 220, 0.3);
     transform: scale(0.97);
-    opacity: 0.75;
+    opacity: 0.85;
   }
 }
 
 .sidebar-blink-btn {
-  animation: academicBlinkGlow 1.8s infinite ease-in-out !important;
+  animation: academicBlinkGlow 2s infinite ease-in-out !important;
+}
+
+/* Primary Theme Button */
+.btn-primary-theme {
+  background-color: #26648E;
+  color: #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+.btn-primary-theme:hover {
+  background-color: #1f5072;
+}
+
+/* Accent Theme Button */
+.btn-accent-theme {
+  background-color: #53D2DC;
+  color: #1a424a;
+  transition: all 0.2s ease-in-out;
+}
+.btn-accent-theme:hover {
+  background-color: #3ec8d3;
 }
 
 /* Glass panel */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(226, 232, 240, 0.85);
+  border: 1px solid rgba(79, 143, 192, 0.25);
 }
 
 /* Table controls */
 table tbody tr:hover td {
-  background-color: rgba(239, 246, 255, 0.45);
+  background-color: rgba(79, 143, 192, 0.08);
 }
 
 /* Animations */
@@ -128,7 +146,8 @@ table tbody tr:hover td {
   }
 }
 
-/* Academic seal ring */
-.crest-ring {
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+/* Dynamic Toast Progress Animation */
+@keyframes toastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
 }

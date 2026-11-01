@@ -331,36 +331,23 @@ class AdminDashboard {
     this.container.innerHTML = `
       <div class="space-y-6">
         <!-- Admin Academic Central Header -->
-        <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-amber-50/40 rounded-2xl p-6 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
           <div>
             <div class="flex items-center flex-wrap gap-2 mb-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wide">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#53D2DC]/20 text-[#136168] border border-[#53D2DC]/50 uppercase tracking-wide">
                 IQAC Central Admin Console
               </span>
-              <span class="px-3 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-900 border border-blue-200 tracking-wide">
+              <span class="px-3 py-0.5 rounded-full text-[11px] font-black bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] tracking-wide">
                 Active Year of Form: 2026–2027
               </span>
-              <span class="text-xs text-blue-800 font-bold flex items-center gap-1">
-                <span>🏛️</span> St. Joseph's College (Autonomous)
-              </span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-blue-950">
-              Annual Academic Audit (AAA) 2026-2027 Admin Command Center
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
+              Admin & Access Hub
             </h1>
-            <p class="text-xs text-slate-600 mt-1 font-medium">
-              Institutional executive oversight, department user access control, academic benchmark analytics, and faculty contributions directory.
-            </p>
           </div>
 
           <div class="flex items-center gap-2">
-            <button type="button" onclick="adminDashboard.openAgendaConfigModal()" class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
-              <i data-lucide="sliders" class="w-4 h-4"></i>
-              <span>Meeting Agenda & Questions</span>
-              <span id="admin-agenda-pill" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
-                ${window.dataStore ? window.dataStore.getAgendaStats().activeAttributes + '/' + window.dataStore.getAgendaStats().totalAttributes + ' Attrs' : 'All Active'}
-              </span>
-            </button>
-            <button type="button" onclick="adminDashboard.showAddDeptModal()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap">
+            <button type="button" onclick="adminDashboard.showAddDeptModal()" class="px-3.5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs shadow-md shadow-[#26648E]/25 transition flex items-center gap-1.5 whitespace-nowrap">
               <i data-lucide="plus" class="w-4 h-4"></i>
               <span>Add Department</span>
             </button>
@@ -1653,7 +1640,7 @@ class AdminDashboard {
   saveSubmissionDeadline() {
     const input = document.getElementById('admin-deadline-input');
     if (!input || !input.value) {
-      alert('Please select a valid date and time for the submission deadline.');
+      window.showToast('Please select a valid date and time for the submission deadline.', 'warning', 3500, 'Invalid Deadline');
       return;
     }
     if (window.dataStore) {
@@ -2090,7 +2077,7 @@ class AdminDashboard {
     const newPass = prompt(`Enter new password for Department "${code}":`);
     if (newPass && newPass.trim()) {
       window.dataStore.updateDepartmentUser(code, { password: newPass.trim() });
-      alert(`Password for Department "${code}" updated successfully!`);
+      window.showToast(`Password for Department "${code}" updated successfully!`, 'success', 3500, 'Security Updated');
       this.render();
     }
   }
@@ -2099,7 +2086,7 @@ class AdminDashboard {
     const newPass = prompt(`Enter new password for Admin "${username}":`);
     if (newPass && newPass.trim()) {
       window.dataStore.updateAdminUser(username, { password: newPass.trim() });
-      alert(`Password for Admin "${username}" updated successfully!`);
+      window.showToast(`Password for Admin "${username}" updated successfully!`, 'success', 3500, 'Security Updated');
       this.render();
     }
   }
@@ -2108,7 +2095,7 @@ class AdminDashboard {
     if (confirm(`Are you sure you want to delete department account "${code}"?\nThis cannot be undone.`)) {
       try {
         window.dataStore.deleteDepartmentUser(code);
-        alert(`Department "${code}" deleted successfully.`);
+        window.showToast(`Department "${code}" deleted successfully.`, 'info', 3500, 'Department Removed');
         this.render();
         if (window.app) window.app.refreshDeptDropdown();
       } catch (e) {
@@ -2121,7 +2108,7 @@ class AdminDashboard {
     if (confirm(`Are you sure you want to delete admin account "${username}"?`)) {
       try {
         window.dataStore.deleteAdminUser(username);
-        alert(`Admin account "${username}" deleted successfully.`);
+        window.showToast(`Admin account "${username}" deleted successfully.`, 'info', 3500, 'Admin Removed');
         this.render();
       } catch (e) {
         alert(e.message);

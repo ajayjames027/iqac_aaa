@@ -282,10 +282,10 @@ class DashboardRenderer {
         ` : ''}
       <div class="space-y-6">
         <!-- Executive Header Banner (Matching Admin Console Style) -->
-        <div class="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2 flex-wrap">
-              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wide">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FFE3B3] text-[#26648E] uppercase tracking-wide border border-[#fedba0] shadow-2xs font-extrabold">
                 First 15 Minutes • Executive Departmental Dashboard
               </span>
               <span class="text-xs text-blue-200">${dept.collegeName || "St. Joseph's College (Autonomous)"}</span>

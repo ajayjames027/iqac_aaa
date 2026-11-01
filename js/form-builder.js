@@ -81,7 +81,7 @@ class FormBuilder {
   // Toggle Admin Question Edit Mode
   toggleAdminEditQuestionsMode() {
     if (!this.isAdmin()) {
-      alert('Access Denied: Only IQAC Administrators can edit the questionnaire schema.');
+      window.showToast('Access Denied: Only IQAC Administrators can edit the questionnaire schema.', 'error', 3500, 'Access Denied');
       return;
     }
     this.adminEditQuestionsMode = !this.adminEditQuestionsMode;
@@ -96,7 +96,7 @@ class FormBuilder {
       window.dataStore.saveAllCardsSchema(schema);
     }
     this.adminEditQuestionsMode = false;
-    alert('Questionnaire Template successfully saved and updated across all departments!');
+    window.showToast('Questionnaire template successfully saved and updated across all departments!', 'success', 3500, 'Template Saved');
     this.render(window.dataStore ? window.dataStore.data : null);
   }
 
@@ -108,7 +108,7 @@ class FormBuilder {
         window.dataStore.resetAllCardsSchema();
       }
       this.adminEditQuestionsMode = false;
-      alert('Questionnaire reset to default Excel template!');
+      window.showToast('Questionnaire reset to default Excel template.', 'warning', 3500, 'Template Reset');
       this.render(window.dataStore ? window.dataStore.data : null);
     }
   }
@@ -141,7 +141,7 @@ class FormBuilder {
   // Dedicated Save Sheet Data method
   saveCurrentSheetData(sheetKey) {
     if (this.isSubmissionLocked()) {
-      alert('The submission deadline has expired. Records are locked in read-only mode.');
+      window.showToast('The submission deadline has expired. Records are locked in read-only mode.', 'warning', 4000, 'Deadline Locked');
       return;
     }
     if (window.dataStore) {
@@ -150,7 +150,7 @@ class FormBuilder {
     this.showSaveIndicator();
     const sheet = this.getActiveSheet();
     const sheetName = sheet ? (sheet.sheetName || sheet.key) : (sheetKey || 'Sheet');
-    alert(`Data for ${sheetName} saved successfully!`);
+    window.showToast(`Data for ${sheetName} saved successfully!`, 'success', 3500, 'Sheet Saved');
     this.render(window.dataStore ? window.dataStore.data : null);
   }
 
@@ -159,7 +159,7 @@ class FormBuilder {
       window.dataStore.saveCurrentData();
     }
     this.showSaveIndicator();
-    alert('Department data saved successfully!');
+    window.showToast('Department data saved successfully!', 'success', 3500, 'Records Saved');
     this.render(window.dataStore ? window.dataStore.data : null);
   }
 
@@ -414,7 +414,7 @@ class FormBuilder {
 
   addTableRow(sheetKey) {
     if (this.isSubmissionLocked()) {
-      alert('The submission deadline has expired. Data cannot be edited or added.');
+      window.showToast('The submission deadline has expired. Data cannot be edited or added.', 'warning', 4000, 'Deadline Locked');
       return;
     }
     const card = this.getActiveCard();
@@ -436,7 +436,7 @@ class FormBuilder {
 
   deleteTableRow(sheetKey, rowIdx) {
     if (this.isSubmissionLocked()) {
-      alert('The submission deadline has expired. Records cannot be deleted.');
+      window.showToast('The submission deadline has expired. Records cannot be deleted.', 'warning', 4000, 'Deadline Locked');
       return;
     }
     const card = this.getActiveCard();
@@ -653,61 +653,21 @@ class FormBuilder {
     this.container.innerHTML = `
       <div class="w-full space-y-6 animate-fadeIn">
         
-        <!-- Institutional Academic Light Header Banner -->
-        <div class="bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-amber-50/40 rounded-2xl p-6 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900">
+        <!-- Simple & Professional Header Banner -->
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-5 sm:p-6 border border-[#4F8FC0]/30 shadow-2xs flex items-center justify-between gap-4">
           <div>
-            <div class="flex items-center flex-wrap gap-2 mb-2">
-              <span class="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
-                Active Academic Year: ${this.academicYear}
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs">
+                Active Year: ${this.academicYear}
               </span>
-              <span class="text-xs text-blue-800 font-bold flex items-center gap-1">
-                <span>🏛️</span> St. Joseph's College (Autonomous), Tiruchirappalli
-              </span>
-              <span class="text-slate-300">•</span>
-              <span class="text-xs text-blue-900 font-extrabold bg-blue-100/70 px-2.5 py-0.5 rounded-md border border-blue-200/70">${deptName}</span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-blue-950">
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
               Annual Academic Audit (AAA) ${this.academicYear}
             </h1>
-            <p class="text-xs text-slate-600 mt-1 max-w-4xl font-medium">
-              Institutional Quality Assurance Framework • Fill and update departmental records for Attributes 1 through 10 and Part-A aligned with NAAC Cycle IV criteria.
-            </p>
-          </div>
-
-          <div class="flex items-center flex-wrap gap-2">
-            <span class="text-xs px-3.5 py-2 bg-white text-blue-950 rounded-xl font-bold flex items-center gap-2 border border-blue-200 shadow-xs">
-              <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
-              <span>11 Academic Cards</span>
-            </span>
           </div>
         </div>
 
         ${this.renderDeadlineNoticeBanner()}
-
-        <!-- Role Access Banner -->
-        ${isAdmin ? `
-          <div class="bg-purple-50 border border-purple-200 rounded-xl px-5 py-3 flex items-center justify-between text-xs text-purple-900 shadow-xs">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
-              <span class="font-bold">🛡️ IQAC Administrator Access:</span>
-              <span class="text-purple-700">Click any card to inspect or customize question text and columns for all departments.</span>
-            </div>
-            <span class="px-2.5 py-0.5 rounded bg-purple-200 text-purple-900 font-bold text-[10px] uppercase tracking-wider">
-              Admin Edit Permitted
-            </span>
-          </div>
-        ` : `
-          <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between text-xs text-blue-900 shadow-xs">
-            <div class="flex items-center gap-2">
-              <i data-lucide="lock" class="w-4 h-4 text-blue-600"></i>
-              <span class="font-bold">👤 Department Data Entry Mode (${deptName}):</span>
-              <span class="text-blue-700">Questions and headers are fixed. Open each card to fill and save your departmental audit records.</span>
-            </div>
-            <span class="px-2.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] uppercase tracking-wider border border-blue-200">
-              Fill Data Only
-            </span>
-          </div>
-        `}
 
         <!-- Cards Grid with Exact Finished Count (e.g. 4/11) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
@@ -801,12 +761,12 @@ class FormBuilder {
       <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
         
         <!-- Academic Royal Header Banner -->
-        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white px-6 py-5 border-b border-blue-950/40 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full shadow-xs">
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white px-6 py-5 border-b border-[#26648E]/40 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full shadow-xs">
           <div class="flex items-center gap-3">
             <button 
               type="button" 
               onclick="formBuilder.backToCards()" 
-              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl text-xs transition flex items-center gap-1.5 border border-slate-700 shrink-0 shadow-xs"
+              class="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 border border-white/20 shrink-0 shadow-xs backdrop-blur-xs"
               title="Return to Attributes Cards"
             >
               <i data-lucide="arrow-left" class="w-4 h-4"></i>
@@ -816,16 +776,15 @@ class FormBuilder {
             <div>
               <div class="flex items-center flex-wrap gap-2 mb-1">
                 <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">
-                  Annual Academic Audit (AAA) ${this.academicYear}
+                  AAA ${this.academicYear}
                 </span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-900 text-blue-200 border border-blue-700">
                   ${card.cardCode}
                 </span>
-                <span class="text-xs text-blue-300 font-semibold">${deptName}</span>
                 <span class="text-slate-500">•</span>
-                <span class="text-xs text-emerald-400 font-bold">${finishedCount}/${totalSheets} Finished</span>
+                <span class="text-xs text-emerald-300 font-bold">${finishedCount}/${totalSheets} Completed</span>
               </div>
-              <h2 class="text-lg md:text-xl font-black tracking-tight flex items-center gap-2">
+              <h2 class="text-lg md:text-xl font-black tracking-tight flex items-center gap-2 text-white">
                 <span>${card.cardTitle}</span>
               </h2>
             </div>
@@ -836,7 +795,7 @@ class FormBuilder {
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-saved
             </span>
 
-            <button type="button" onclick="formBuilder.saveCurrentSheetData('${activeSheet?.key}')" class="text-xs px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <button type="button" onclick="formBuilder.saveCurrentSheetData('${activeSheet?.key}')" class="text-xs px-3.5 py-2 bg-[#26648E] hover:bg-[#1a4a6b] text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50">
               <i data-lucide="save" class="w-3.5 h-3.5"></i>
               <span>Save Sheet Data</span>
             </button>
@@ -904,7 +863,7 @@ class FormBuilder {
                   onclick="formBuilder.switchSheet('${s.key}')" 
                   class="px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 whitespace-nowrap transition ${
                     isActive 
-                      ? 'bg-blue-600 text-white font-black shadow-sm' 
+                      ? 'bg-[#26648E] text-white font-black shadow-sm border border-[#26648E]' 
                       : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold'
                   }"
                 >
@@ -1322,7 +1281,7 @@ class FormBuilder {
               </button>
             ` : ''}
             
-            <button type="button" onclick="formBuilder.addTableRow('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+            <button type="button" onclick="formBuilder.addTableRow('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-[#4F8FC0] hover:bg-[#3a7ca9] text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Data Row
             </button>
 
@@ -1636,38 +1595,24 @@ class FormBuilder {
     const formatted = window.dataStore ? window.dataStore.formatDeadlineForDisplay() : 'Not Configured';
 
     return `
-      <div class="rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${
+      <div class="rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 text-xs shadow-2xs ${
         isLocked 
-          ? 'bg-red-50 border border-red-300 text-red-900' 
-          : 'bg-amber-50 border border-amber-300 text-amber-950'
+          ? 'bg-red-50 border border-red-200 text-red-900' 
+          : 'bg-amber-50/70 border border-amber-200 text-amber-950'
       }">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg ${isLocked ? 'bg-red-600 text-white' : 'bg-amber-500 text-slate-950'} flex items-center justify-center font-bold shrink-0 shadow-xs">
-            <i data-lucide="${isLocked ? 'lock' : 'calendar-clock'}" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <div class="flex items-center flex-wrap gap-2">
-              <span class="font-black uppercase tracking-wider text-[11px]">Submission Deadline:</span>
-              <span class="font-black underline">${formatted}</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                isLocked 
-                  ? 'bg-red-200 text-red-900' 
-                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-              }">
-                ${isLocked ? '🚨 LOCKED (READ-ONLY)' : '🟢 OPEN FOR DATA ENTRY'}
-              </span>
-            </div>
-            <p class="text-[11px] ${isLocked ? 'text-red-700' : 'text-amber-800'} mt-0.5">
-              ${isLocked 
-                ? 'The submission cutoff has passed. Attribute data is locked in read-only mode and cannot be edited or deleted.' 
-                : 'Please ensure all sheets are completed and saved before the deadline cutoff.'}
-            </p>
-          </div>
+          <i data-lucide="${isLocked ? 'lock' : 'clock'}" class="w-4 h-4 ${isLocked ? 'text-red-600' : 'text-amber-600'}"></i>
+          <span class="font-bold text-xs">Submission Deadline:</span>
+          <span class="font-black text-xs font-mono">${formatted}</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+            isLocked ? 'bg-red-200 text-red-900' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+          }">
+            ${isLocked ? 'LOCKED' : 'ACTIVE'}
+          </span>
         </div>
-        
         ${this.isAdmin() ? `
-          <span class="text-[11px] px-2.5 py-1 bg-purple-100 text-purple-900 border border-purple-300 rounded-lg font-bold self-start sm:self-auto">
-            🛡️ Admin Override Active
+          <span class="text-[10px] px-2 py-0.5 bg-purple-100 text-purple-900 border border-purple-200 rounded font-bold">
+            Admin Mode
           </span>
         ` : ''}
       </div>
@@ -1746,7 +1691,7 @@ class FormBuilder {
 
   updateDateRangeCell(sheetKey, rowIdx, colKey, val1, val2, changedField) {
     if (this.isSubmissionLocked()) {
-      alert('Submissions are locked. Cannot edit data.');
+      window.showToast('Submissions are locked. Cannot edit data.', 'warning', 4000, 'Deadline Locked');
       return;
     }
     let combined = '';

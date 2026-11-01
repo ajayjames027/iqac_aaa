@@ -223,12 +223,12 @@ class AuthManager {
     modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 hidden';
     modalDiv.innerHTML = `
       <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-fadeIn">
-        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 text-white text-center">
-          <div class="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 font-black text-lg flex items-center justify-center mx-auto mb-2 shadow">
-            SJC
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] p-6 text-white text-center">
+          <div class="w-16 h-18 rounded-2xl bg-white/95 border border-white/40 shadow-md flex items-center justify-center p-2 mx-auto mb-3">
+            <img src="assets/weblogo.png" alt="College Crest" class="h-full w-auto object-contain drop-shadow-xs" />
           </div>
-          <h2 class="text-xl font-bold tracking-tight">St. Joseph's College (Autonomous)</h2>
-          <p class="text-xs text-blue-200 mt-1">IQAC Annual Academic Audit (AAA) 2026-2027</p>
+          <h2 class="text-xl font-bold tracking-tight">Annual Academic Audit (AAA)</h2>
+          <p class="text-xs text-blue-200 mt-1">IQAC Portal &bull; 2026&ndash;2027</p>
         </div>
 
         <form id="auth-login-form" onsubmit="authManager.handleFormSubmit(event)" class="p-6 space-y-4">
@@ -244,7 +244,7 @@ class AuthManager {
             <input type="password" id="login-password" required placeholder="••••••••" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
-          <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition">
+          <button type="submit" class="w-full py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50 transition">
             Sign In to Dashboard
           </button>
 

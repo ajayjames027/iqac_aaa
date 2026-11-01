@@ -589,7 +589,7 @@ class FormBuilder {
     window.dataStore?.saveAllCardsSchema(this.getMasterSchema());
   }
 
-  addColumnToSchema(sheetKey, sectionId = null) {
+  async addColumnToSchema(sheetKey, sectionId = null) {
     if (!this.isAdmin()) return;
     const colName = await window.showPromptDialog('Enter new Question Column Title:', '', 'Add Question Column', { placeholder: 'e.g. Activity Name / Date / Beneficiaries', confirmText: 'Add Column' });
     if (!colName || !colName.trim()) return;
@@ -615,7 +615,7 @@ class FormBuilder {
     this.render(window.dataStore?.data);
   }
 
-  deleteColumnFromSchema(sheetKey, colKey, sectionId = null) {
+  async deleteColumnFromSchema(sheetKey, colKey, sectionId = null) {
     if (!this.isAdmin()) return;
     const ok = await window.showConfirmDialog('Are you sure you want to remove this question column from the template?', 'Remove Column', { confirmText: 'Remove', cancelText: 'Cancel', type: 'danger' });
     if (!ok) return;

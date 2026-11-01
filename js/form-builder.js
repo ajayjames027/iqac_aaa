@@ -101,9 +101,14 @@ class FormBuilder {
   }
 
   // Reset Question Schema to original Excel template (Admin Only)
-  resetQuestionSchemaToDefault() {
+  async resetQuestionSchemaToDefault() {
     if (!this.isAdmin()) return;
-    if (confirm('Reset questionnaire structure and column headers to the official Excel template? (This will restore default question text)')) {
+    const ok = await window.showConfirmDialog(
+      'Reset questionnaire structure and column headers to the official Excel template? (This will restore default question text)',
+      'Reset Template',
+      { confirmText: 'Reset to Default', cancelText: 'Cancel', type: 'warning' }
+    );
+    if (ok) {
       if (window.dataStore) {
         window.dataStore.resetAllCardsSchema();
       }
@@ -434,7 +439,7 @@ class FormBuilder {
     this.render(window.dataStore?.data);
   }
 
-  deleteTableRow(sheetKey, rowIdx) {
+  async deleteTableRow(sheetKey, rowIdx) {
     if (this.isSubmissionLocked()) {
       window.showToast('The submission deadline has expired. Records cannot be deleted.', 'warning', 4000, 'Deadline Locked');
       return;
@@ -443,7 +448,8 @@ class FormBuilder {
     if (!card) return;
     const cardData = this.getCardData(card.id);
     if (!Array.isArray(cardData[sheetKey])) return;
-    if (confirm('Delete this data row?')) {
+    const ok = await window.showConfirmDialog('Are you sure you want to delete this data row?', 'Delete Row', { confirmText: 'Delete', cancelText: 'Cancel', type: 'danger' });
+    if (ok) {
       cardData[sheetKey].splice(rowIdx, 1);
       cardData[sheetKey].forEach((r, idx) => {
         if (r.sno !== undefined) r.sno = String(idx + 1);
@@ -486,12 +492,13 @@ class FormBuilder {
     this.render(window.dataStore?.data);
   }
 
-  deleteMultiTableRow(sheetKey, sectionId, rowIdx) {
+  async deleteMultiTableRow(sheetKey, sectionId, rowIdx) {
     const card = this.getActiveCard();
     if (!card) return;
     const cardData = this.getCardData(card.id);
     if (!cardData[sheetKey]?.[sectionId]) return;
-    if (confirm('Delete this row?')) {
+    const ok = await window.showConfirmDialog('Are you sure you want to delete this row?', 'Delete Row', { confirmText: 'Delete', cancelText: 'Cancel', type: 'danger' });
+    if (ok) {
       cardData[sheetKey][sectionId].splice(rowIdx, 1);
       cardData[sheetKey][sectionId].forEach((r, idx) => {
         if (r.sno !== undefined) r.sno = String(idx + 1);
@@ -531,12 +538,13 @@ class FormBuilder {
     this.render(window.dataStore?.data);
   }
 
-  deleteBatchTableRow(sheetKey, batchId, rowIdx) {
+  async deleteBatchTableRow(sheetKey, batchId, rowIdx) {
     const card = this.getActiveCard();
     if (!card) return;
     const cardData = this.getCardData(card.id);
     if (!cardData[sheetKey]?.[batchId]) return;
-    if (confirm('Delete this row?')) {
+    const ok = await window.showConfirmDialog('Are you sure you want to delete this row?', 'Delete Row', { confirmText: 'Delete', cancelText: 'Cancel', type: 'danger' });
+    if (ok) {
       cardData[sheetKey][batchId].splice(rowIdx, 1);
       cardData[sheetKey][batchId].forEach((r, idx) => {
         if (r.sno !== undefined) r.sno = String(idx + 1);
@@ -583,7 +591,7 @@ class FormBuilder {
 
   addColumnToSchema(sheetKey, sectionId = null) {
     if (!this.isAdmin()) return;
-    const colName = prompt('Enter new Question Column Title:');
+    const colName = await window.showPromptDialog('Enter new Question Column Title:', '', 'Add Question Column', { placeholder: 'e.g. Activity Name / Date / Beneficiaries', confirmText: 'Add Column' });
     if (!colName || !colName.trim()) return;
 
     const sheet = this.getActiveSheet();
@@ -609,7 +617,8 @@ class FormBuilder {
 
   deleteColumnFromSchema(sheetKey, colKey, sectionId = null) {
     if (!this.isAdmin()) return;
-    if (!confirm('Are you sure you want to remove this question column from the template?')) return;
+    const ok = await window.showConfirmDialog('Are you sure you want to remove this question column from the template?', 'Remove Column', { confirmText: 'Remove', cancelText: 'Cancel', type: 'danger' });
+    if (!ok) return;
 
     const sheet = this.getActiveSheet();
     if (!sheet) return;

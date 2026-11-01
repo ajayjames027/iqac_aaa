@@ -63,9 +63,9 @@ class App {
     `).join('') + `<option value="__NEW__">+ Add New Department...</option>`;
   }
 
-  onDeptChanged(deptName) {
+  async onDeptChanged(deptName) {
     if (deptName === '__NEW__') {
-      const newName = prompt('Enter New Department Name (e.g. PG & Research Department of Physics):');
+      const newName = await window.showPromptDialog('Enter New Department Name (e.g. PG & Research Department of Physics):', '', 'Add New Department', { placeholder: 'e.g. PG & Research Department of Physics', confirmText: 'Add Department' });
       if (newName && newName.trim()) {
         window.dataStore.switchDepartment(newName.trim());
         this.refreshDeptDropdown();

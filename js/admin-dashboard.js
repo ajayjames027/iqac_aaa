@@ -2057,24 +2057,78 @@ class AdminDashboard {
     const dept = (db.departments || []).find(d => d.code === code);
     if (!dept) return;
 
-    const newName = prompt('Edit Department Name:', dept.name);
-    if (newName === null) return;
-    const newSchool = prompt('Edit School:', dept.school || '');
-    const newHod = prompt('Edit HOD Name:', dept.hod_name || '');
+    const modal = document.createElement('div');
+    modal.id = 'edit-dept-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-fadeIn p-6 space-y-4">
+        <div class="flex items-center gap-3.5 pb-2 border-b border-slate-100">
+          <div class="w-12 h-12 rounded-2xl bg-[#4F8FC0]/15 border border-[#4F8FC0]/30 text-[#26648E] flex items-center justify-center shrink-0 shadow-2xs">
+            <i data-lucide="edit-3" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-[#26648E] tracking-tight leading-snug">Edit Department Details</h3>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#4F8FC0]">Department Code: ${dept.code}</span>
+          </div>
+        </div>
 
-    window.dataStore.updateDepartmentUser(code, {
-      name: (newName || dept.name).trim(),
-      school: (newSchool !== null ? newSchool : dept.school).trim(),
-      hod_name: (newHod !== null ? newHod : dept.hod_name).trim()
-    });
+        <form id="edit-dept-form" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Department Name</label>
+            <input type="text" id="edit-dept-name" value="${dept.name || ''}" required class="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#4F8FC0] focus:border-[#26648E] outline-none font-medium text-slate-800" />
+          </div>
 
-    alert(`Department ${code} updated successfully!`);
-    this.render();
-    if (window.app) window.app.refreshDeptDropdown();
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">School / Faculty Stream</label>
+            <input type="text" id="edit-dept-school" value="${dept.school || ''}" class="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#4F8FC0] focus:border-[#26648E] outline-none font-medium text-slate-800" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Head of Department (HOD)</label>
+            <input type="text" id="edit-dept-hod" value="${dept.hod_name || ''}" class="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#4F8FC0] focus:border-[#26648E] outline-none font-medium text-slate-800" />
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button type="button" onclick="document.getElementById('edit-dept-modal').remove()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50 transition cursor-pointer">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons({ root: modal });
+
+    document.getElementById('edit-dept-form').onsubmit = (e) => {
+      e.preventDefault();
+      const name = document.getElementById('edit-dept-name').value.trim();
+      const school = document.getElementById('edit-dept-school').value.trim();
+      const hod = document.getElementById('edit-dept-hod').value.trim();
+
+      window.dataStore.updateDepartmentUser(code, {
+        name: name || dept.name,
+        school: school || dept.school,
+        hod_name: hod || dept.hod_name
+      });
+
+      modal.remove();
+      window.showToast(`Department "${code}" updated successfully!`, 'success', 3500, 'Details Updated');
+      this.render();
+      if (window.app) window.app.refreshDeptDropdown();
+    };
   }
 
-  openChangeDeptPasswordModal(code) {
-    const newPass = prompt(`Enter new password for Department "${code}":`);
+  async openChangeDeptPasswordModal(code) {
+    const newPass = await window.showPromptDialog(
+      `Enter new password for Department "${code}":`,
+      '',
+      `Change Department Password`,
+      { placeholder: 'Enter new password', inputType: 'password', confirmText: 'Update Password' }
+    );
     if (newPass && newPass.trim()) {
       window.dataStore.updateDepartmentUser(code, { password: newPass.trim() });
       window.showToast(`Password for Department "${code}" updated successfully!`, 'success', 3500, 'Security Updated');
@@ -2082,8 +2136,13 @@ class AdminDashboard {
     }
   }
 
-  openChangeAdminPasswordModal(username) {
-    const newPass = prompt(`Enter new password for Admin "${username}":`);
+  async openChangeAdminPasswordModal(username) {
+    const newPass = await window.showPromptDialog(
+      `Enter new password for Admin "${username}":`,
+      '',
+      `Change Admin Password`,
+      { placeholder: 'Enter new password', inputType: 'password', confirmText: 'Update Password' }
+    );
     if (newPass && newPass.trim()) {
       window.dataStore.updateAdminUser(username, { password: newPass.trim() });
       window.showToast(`Password for Admin "${username}" updated successfully!`, 'success', 3500, 'Security Updated');
@@ -2091,27 +2150,37 @@ class AdminDashboard {
     }
   }
 
-  handleDeleteDepartment(code) {
-    if (confirm(`Are you sure you want to delete department account "${code}"?\nThis cannot be undone.`)) {
+  async handleDeleteDepartment(code) {
+    const ok = await window.showConfirmDialog(
+      `Are you sure you want to delete department account "${code}"?\n\nThis action cannot be undone.`,
+      `Delete Department Account`,
+      { confirmText: 'Yes, Delete', cancelText: 'Cancel', type: 'danger' }
+    );
+    if (ok) {
       try {
         window.dataStore.deleteDepartmentUser(code);
         window.showToast(`Department "${code}" deleted successfully.`, 'info', 3500, 'Department Removed');
         this.render();
         if (window.app) window.app.refreshDeptDropdown();
       } catch (e) {
-        alert(e.message);
+        window.showToast(e.message, 'error', 3500, 'Delete Error');
       }
     }
   }
 
-  handleDeleteAdmin(username) {
-    if (confirm(`Are you sure you want to delete admin account "${username}"?`)) {
+  async handleDeleteAdmin(username) {
+    const ok = await window.showConfirmDialog(
+      `Are you sure you want to delete admin account "${username}"?`,
+      `Delete Admin Account`,
+      { confirmText: 'Yes, Delete', cancelText: 'Cancel', type: 'danger' }
+    );
+    if (ok) {
       try {
         window.dataStore.deleteAdminUser(username);
         window.showToast(`Admin account "${username}" deleted successfully.`, 'info', 3500, 'Admin Removed');
         this.render();
       } catch (e) {
-        alert(e.message);
+        window.showToast(e.message, 'error', 3500, 'Delete Error');
       }
     }
   }

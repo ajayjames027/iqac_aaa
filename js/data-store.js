@@ -3,6 +3,9 @@
 const STORAGE_KEY_PREFIX = 'IQAC_AAA_DATA_';
 const DEPT_LIST_KEY = 'IQAC_AAA_DEPARTMENTS_LIST';
 const ACTIVE_DEPT_KEY = 'IQAC_AAA_ACTIVE_DEPT';
+const ACTIVE_YEAR_KEY = 'IQAC_AAA_ACTIVE_YEAR';
+const YEARS_LIST_KEY = 'IQAC_AAA_YEARS_LIST';
+const DEFAULT_ACTIVE_YEAR = '2026 - 2027';
 
 class DataStore {
   constructor() {
@@ -72,6 +75,107 @@ class DataStore {
     this.activeDepartment = this.data.departmentInfo.departmentName;
     this.saveCurrentData();
     this.notify();
+  }
+
+
+    // ================= ACADEMIC YEAR MANAGEMENT & PERSISTENCE =================
+  getActiveYear() {
+    return localStorage.getItem(ACTIVE_YEAR_KEY) || DEFAULT_ACTIVE_YEAR;
+  }
+
+  getAcademicYearsList() {
+    try {
+      const stored = localStorage.getItem(YEARS_LIST_KEY);
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list) && list.length > 0) return list;
+      }
+    } catch (e) {}
+    const defaultYears = ['2024 - 2025', '2025 - 2026', '2026 - 2027', '2027 - 2028', '2028 - 2029'];
+    localStorage.setItem(YEARS_LIST_KEY, JSON.stringify(defaultYears));
+    return defaultYears;
+  }
+
+  addAcademicYear(yearStr) {
+    const cleanYear = (yearStr || '').trim();
+    if (!cleanYear) return this.getAcademicYearsList();
+    const list = this.getAcademicYearsList();
+    if (!list.includes(cleanYear)) {
+      list.push(cleanYear);
+      localStorage.setItem(YEARS_LIST_KEY, JSON.stringify(list));
+    }
+    return list;
+  }
+
+  setActiveYear(newYear) {
+    const cleanYear = (newYear || '').trim();
+    if (!cleanYear) return;
+
+    // 1. Save current active department data for the old year before switching
+    if (this.data && this.activeDepartment) {
+      this.saveCurrentData();
+    }
+
+    // 2. Set new active year
+    localStorage.setItem(ACTIVE_YEAR_KEY, cleanYear);
+    this.addAcademicYear(cleanYear);
+
+    // 3. Load or initialize department data for this new year
+    const deptName = this.activeDepartment || (this.getDepartmentList()[0] || 'PG & Research Department of Computer Science');
+    const yearStorageKey = STORAGE_KEY_PREFIX + cleanYear + '_' + deptName;
+    const stored = localStorage.getItem(yearStorageKey);
+
+    if (stored) {
+      try {
+        this.data = this.ensureSchema(JSON.parse(stored));
+      } catch (e) {
+        console.warn('Error reading stored data for year:', cleanYear, e);
+        this.data = this.ensureSchema(this.createDefaultData(deptName));
+      }
+    } else {
+      // If switching to default year 2026 - 2027 and un-prefixed data exists, migrate it
+      const legacyStored = localStorage.getItem(STORAGE_KEY_PREFIX + deptName);
+      if (cleanYear === DEFAULT_ACTIVE_YEAR && legacyStored) {
+        try {
+          this.data = this.ensureSchema(JSON.parse(legacyStored));
+        } catch (e) {
+          this.data = this.ensureSchema(this.createDefaultData(deptName));
+        }
+      } else {
+        // Fresh year-specific dataset
+        this.data = this.ensureSchema(this.createDefaultData(deptName));
+      }
+      this.data.departmentInfo.academicYear = cleanYear;
+      localStorage.setItem(yearStorageKey, JSON.stringify(this.data));
+    }
+
+    if (this.data && this.data.departmentInfo) {
+      this.data.departmentInfo.academicYear = cleanYear;
+    }
+
+    this.notify();
+    return cleanYear;
+  }
+
+  getDepartmentDataForYear(deptName, year) {
+    const targetYear = year || this.getActiveYear();
+    const key = STORAGE_KEY_PREFIX + targetYear + '_' + deptName;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        return this.ensureSchema(JSON.parse(stored));
+      } catch (e) {}
+    }
+    // Fallback to un-prefixed key if 2026 - 2027
+    if (targetYear === DEFAULT_ACTIVE_YEAR) {
+      const legacy = localStorage.getItem(STORAGE_KEY_PREFIX + deptName);
+      if (legacy) {
+        try {
+          return this.ensureSchema(JSON.parse(legacy));
+        } catch (e) {}
+      }
+    }
+    return this.ensureSchema(this.createDefaultData(deptName));
   }
 
 
@@ -380,7 +484,13 @@ class DataStore {
   saveCurrentData() {
     if (!this.data || !this.data.departmentInfo) return;
     const name = this.data.departmentInfo.departmentName || 'Untitled Department';
+    const activeYear = this.getActiveYear();
     this.activeDepartment = name;
+    this.data.departmentInfo.academicYear = activeYear;
+
+    // Save under year-scoped key to ensure previous years remain preserved
+    localStorage.setItem(STORAGE_KEY_PREFIX + activeYear + '_' + name, JSON.stringify(this.data));
+    // Also save legacy key for compatibility with existing exporters
     localStorage.setItem(STORAGE_KEY_PREFIX + name, JSON.stringify(this.data));
     localStorage.setItem(ACTIVE_DEPT_KEY, name);
 
@@ -973,7 +1083,7 @@ class DataStore {
           name: 'PG & Research Department of Computer Science',
           school: 'School of Computing Sciences',
           hod_name: 'Dr. S. Albert Rabara',
-          password: 'cs123',
+          password: 'sjc123',
           is_locked: false,
           status: 'submitted',
           last_updated: '2026-10-30 11:30'
@@ -984,7 +1094,7 @@ class DataStore {
           name: 'PG & Research Department of Commerce',
           school: 'School of Management Studies',
           hod_name: 'Dr. F. R. Alexander Pravin Durai',
-          password: 'commerce123',
+          password: 'sjc123',
           is_locked: false,
           status: 'submitted',
           last_updated: '2026-10-30 10:15'
@@ -995,7 +1105,7 @@ class DataStore {
           name: 'PG & Research Department of Physics',
           school: 'School of Physical Sciences',
           hod_name: 'Dr. N. Lawrence',
-          password: 'physics123',
+          password: 'sjc123',
           is_locked: false,
           status: 'in_progress',
           last_updated: '2026-10-29 14:20'
@@ -1006,7 +1116,7 @@ class DataStore {
           name: 'PG & Research Department of Chemistry',
           school: 'School of Chemical Sciences',
           hod_name: 'Dr. A. Rose Venis',
-          password: 'chemistry123',
+          password: 'sjc123',
           is_locked: false,
           status: 'draft',
           last_updated: '2026-10-28 11:00'
@@ -1017,7 +1127,7 @@ class DataStore {
           name: 'PG & Research Department of Mathematics',
           school: 'School of Computing Sciences',
           hod_name: 'Dr. J. Maria Joseph',
-          password: 'maths123',
+          password: 'sjc123',
           is_locked: false,
           status: 'draft',
           last_updated: '2026-10-28 09:30'
@@ -1028,7 +1138,7 @@ class DataStore {
           name: 'Department of History',
           school: 'School of Social Sciences',
           hod_name: 'Dr. K. Lingammal',
-          password: 'history123',
+          password: 'sjc123',
           is_locked: false,
           status: 'in_progress',
           last_updated: '2026-10-29 16:45'
@@ -1039,7 +1149,7 @@ class DataStore {
           name: 'Department of English',
           school: 'School of Languages',
           hod_name: 'Dr. V. L. Jayapaul',
-          password: 'english123',
+          password: 'sjc123',
           is_locked: false,
           status: 'draft',
           last_updated: '2026-10-27 15:10'
@@ -1050,7 +1160,7 @@ class DataStore {
           name: 'Department of Economics',
           school: 'School of Management Studies',
           hod_name: 'Dr. S. Sujatha',
-          password: 'economics123',
+          password: 'sjc123',
           is_locked: false,
           status: 'submitted',
           last_updated: '2026-10-30 08:50'
@@ -1069,7 +1179,7 @@ class DataStore {
           username: 'iqac_coord',
           name: 'Dr. A. John Peter',
           role: 'IQAC Coordinator',
-          password: 'coord123'
+          password: 'sjc123'
         }
       ]
     };
@@ -1106,7 +1216,7 @@ class DataStore {
       id: Date.now(),
       code: cleanCode,
       name: (deptData.name || '').trim(),
-      school: (deptData.school || 'School of Sciences').trim(),
+      school: (deptData.school || 'Department').trim(),
       hod_name: (deptData.hod_name || '').trim(),
       password: (deptData.password || 'sjc123').trim(),
       is_locked: false,

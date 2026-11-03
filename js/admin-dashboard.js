@@ -337,9 +337,22 @@ class AdminDashboard {
               <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#53D2DC]/20 text-[#136168] border border-[#53D2DC]/50 uppercase tracking-wide">
                 IQAC Central Admin Console
               </span>
-              <span class="px-3 py-0.5 rounded-full text-[11px] font-black bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] tracking-wide">
-                Active Year of Form: 2026–2027
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600">Active Year:</span>
+                <select 
+                  id="admin-active-year-selector" 
+                  onchange="adminDashboard.onYearSelectChange(this.value)"
+                  class="text-xs font-black px-2.5 py-1 rounded-lg bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs outline-none cursor-pointer"
+                  title="Switch Active Academic Year (Data is preserved separately for each year)"
+                >
+                  ${(window.dataStore ? window.dataStore.getAcademicYearsList() : ['2026 - 2027']).map(y => `
+                    <option value="${y}" ${y === (window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027') ? 'selected' : ''}>
+                      ${y}
+                    </option>
+                  `).join('')}
+                  <option value="__NEW__">+ Add New Academic Year...</option>
+                </select>
+              </div>
             </div>
             <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
               Admin & Access Hub
@@ -363,6 +376,7 @@ class AdminDashboard {
 
         <!-- Admin Module Navigation Tabs -->
         <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-2">
+          ${this.renderAdminNavTab('dept_data', 'Department Data', 'folder-kanban')}
           ${this.renderAdminNavTab('access_control', 'Department & Admin Access Hub', 'key')}
           ${this.renderAdminNavTab('sub_control', 'Department Submissions & Control', 'check-square')}
           ${this.renderAdminNavTab('overview', 'Institutional Overview & Macro KPIs', 'bar-chart-3')}
@@ -399,6 +413,8 @@ class AdminDashboard {
 
   renderActiveTabContent() {
     switch (this.activeTab) {
+      case 'dept_data':
+        return this.renderDepartmentDataTab();
       case 'access_control':
         return this.renderAccessManagementTab();
       case 'sub_control':
@@ -1214,17 +1230,7 @@ class AdminDashboard {
               <label class="font-bold text-slate-700 block mb-1">Department Code *</label>
               <input type="text" name="code" required placeholder="e.g. history" class="w-full p-2 border rounded" />
             </div>
-            <div>
-              <label class="font-bold text-slate-700 block mb-1">Academic School *</label>
-              <select name="school" class="w-full p-2 border rounded">
-                <option value="School of Computing Sciences">School of Computing Sciences</option>
-                <option value="School of Physical Sciences">School of Physical Sciences</option>
-                <option value="School of Chemical Sciences">School of Chemical Sciences</option>
-                <option value="School of Biological Sciences">School of Biological Sciences</option>
-                <option value="School of Management Studies">School of Management Studies</option>
-                <option value="School of Languages and Culture">School of Languages and Culture</option>
-              </select>
-            </div>
+
             <div>
               <label class="font-bold text-slate-700 block mb-1">Head of Department (HOD) Name</label>
               <input type="text" name="hod_name" placeholder="e.g. Dr. A. Historian" class="w-full p-2 border rounded" />
@@ -1251,7 +1257,7 @@ class AdminDashboard {
       id: this.departments.length + 1,
       code: fd.get('code'),
       name: fd.get('name'),
-      school: fd.get('school'),
+      school: 'Department',
       hod_name: fd.get('hod_name') || 'HOD In-Charge',
       audit_date: fd.get('audit_date'),
       status: 'draft',
@@ -1271,7 +1277,7 @@ class AdminDashboard {
     }
 
     document.getElementById('add-dept-modal').remove();
-    alert(`Department "${newDept.name}" created successfully!\nLogin Account: ${newDept.code} (Password: ${newDept.code}123)`);
+    alert(`Department "${newDept.name}" created successfully!\nLogin Account: ${newDept.code} (Password: sjc123)`);
     this.render();
   }
 
@@ -1689,7 +1695,7 @@ class AdminDashboard {
               </h3>
 
               <form onsubmit="adminDashboard.handleCreateDepartment(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <div>
+                <div class="lg:col-span-2">
                   <label class="block text-[11px] font-bold text-slate-600 mb-1">Department Name *</label>
                   <input 
                     type="text" 
@@ -1701,7 +1707,7 @@ class AdminDashboard {
                 </div>
 
                 <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">User ID / Dept Code *</label>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">User ID / Login Code *</label>
                   <input 
                     type="text" 
                     id="new-dept-code" 
@@ -1712,39 +1718,28 @@ class AdminDashboard {
                 </div>
 
                 <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Initial Password *</label>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Head of Department (HOD)</label>
                   <input 
                     type="text" 
-                    id="new-dept-pass" 
-                    required 
-                    value="sjc123"
-                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-mono focus:border-blue-500 focus:outline-none"
+                    id="new-dept-hod" 
+                    placeholder="e.g. Dr. A. Rajan"
+                    class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
 
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">School</label>
-                  <select id="new-dept-school" class="w-full text-xs px-2.5 py-2 border border-slate-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none font-semibold">
-                    <option value="School of Computing Sciences">School of Computing Sciences</option>
-                    <option value="School of Management Studies">School of Management Studies</option>
-                    <option value="School of Physical Sciences">School of Physical Sciences</option>
-                    <option value="School of Chemical Sciences">School of Chemical Sciences</option>
-                    <option value="School of Biological Sciences">School of Biological Sciences</option>
-                    <option value="School of Languages">School of Languages</option>
-                    <option value="School of Social Sciences">School of Social Sciences</option>
-                  </select>
-                </div>
-
-                <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+                <div class="flex items-end">
                   <button 
                     type="submit" 
-                    class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5"
+                    class="w-full py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-[#53D2DC]"></i>
                     <span>Add Department</span>
                   </button>
                 </div>
               </form>
+              <div class="mt-2 text-[11px] text-slate-500 font-medium">
+                * Note: Default login password for all new departments is automatically set to <span class="font-mono font-bold text-[#26648E] bg-slate-100 px-1.5 py-0.5 rounded">sjc123</span>. Department users can change their password at any time.
+              </div>
             </div>
 
             <!-- Departments Accounts Table -->
@@ -1755,7 +1750,7 @@ class AdminDashboard {
                     <th class="p-3 w-12 text-center">#</th>
                     <th class="p-3">User ID (Login Code)</th>
                     <th class="p-3">Department Name</th>
-                    <th class="p-3">School / HOD</th>
+                    <th class="p-3">Head of Department (HOD)</th>
                     <th class="p-3">Login Password</th>
                     <th class="p-3 text-center">Data Lock Status</th>
                     <th class="p-3 text-center">Actions</th>
@@ -1773,9 +1768,8 @@ class AdminDashboard {
                         <td class="p-3">
                           <span class="font-bold text-slate-900">${dept.name}</span>
                         </td>
-                        <td class="p-3 text-slate-600">
-                          <div class="font-semibold text-slate-800">${dept.school || '—'}</div>
-                          <div class="text-[11px] text-slate-500">${dept.hod_name ? 'HOD: ' + dept.hod_name : ''}</div>
+                        <td class="p-3 text-slate-800 font-bold">
+                          <div>${dept.hod_name || 'HOD In-Charge'}</div>
                         </td>
                         <td class="p-3">
                           <div class="flex items-center gap-1.5 font-mono">
@@ -2020,18 +2014,18 @@ class AdminDashboard {
     event.preventDefault();
     const name = document.getElementById('new-dept-name')?.value;
     const code = document.getElementById('new-dept-code')?.value;
-    const password = document.getElementById('new-dept-pass')?.value;
-    const school = document.getElementById('new-dept-school')?.value;
+    const hod_name = document.getElementById('new-dept-hod')?.value || 'HOD In-Charge';
+    const password = 'sjc123'; // Default password requested by user
 
     try {
       if (window.dataStore) {
-        window.dataStore.addDepartmentUser({ name, code, password, school });
-        alert(`Department "${name}" (User ID: ${code}) created successfully!`);
+        window.dataStore.addDepartmentUser({ name, code, password, hod_name });
+        window.showToast(`Department "${name}" created! User ID: ${code} (Default Password: sjc123)`, 'success', 4500, 'Department Registered');
         this.render();
         if (window.app) window.app.refreshDeptDropdown();
       }
     } catch (e) {
-      alert(`Error creating department: ${e.message}`);
+      window.showToast(`Error creating department: ${e.message}`, 'error', 4000, 'Creation Error');
     }
   }
 
@@ -2199,4 +2193,322 @@ class AdminDashboard {
     if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
   }
 
+
+  // ================= ACADEMIC YEAR SWITCHER HANDLERS =================
+  async onYearSelectChange(val) {
+    if (val === '__NEW__') {
+      const newYear = await window.showPromptDialog(
+        'Enter New Academic Year in format YYYY - YYYY (e.g. 2027 - 2028):',
+        '',
+        'Add Academic Year',
+        { placeholder: 'e.g. 2027 - 2028', confirmText: 'Create Year' }
+      );
+      if (newYear && newYear.trim()) {
+        const clean = newYear.trim();
+        if (window.dataStore) {
+          window.dataStore.setActiveYear(clean);
+          window.showToast(`Active Academic Year set to "${clean}". Department data for that year loaded.`, 'success', 4000, 'Academic Year Created');
+          this.render();
+          if (window.app) window.app.onDataUpdated(window.dataStore.data);
+        }
+      } else {
+        this.render();
+      }
+      return;
+    }
+
+    if (window.dataStore) {
+      window.dataStore.setActiveYear(val);
+      window.showToast(`Active Academic Year switched to "${val}". Previous year records safely preserved.`, 'success', 4000, 'Academic Year Switched');
+      this.render();
+      if (window.app) window.app.onDataUpdated(window.dataStore.data);
+    }
+  }
+
+  // ================= DEPARTMENT DATA HUB (DATA DEPARTMENT) =================
+  renderDepartmentDataTab() {
+    const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
+    const departments = db.departments || [];
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+    const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
+
+    return `
+      <div class="space-y-6 animate-fadeIn">
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-5 border border-[#4F8FC0]/30 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0]">
+                Academic Year: ${activeYear}
+              </span>
+              <span class="text-xs text-[#4F8FC0] font-bold">
+                ${departments.length} Registered Departments
+              </span>
+            </div>
+            <h2 class="text-xl font-black text-[#26648E] tracking-tight">
+              Department Data Hub (Attribute-Wise Submissions)
+            </h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Click on any attribute button inside a department's card to view, inspect, and export the specific records entered by that department.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              onclick="adminDashboard.exportAllDepartmentsConsolidated()" 
+              class="px-4 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer"
+            >
+              <i data-lucide="download" class="w-4 h-4 text-[#53D2DC]"></i>
+              <span>Export All Departments (.xls)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Department Cards Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          ${departments.map(dept => {
+            const deptData = window.dataStore ? window.dataStore.getDepartmentDataForYear(dept.name, activeYear) : null;
+
+            return `
+              <div class="bg-white rounded-2xl border border-slate-200 hover:border-[#4F8FC0]/50 shadow-xs hover:shadow-md transition p-5 space-y-4">
+                
+                <!-- Department Card Header -->
+                <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-b from-[#f0f6fa] to-[#FFE3B3]/25 border border-[#4F8FC0]/30 text-[#26648E] flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">
+                      ${dept.code.substring(0, 3).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-black text-slate-900 leading-snug">
+                        ${dept.name}
+                      </h3>
+                      <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-50 text-blue-800 border border-blue-200">
+                          ID: ${dept.code}
+                        </span>
+                        <span class="text-[11px] text-slate-500 font-semibold">
+                          ${dept.hod_name ? 'HOD: ' + dept.hod_name : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                    dept.status === 'submitted' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                  }">
+                    ${dept.status || 'Draft'}
+                  </span>
+                </div>
+
+                <!-- Attributes Grid (Click to Inspect) -->
+                <div>
+                  <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
+                    <span>Attribute Submissions (Click to View Records):</span>
+                    <span class="text-[#26648E] font-bold">Academic Year: ${activeYear}</span>
+                  </div>
+
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    ${cardsSchema.map(card => {
+                      // Calculate sheet rows count for this dept
+                      let filledSheets = 0;
+                      const totalSheets = (card.sheets || []).length;
+                      if (deptData && card.sheets) {
+                        card.sheets.forEach(s => {
+                          const sData = deptData[s.key];
+                          if (Array.isArray(sData) && sData.length > 0) filledSheets++;
+                          else if (sData && typeof sData === 'object' && Object.keys(sData).length > 0) filledSheets++;
+                        });
+                      }
+
+                      const isDone = totalSheets > 0 && filledSheets === totalSheets;
+
+                      return `
+                        <button 
+                          type="button" 
+                          onclick="adminDashboard.inspectDepartmentAttributeData('${dept.name.replace(/'/g, "\'")}', '${card.id}', '${card.cardTitle.replace(/'/g, "\'")}')" 
+                          class="p-2.5 rounded-xl border border-slate-200 hover:border-[#26648E] bg-slate-50 hover:bg-white text-left transition flex items-center justify-between gap-1.5 shadow-2xs group cursor-pointer"
+                          title="Click to view ${dept.name}'s data for ${card.cardTitle}"
+                        >
+                          <div class="min-w-0 flex-1">
+                            <span class="block text-[10px] font-black ${card.id === 'part_a' ? 'text-amber-800' : 'text-[#26648E]'}">
+                              ${card.cardCode}
+                            </span>
+                            <span class="block text-[11px] font-bold text-slate-800 truncate group-hover:text-[#26648E]">
+                              ${card.cardTitle.split(':')[0]}
+                            </span>
+                          </div>
+                          <span class="px-1.5 py-0.5 rounded text-[9px] font-black shrink-0 ${
+                            isDone ? 'bg-emerald-100 text-emerald-800' : (filledSheets > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-600')
+                          }">
+                            ${filledSheets}/${totalSheets}
+                          </span>
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+      </div>
+    `;
+  }
+
+  // Inspect data entered by a department for an attribute
+  inspectDepartmentAttributeData(deptName, cardId, cardTitle) {
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+    const deptData = window.dataStore ? window.dataStore.getDepartmentDataForYear(deptName, activeYear) : null;
+    const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
+    const card = cardsSchema.find(c => c.id === cardId);
+    if (!card) return;
+
+    let existing = document.getElementById('inspect-dept-data-modal');
+    if (existing) existing.remove();
+
+    const sheets = card.sheets || [];
+
+    const modal = document.createElement('div');
+    modal.id = 'inspect-dept-data-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn';
+    modal.innerHTML = `
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-5xl w-full my-6 overflow-hidden flex flex-col max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white p-5 flex items-center justify-between gap-4 shrink-0 shadow-xs">
+          <div>
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
+                Active Year: ${activeYear}
+              </span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">
+                ${card.cardCode}
+              </span>
+              <span class="text-xs text-blue-100 font-semibold">Department Data Inspection</span>
+            </div>
+            <h3 class="text-lg font-black tracking-tight text-white">
+              ${deptName} — ${card.cardTitle}
+            </h3>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              onclick="adminDashboard.exportDepartmentAttributeToExcel('${deptName.replace(/'/g, "\'")}', '${card.id}')" 
+              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export (.xls)</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="document.getElementById('inspect-dept-data-modal').remove()" 
+              class="p-2 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition"
+              title="Close"
+            >
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Body: Sheet Records Review -->
+        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+          ${sheets.map(s => {
+            const sData = deptData ? deptData[s.key] : null;
+            const columns = s.columns || [];
+
+            let rows = [];
+            if (Array.isArray(sData)) rows = sData;
+            else if (sData && typeof sData === 'object') {
+              // Section/batch table rows
+              rows = Object.values(sData).flat();
+            }
+
+            return `
+              <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-3 p-4">
+                <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
+                  <div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-800">
+                      ${s.badge || s.key}
+                    </span>
+                    <h4 class="text-xs font-bold text-slate-900 mt-1">${s.title || s.sheetName}</h4>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black ${rows.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
+                    ${rows.length} ${rows.length === 1 ? 'Record' : 'Records'} Entered
+                  </span>
+                </div>
+
+                ${rows.length > 0 && columns.length > 0 ? `
+                  <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                        <tr>
+                          ${columns.map(c => `<th class="p-2.5 whitespace-nowrap">${c.label}</th>`).join('')}
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        ${rows.map(r => `
+                          <tr class="hover:bg-slate-50">
+                            ${columns.map(c => `<td class="p-2.5 text-slate-700 font-medium whitespace-nowrap">${r[c.key] !== undefined && r[c.key] !== '' ? r[c.key] : '—'}</td>`).join('')}
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                ` : `
+                  <div class="text-xs text-slate-400 py-3 text-center italic">
+                    ${rows.length === 0 ? 'No records entered by this department for this sheet yet.' : 'Profile data saved in standard departmental records.'}
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 border-t border-slate-200 px-6 py-3 flex items-center justify-end shrink-0">
+          <button 
+            type="button" 
+            onclick="document.getElementById('inspect-dept-data-modal').remove()" 
+            class="px-5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-xs cursor-pointer"
+          >
+            Done Reviewing
+          </button>
+        </div>
+
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons({ root: modal });
+  }
+
+  exportDepartmentAttributeToExcel(deptName, cardId) {
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+    const deptData = window.dataStore ? window.dataStore.getDepartmentDataForYear(deptName, activeYear) : null;
+    const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
+    const card = cardsSchema.find(c => c.id === cardId);
+    if (!card || !window.ExcelExporter) return;
+
+    window.showToast(`Exporting ${deptName} records for ${card.cardTitle}...`, 'info', 2500, 'Excel Export');
+    try {
+      window.ExcelExporter.exportCardWorkbook(card, deptData, deptName);
+    } catch (e) {
+      console.error(e);
+      window.showToast('Export error: ' + e.message, 'error', 3500, 'Export Failed');
+    }
+  }
+
+  exportAllDepartmentsConsolidated() {
+    window.showToast('Downloading consolidated multi-department report...', 'info', 3000, 'Consolidated Export');
+    if (window.ExcelExporter && typeof window.ExcelExporter.exportComparisonMatrixToExcel === 'function') {
+      window.ExcelExporter.exportComparisonMatrixToExcel(this.departments);
+    }
+  }
+
 }
+
+// Global singleton instance

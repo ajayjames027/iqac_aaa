@@ -151,3 +151,23 @@ table tbody tr:hover td {
   from { width: 100%; }
   to { width: 0%; }
 }
+
+/* Department Side Blinking Submission Deadline Box in Noticeable Coral/Amber Alert */
+@keyframes deptDeadlineBlink {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.45), 0 0 5px rgba(245, 158, 11, 0.6);
+    border-color: #f87171;
+    background-color: #fff1f2;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+    border-color: #fca5a5;
+    background-color: #ffffff;
+    transform: scale(0.98);
+  }
+}
+
+.dept-deadline-blink {
+  animation: deptDeadlineBlink 1.8s infinite ease-in-out !important;
+}

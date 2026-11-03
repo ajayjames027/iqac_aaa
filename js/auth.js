@@ -173,30 +173,66 @@ class AuthManager {
     const userRoleBadge = document.getElementById('user-role-badge');
     const userNameLabel = document.getElementById('user-name-label');
     const adminNavBtn = document.getElementById('nav-btn-admin');
+    const filterNavBtn = document.getElementById('nav-btn-filter');
+    const dashboardNavBtn = document.getElementById('nav-btn-dashboard');
+    const deptProfileNavBtn = document.getElementById('nav-btn-dept-profile');
     const deptSwitcher = document.getElementById('dept-switcher-container');
+    const topDeptDisplayName = document.getElementById('top-dept-display-name');
+    const deadlineWidget = document.getElementById('sidebar-deadline-widget');
 
     if (this.user) {
+      const isAdmin = this.user.role === 'admin';
+      const isDept = this.user.role === 'department';
+
       if (userRoleBadge) {
-        userRoleBadge.textContent = this.user.role === 'admin' ? 'IQAC Admin' : 'Department User';
-        userRoleBadge.className = this.user.role === 'admin' 
+        userRoleBadge.textContent = isAdmin ? 'IQAC Admin' : 'Department User';
+        userRoleBadge.className = isAdmin 
           ? 'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200' 
           : 'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200';
       }
       if (userNameLabel) {
         userNameLabel.textContent = this.user.display_name || this.user.username;
       }
+
+      // Department users see only Attribute Forms and Department Info (Filter & Analytics hidden)
+      if (filterNavBtn) {
+        if (isAdmin) filterNavBtn.classList.remove('hidden');
+        else filterNavBtn.classList.add('hidden');
+      }
+      if (dashboardNavBtn) {
+        if (isAdmin) dashboardNavBtn.classList.remove('hidden');
+        else dashboardNavBtn.classList.add('hidden');
+      }
       if (adminNavBtn) {
-        if (this.user.role === 'admin') {
-          adminNavBtn.classList.remove('hidden');
+        if (isAdmin) adminNavBtn.classList.remove('hidden');
+        else adminNavBtn.classList.add('hidden');
+      }
+      if (deptProfileNavBtn) {
+        if (isDept) deptProfileNavBtn.classList.remove('hidden');
+        else deptProfileNavBtn.classList.add('hidden');
+      }
+
+      // Blinking Submission Deadline box in Noticeable Alert Color on Department side
+      if (deadlineWidget) {
+        if (isDept) {
+          deadlineWidget.classList.add('dept-deadline-blink');
         } else {
-          adminNavBtn.classList.add('hidden');
+          deadlineWidget.classList.remove('dept-deadline-blink');
         }
       }
+
+      // Top right corner Department Name Badge
+      if (topDeptDisplayName) {
+        const deptName = isDept
+          ? (this.user.department_name || this.user.display_name || window.dataStore?.activeDepartment || 'Department')
+          : (window.dataStore?.activeDepartment || 'IQAC Central Admin');
+        topDeptDisplayName.textContent = deptName;
+      }
+
       if (deptSwitcher) {
-        if (this.user.role === 'admin') {
+        if (isAdmin) {
           deptSwitcher.classList.remove('hidden');
         } else {
-          // Department user locked to their own department
           deptSwitcher.classList.add('hidden');
         }
       }
@@ -255,7 +291,7 @@ class AuthManager {
               <button type="button" onclick="authManager.quickLogin('admin', 'admin123')" class="p-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-lg font-bold text-[11px] text-center transition">
                 IQAC Admin
               </button>
-              <button type="button" onclick="authManager.quickLogin('cs', 'cs123')" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg font-bold text-[11px] text-center transition">
+              <button type="button" onclick="authManager.quickLogin('cs', 'sjc123')" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg font-bold text-[11px] text-center transition">
                 Dept CS
               </button>
               <button type="button" onclick="authManager.quickLogin('commerce', 'commerce123')" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg font-bold text-[11px] text-center transition">

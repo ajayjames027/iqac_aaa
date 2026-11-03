@@ -203,6 +203,7 @@ class FormBuilder {
     const card = this.getActiveCard();
     if (!card) return;
     const deptName = window.dataStore?.activeDepartment || 'Department';
+    this.academicYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
     const cardData = this.getCardData(card.id);
 
     if (window.ExcelExporter && typeof window.ExcelExporter.exportAttribute1Workbook === 'function') {
@@ -243,7 +244,7 @@ class FormBuilder {
       if (sheet.type === 'profile') {
         const prof = sData?.profile || sheet.profileQuestions || {};
         const facRows = sData?.facultyDetails || sheet.facultyDetails?.rows || [];
-        const hasProf = Boolean(prof.department || prof.hodName);
+        const hasProf = Boolean((prof.department && prof.department.trim() && prof.department !== 'Department') || (prof.hodName && prof.hodName.trim()));
         const hasFac = facRows.some(r => (Number(r.male) > 0 || Number(r.female) > 0));
         if (hasProf || hasFac) isFinished = true;
       } else if (sheet.type === 'multi_table' || sheet.type === 'batch_table') {
@@ -689,28 +690,111 @@ class FormBuilder {
     const cards = this.getMasterSchema();
     const isAdmin = this.isAdmin();
     const deptName = window.dataStore?.activeDepartment || 'Department';
+    this.academicYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+
+    try {
+      if (sessionStorage.getItem('IQAC_CARDS_UNLOCKED') === 'true') {
+        this.isCardsUnlocked = true;
+      }
+    } catch (e) {}
+    const isUnlocked = this.isCardsUnlocked;
 
     this.container.innerHTML = `
       <div class="w-full space-y-6 animate-fadeIn">
         
-        <!-- Simple & Professional Header Banner -->
-        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-5 sm:p-6 border border-[#4F8FC0]/30 shadow-2xs flex items-center justify-between gap-4">
+        <!-- Simple & Professional Header Banner with Academic Year & Workspace Tools -->
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-5 sm:p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex items-center gap-2 mb-1.5">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs">
-                Active Year: ${this.academicYear}
-              </span>
+            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+              <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-2.5 py-1 rounded-lg border border-[#fedba0] shadow-2xs">
+                <span class="text-xs font-black text-[#26648E]">Active Year:</span>
+                <select 
+                  id="form-active-year-selector" 
+                  onchange="app.onGlobalYearChange(this.value)" 
+                  class="text-xs font-black text-[#26648E] bg-transparent outline-none cursor-pointer"
+                  title="Switch Active Academic Year"
+                >
+                  ${(window.dataStore ? window.dataStore.getAcademicYearsList() : ['2026 - 2027']).map(y => `
+                    <option value="${y}" ${y === this.academicYear ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                  <option value="__NEW__">+ Add New Year...</option>
+                  <option value="__DELETE__">🗑️ Delete Active Year...</option>
+                </select>
+                <button 
+                  type="button" 
+                  onclick="app.deleteActiveYear()" 
+                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200 cursor-pointer"
+                  title="Delete Active Academic Year and erase all its data"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+                </button>
+              </div>
+
+              <button 
+                id="cards-lock-toggle-btn"
+                type="button" 
+                onclick="formBuilder.toggleCardsLock()" 
+                class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isUnlocked ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-700 border border-slate-300'} cursor-pointer shadow-2xs"
+                title="${isUnlocked ? 'Lock / Soft-Blur workspace cards' : 'Unlock cards'}"
+              >
+                <i data-lucide="${isUnlocked ? 'unlock' : 'lock'}" class="w-3.5 h-3.5"></i>
+                <span>${isUnlocked ? 'Workspace Unlocked' : 'Workspace Locked'}</span>
+              </button>
             </div>
+
             <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
               Annual Academic Audit (AAA) ${this.academicYear}
             </h1>
+            <p class="text-xs text-slate-600 mt-1 font-medium">
+              Review and submit quality assurance records across all 11 audit attributes.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button 
+              type="button" 
+              onclick="formBuilder.exportAllAttributesConsolidated()" 
+              class="px-4 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer"
+              title="Download consolidated audit report for all attributes in Excel"
+            >
+              <i data-lucide="download" class="w-4 h-4 text-[#53D2DC]"></i>
+              <span>Download Complete Audit (All Attributes)</span>
+            </button>
           </div>
         </div>
 
         ${this.renderDeadlineNoticeBanner()}
 
-        <!-- Cards Grid with Exact Finished Count (e.g. 4/11) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
+        <!-- Container for Blurred Cards Grid + Floating Central Unlock Overlay -->
+        <div class="relative w-full min-h-[460px]">
+          ${!isUnlocked ? `
+            <div id="cards-unlock-overlay" class="absolute inset-0 z-20 flex items-center justify-center p-4 transition-all duration-500">
+              <div class="bg-white/95 backdrop-blur-md border border-[#4F8FC0]/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl space-y-4 animate-fadeIn">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#26648E] to-[#4F8FC0] text-white flex items-center justify-center mx-auto shadow-lg shadow-[#26648E]/30 ring-4 ring-[#FFE3B3]">
+                  <i data-lucide="shield-check" class="w-8 h-8 text-[#FFE3B3]"></i>
+                </div>
+                <div class="space-y-1">
+                  <h2 class="text-xl md:text-2xl font-black text-[#26648E] tracking-tight">
+                    Attribute Forms Workspace
+                  </h2>
+                  <p class="text-xs text-slate-600 font-medium max-w-md mx-auto">
+                    All 11 Institutional Audit Attributes are ready for data entry. Click below to smoothly unlock the workspace.
+                  </p>
+                </div>
+                <button 
+                  type="button" 
+                  onclick="formBuilder.unlockAttributeCards()" 
+                  class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-[#26648E] to-[#1b4b6d] hover:from-[#1b4b6d] hover:to-[#26648E] text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-[#26648E]/30 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 mx-auto cursor-pointer border border-[#53D2DC]/40"
+                >
+                  <i data-lucide="lock-keyhole-open" class="w-4 h-4 text-[#FFE3B3]"></i>
+                  <span>Unlock & Access All Attributes</span>
+                </button>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Cards Grid with Exact Finished Count (e.g. 0/11) -->
+          <div id="cards-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full ${!isUnlocked ? 'filter blur-[6px] opacity-40 pointer-events-none select-none' : ''} transition-all duration-500">
           ${cards.map(card => {
             const isPartA = card.id === 'part_a';
             const { finishedCount, totalSheets, percentage } = this.getCompletionStats(card);

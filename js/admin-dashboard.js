@@ -267,7 +267,7 @@ class AdminDashboard {
         });
       }
     });
-    alert(lock ? 'All departmental submissions have been locked for audit review.' : 'All departmental submissions unlocked for data editing.');
+    window.showToast(lock ? 'All departmental submissions have been locked for audit review.' : 'All departmental submissions unlocked for data editing.', lock ? 'warning' : 'success', 3500, 'Submissions ' + (lock ? 'Locked' : 'Unlocked'));
     this.render();
   }
 
@@ -300,7 +300,7 @@ class AdminDashboard {
 
   exportDepartmentExcel(deptName) {
     if (!window.ExcelExporter) {
-      alert('Excel exporter initializing...');
+      window.showToast('Preparing Excel export workbook...', 'info', 3000, 'Exporting Data');
       return;
     }
     const data = window.dataStore && window.dataStore.data ? window.dataStore.data : (window.CS_SAMPLE_DATA || {});
@@ -1277,7 +1277,7 @@ class AdminDashboard {
     }
 
     document.getElementById('add-dept-modal').remove();
-    alert(`Department "${newDept.name}" created successfully!\nLogin Account: ${newDept.code} (Password: sjc123)`);
+    window.showToast(`Department "${newDept.name}" created! User ID: ${newDept.code} (Default Password: sjc123)`, 'success', 4500, 'Department Registered');
     this.render();
   }
 
@@ -1501,7 +1501,7 @@ class AdminDashboard {
     this.closeAgendaConfigModal();
     this.render();
 
-    alert(`Meeting Agenda Updated!\nOnly the ${window.dataStore.getAgendaStats().activeAttributes} selected attributes and their questions will now be displayed during the meeting presentation and executive dashboard.`);
+    window.showToast('Meeting Agenda Updated! Active attributes and questions will now be displayed in the executive dashboard.', 'success', 3500, 'Agenda Saved');
     
     if (window.app) {
       window.app.renderCurrentView();
@@ -1651,7 +1651,7 @@ class AdminDashboard {
     }
     if (window.dataStore) {
       window.dataStore.setSubmissionDeadline(input.value);
-      alert(`Submission deadline updated to: ${window.dataStore.formatDeadlineForDisplay()}\n\nDepartments will be locked from editing after this time.`);
+      window.showToast(`Submission deadline updated to: ${window.dataStore.formatDeadlineForDisplay()}`, 'success', 4000, 'Deadline Updated');
       this.render();
       if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
     }
@@ -2038,11 +2038,11 @@ class AdminDashboard {
     try {
       if (window.dataStore) {
         window.dataStore.addAdminUser({ name, username, password, role: 'IQAC Administrator' });
-        alert(`Admin account "${username}" created successfully!`);
+        window.showToast(`Admin account "${username}" created successfully!`, 'success', 3500, 'Admin Created');
         this.render();
       }
     } catch (e) {
-      alert(`Error creating admin: ${e.message}`);
+      window.showToast(`Error creating admin: ${e.message}`, 'error', 3500, 'Error');
     }
   }
 
@@ -2188,7 +2188,7 @@ class AdminDashboard {
     window.dataStore.updateDepartmentUser(code, { is_locked: newLockState });
     window.dataStore.setDepartmentSubmissionStatus(dept.name, newLockState ? 'submitted' : 'draft', newLockState);
 
-    alert(`Department "${dept.name}" data submission has been ${newLockState ? 'LOCKED (Read-Only)' : 'UNLOCKED (Open for editing)'}.`);
+    window.showToast(`Department "${dept.name}" data submission has been ${newLockState ? 'LOCKED (Read-Only)' : 'UNLOCKED (Open for editing)'}.`, newLockState ? 'warning' : 'success', 3500, 'Status Updated');
     this.render();
     if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
   }
@@ -2511,6 +2511,21 @@ class AdminDashboard {
 
 
 
+  async wipeAllDataToCleanSlate() {
+    const ok = await window.showConfirmDialog(
+      'Are you sure you want to completely wipe all departmental records, audit data, and reset the portal to a pristine blank slate?',
+      'Reset All Records',
+      { confirmText: 'Yes, Wipe Everything', cancelText: 'Cancel', type: 'danger' }
+    );
+    if (ok) {
+      if (window.dataStore) {
+        window.dataStore.resetAllDataToBlankSlate();
+        window.showToast('All audit data wiped cleanly. Portal is now at zero-state blank template.', 'success', 4000, 'All Records Reset');
+        setTimeout(() => window.location.reload(), 600);
+      }
+    }
+  }
+
   // Select department to show attributes or null to show simple cards
   selectDeptForAttributes(deptCode) {
     this.selectedDeptForAttributes = deptCode;
@@ -2523,8 +2538,18 @@ class AdminDashboard {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
-    const departments = db.departments && db.departments.length > 0 ? db.departments : this.departments;
+    let db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
+    let departments = (db.departments && db.departments.length > 0) ? db.departments : (this.departments || []);
+    if (!departments || departments.length === 0) {
+      const deptNames = window.dataStore ? window.dataStore.getDepartmentList() : [];
+      departments = deptNames.map((name, idx) => ({
+        id: idx + 1,
+        code: name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || `dept_${idx + 1}`,
+        name: name,
+        school: 'Academic School',
+        status: 'draft'
+      }));
+    }
     const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
     const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
 
@@ -2655,9 +2680,29 @@ class AdminDashboard {
         <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0]">
-                Academic Year: ${activeYear}
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600">Active Year:</span>
+                <select 
+                  id="dept-data-active-year-selector" 
+                  onchange="app.onGlobalYearChange(this.value)"
+                  class="text-xs font-black px-2.5 py-1 rounded-lg bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs outline-none cursor-pointer"
+                  title="Switch Active Academic Year"
+                >
+                  ${(window.dataStore ? window.dataStore.getAcademicYearsList() : ['2026 - 2027']).map(y => `
+                    <option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                  <option value="__NEW__">+ Add New Year...</option>
+                  <option value="__DELETE__">🗑️ Delete Active Year...</option>
+                </select>
+                <button 
+                  type="button" 
+                  onclick="app.deleteActiveYear()" 
+                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200 cursor-pointer"
+                  title="Delete Active Academic Year and erase all its data"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+                </button>
+              </div>
               <span class="text-xs text-[#4F8FC0] font-black">
                 ${departments.length} Academic Departments
               </span>

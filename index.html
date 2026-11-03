@@ -144,9 +144,31 @@
           <span id="sidebar-toggle-text">Hide Menu</span>
         </button>
 
-        <span class="text-xs font-extrabold text-[#26648E] tracking-tight">
-          Annual Academic Audit (AAA) 2026–2027
+        <span class="text-xs font-extrabold text-[#26648E] tracking-tight hidden sm:inline">
+          Annual Academic Audit (AAA)
         </span>
+
+        <!-- Active Academic Year Selector with Delete Trash Option -->
+        <div class="flex items-center gap-1.5 bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 px-2.5 py-1 rounded-xl border border-[#4F8FC0]/30 shadow-2xs">
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
+          <span class="text-[11px] font-bold text-slate-700 hidden md:inline">Active Year:</span>
+          <select 
+            id="top-active-year-selector" 
+            onchange="app.onGlobalYearChange(this.value)" 
+            class="text-xs font-black text-[#26648E] bg-transparent outline-none cursor-pointer pr-1"
+            title="Switch Active Academic Year"
+          >
+            <!-- Populated dynamically by app.refreshYearSelectors() -->
+          </select>
+          <button 
+            type="button" 
+            onclick="app.deleteActiveYear()" 
+            class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200 cursor-pointer"
+            title="Delete Active Academic Year and erase all its data"
+          >
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Right Header Actions: Active Department Name Badge & Print -->

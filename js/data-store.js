@@ -27,6 +27,32 @@ class DataStore {
 
   // Initialize store: check if data exists in localStorage, else load sample
   async init() {
+    // Guaranteed automatic one-time wipe of legacy dummy data across all departments & years
+    const PURGE_FLAG = 'IQAC_AAA_CLEAN_DEPLOY_PURGE_V10_ZERO_STATE';
+    if (localStorage.getItem(PURGE_FLAG) !== 'completed') {
+      try {
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (
+            k.startsWith('IQAC_AAA_DATA_') || 
+            k === 'IQAC_USERS_DB' || 
+            k.startsWith('IQAC_AAA_MASTER_') || 
+            k.startsWith('IQAC_AAA_ATTR') ||
+            k === 'IQAC_AUTH_USER' ||
+            k === 'IQAC_CARDS_UNLOCKED' ||
+            k === 'IQAC_AAA_ACTIVE_DEPT'
+          )) {
+            toRemove.push(k);
+          }
+        }
+        toRemove.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+
+      localStorage.setItem(ACTIVE_YEAR_KEY, '2026 - 2027');
+      localStorage.setItem(YEARS_LIST_KEY, JSON.stringify(['2024 - 2025', '2025 - 2026', '2026 - 2027', '2027 - 2028', '2028 - 2029', '2029 - 2030']));
+      localStorage.setItem(PURGE_FLAG, 'completed');
+    }
     let deptList = this.getDepartmentList();
     if (!deptList || deptList.length === 0) {
       deptList = ['PG & Research Department of Computer Science', 'PG & Research Department of Commerce'];
@@ -52,6 +78,26 @@ class DataStore {
     this.activeDepartment = activeDeptName;
     this.saveCurrentData();
     this.notify();
+  }
+
+  resetAllDataToBlankSlate() {
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('IQAC_AAA_DATA_') || k === 'IQAC_USERS_DB' || k.startsWith('IQAC_AAA_MASTER_'))) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+
+    localStorage.setItem(ACTIVE_YEAR_KEY, DEFAULT_ACTIVE_YEAR);
+    localStorage.setItem(YEARS_LIST_KEY, JSON.stringify(['2025 - 2026', '2026 - 2027', '2027 - 2028', '2028 - 2029']));
+    this.data = this.ensureSchema(this.createDefaultData('PG & Research Department of Computer Science'));
+    this.saveCurrentData();
+    this.notify();
+    return true;
   }
 
   // ================= ACADEMIC YEAR MANAGEMENT & PERSISTENCE =================
@@ -229,22 +275,38 @@ class DataStore {
         (card.sheets || []).forEach(sheet => {
           if (sheet.type === 'profile') {
             data[card.id][sheet.key] = {
-              profile: JSON.parse(JSON.stringify(sheet.profileQuestions || {})),
-              facultyDetails: JSON.parse(JSON.stringify(sheet.facultyDetails?.rows || [])),
-              studentDetails: JSON.parse(JSON.stringify(sheet.studentDetails?.rows || []))
+              profile: {
+                collegeName: "St. Joseph's College (Autonomous)",
+                department: "",
+                hodName: "",
+                programmesOffered: ""
+              },
+              facultyDetails: (sheet.facultyDetails?.rows || []).map(r => ({
+                label: r.label,
+                male: 0,
+                female: 0
+              })),
+              studentDetails: (sheet.studentDetails?.rows || []).map(r => ({
+                programme: r.programme || "",
+                male: 0,
+                female: 0,
+                otherGender: 0,
+                otherStates: 0,
+                otherCountries: 0
+              }))
             };
           } else if (sheet.type === 'table') {
-            data[card.id][sheet.key] = JSON.parse(JSON.stringify(sheet.rows || []));
+            data[card.id][sheet.key] = [];
           } else if (sheet.type === 'multi_table') {
             const m = {};
             (sheet.sections || []).forEach(sec => {
-              m[sec.id] = JSON.parse(JSON.stringify(sec.rows || []));
+              m[sec.id] = [];
             });
             data[card.id][sheet.key] = m;
           } else if (sheet.type === 'batch_table') {
             const b = {};
             (sheet.batches || []).forEach(bat => {
-              b[bat.id] = JSON.parse(JSON.stringify(bat.rows || []));
+              b[bat.id] = [];
             });
             data[card.id][sheet.key] = b;
           }
@@ -436,12 +498,14 @@ class DataStore {
   }
 
   switchDepartment(deptName) {
-    // Save current before switching
     if (this.data && this.activeDepartment) {
       this.saveCurrentData();
     }
 
-    const stored = localStorage.getItem(STORAGE_KEY_PREFIX + deptName);
+    const activeYear = this.getActiveYear();
+    const yearStorageKey = STORAGE_KEY_PREFIX + activeYear + '_' + deptName;
+    const stored = localStorage.getItem(yearStorageKey) || localStorage.getItem(STORAGE_KEY_PREFIX + deptName);
+
     if (stored) {
       try {
         this.data = this.ensureSchema(JSON.parse(stored));
@@ -454,7 +518,7 @@ class DataStore {
       }
     }
 
-    // Create new blank if not found
+    // Create fresh zero-dummy dataset for this department
     this.data = this.ensureSchema(this.createDefaultData(deptName));
     this.activeDepartment = deptName;
     localStorage.setItem(ACTIVE_DEPT_KEY, deptName);
@@ -575,159 +639,129 @@ class DataStore {
     }
   }
 
-  createDefaultData(deptName = 'Department of Computer Science') {
+  createDefaultData(deptName = 'Department') {
+    const activeYear = this.getActiveYear();
     return {
       departmentInfo: {
         collegeName: "St. Joseph's College (Autonomous)",
         accreditation: "Special Heritage Status, NIRF Ranked, NAAC A++ Accredited",
-        academicYear: "2026 - 2027",
+        academicYear: activeYear,
         departmentName: deptName,
-        school: "School of Computing Sciences",
-        hodName: "Head of the Department",
+        school: "Academic School",
+        hodName: "",
         auditDate: new Date().toISOString().split('T')[0],
-        facultyCount: 15,
-        studentCountUG: 300,
-        studentCountPG: 80,
-        researchScholarsCount: 12,
+        facultyCount: 0,
+        studentCountUG: 0,
+        studentCountPG: 0,
+        researchScholarsCount: 0,
         scholars: {
-          fullTime: { male: 5, female: 4 },
-          partTime: { male: 2, female: 1 }
+          fullTime: { male: 0, female: 0 },
+          partTime: { male: 0, female: 0 }
         }
       },
+      attributeFormData: this.initDefaultCardsFormData(),
       attributeI: {
-        vac: [{ name: "Advanced Web Technologies", count: 1, studentsEnrolled: 60, feeCollected: 30000, agenciesInvolved: "Industry Partner" }],
-        cc: [{ name: "Applied Data Analytics", count: 1, studentsEnrolled: 45, feeCollected: 22500, agenciesInvolved: "Professional Body" }],
-        iks: { seminarCount: 1, workshopCount: 1, fieldVisitCount: 1, studentsBenefitted: 120, details: "Vedic mathematics and traditional knowledge systems workshop." },
-        visits: { industrial: 1, educational: 1, fieldWork: 1, fieldVisit: 1, studentsParticipated: 150, classSec: "III UG & II PG", details: "Industrial visit to IT tech park and research facility." },
-        internships: { studentsInvolved: 80, details: "Internships across premier software and corporate institutions." },
-        ptm: { numberOfPTMs: 2, parentsParticipated: 240, details: "Conducted semester-wise parent-teacher meetings for UG & PG with academic progress review." },
+        vac: [],
+        cc: [],
+        iks: { seminarCount: 0, workshopCount: 0, fieldVisitCount: 0, studentsBenefitted: 0, details: "" },
+        visits: { industrial: 0, educational: 0, fieldWork: 0, fieldVisit: 0, studentsParticipated: 0, classSec: "", details: "" },
+        internships: { studentsInvolved: 0, details: "" },
+        ptm: { numberOfPTMs: 0, parentsParticipated: 0, details: "" },
         moocs: {
-          ug: { totalStudents: 300, cycle1_registered: 180, cycle2_registered: 160, cycle1_completed: 165, cycle2_completed: 145 },
-          pg: { totalStudents: 80, cycle1_registered: 75, cycle2_registered: 70, cycle1_completed: 72, cycle2_completed: 68 }
+          ug: { totalStudents: 0, cycle1_registered: 0, cycle2_registered: 0, cycle1_completed: 0, cycle2_completed: 0 },
+          pg: { totalStudents: 0, cycle1_registered: 0, cycle2_registered: 0, cycle1_completed: 0, cycle2_completed: 0 }
         }
       },
       attributeII: {
-        newDegrees: { count: 1, details: "Faculty awarded Ph.D." },
-        netSetJrf: { count: 4, details: "Faculty cleared NET/SET/JRF." },
-        recognizedBodies: { bosCount: 5, externalAuditCount: 2, details: "BoS members at universities and autonomous colleges." },
-        researchJournals: { reviewersCount: 6, editorsCount: 2, details: "Reviewers and editors in Scopus/WoS indexed journals." },
-        professionalBodies: { count: 15, details: "Memberships in CSI, IEEE, ACM." },
-        resourcePerson: { international: 2, national: 8, state: 5, regional: 6, institutional: 10, servedFacultyNames: "Faculty invited as keynote speakers." },
-        fdp: { mmttc_aicte_ugc: 10, otherInstitutions: 12, throughFdc: 8, institutionalLevel: 15, details: "FDPs attended on AI, pedagogical reforms, NEP 2020." },
-        industrialTraining: { count: 2, details: "Faculty industry immersion programs." },
-        socialSectorProjects: { count: 2, details: "Community extension projects." },
-        fellowships: { national: 1, international: 0, details: "National research fellowships." },
-        awards: { count: 4, details: "Best teacher and researcher awards." },
-        facultyMooc: { registered: 12, completed: 10, details: "NPTEL/Coursera certifications." },
-        abroadVisits: { count: 1, facultyNames: "Academic conference presentations abroad." }
+        newDegrees: { count: 0, details: "" },
+        netSetJrf: { count: 0, details: "" },
+        recognizedBodies: { bosCount: 0, externalAuditCount: 0, details: "" },
+        researchJournals: { reviewersCount: 0, editorsCount: 0, details: "" },
+        professionalBodies: { count: 0, details: "" },
+        resourcePerson: { international: 0, national: 0, state: 0, regional: 0, institutional: 0, servedFacultyNames: "" },
+        fdp: { mmttc_aicte_ugc: 0, otherInstitutions: 0, throughFdc: 0, institutionalLevel: 0, details: "" },
+        industrialTraining: { count: 0, details: "" },
+        socialSectorProjects: { count: 0, details: "" },
+        fellowships: { national: 0, international: 0, details: "" },
+        awards: { count: 0, details: "" },
+        facultyMooc: { registered: 0, completed: 0, details: "" },
+        abroadVisits: { count: 0, facultyNames: "" }
       },
       attributeIV_VII: {
-        externalFunds: [
-          { category: "Conduct of FDP/Conference/Seminar", agency: "AICTE/SERB", amount: 200000, facultyInvolved: "Senior Faculty Team" },
-          { category: "Research Projects", agency: "DST/UGC", amount: 800000, facultyInvolved: "Principal Investigator" }
-        ],
-        managementFunds: [
-          { category: "Conduct of FDP/Conference/Seminar", amount: 80000, facultyInvolved: "Department Association" },
-          { category: "Projects", amount: 150000, facultyInvolved: "Faculty Seed Grant" },
-          { category: "Attending Conference/Workshop/Seminar", amount: 100000, facultyInvolved: "Faculty Participants" }
-        ],
-        seedMoney: { projectsAmount: 120000, patentsAmount: 50000, copyrightAmount: 30000, totalSanctioned: 200000, details: "College seed grants for research and IPR filing." },
-        endowments: { count: 1, details: "Endowment instituted for academic excellence." }
+        externalFunds: [],
+        managementFunds: [],
+        seedMoney: { projectsAmount: 0, patentsAmount: 0, copyrightAmount: 0, totalSanctioned: 0, details: "" },
+        endowments: { count: 0, details: "" }
       },
       attributeV: {
-        mouCreated: { count: 2, activitiesConducted: "MoUs signed for training and internships." },
-        previousMous: { count: 4, activitiesConducted: "Active linkages for technical lectures and guest talks." },
-        linkages: { count: 5, activitiesConducted: "Industry linkages for student capstone projects." },
-        eContent: { count: 10, details: "4-Quadrant e-content modules created on LMS." }
+        mouCreated: { count: 0, activitiesConducted: "" },
+        previousMous: { count: 0, activitiesConducted: "" },
+        linkages: { count: 0, activitiesConducted: "" },
+        eContent: { count: 0, details: "" }
       },
       attributeVI_VIII: {
-        clubs: [{ clubName: "Department Association Club", studentsUG: 180, studentsPG: 60, activities: "Workshops, coding competitions, technical symposium." }],
-        pursuingOtherDegrees: { count: 25, details: "Students enrolled in add-on diploma and dual certifications." },
-        studentChapters: { count: 1, details: "Active student chapter of professional society." },
-        competitiveExams: { appeared: 40, qualified: 12, details: "GATE, NET, Banking, Civil Services." },
-        studentParticipationAwards: { sports: 10, cultural: 18, externalAcademicEvents: 35, extraCurricularEvents: 20, coCurricularEvents: 45, details: "Prizes in state and university events." }
+        clubs: [],
+        pursuingOtherDegrees: { count: 0, details: "" },
+        studentChapters: { count: 0, details: "" },
+        competitiveExams: { appeared: 0, qualified: 0, details: "" },
+        studentParticipationAwards: { sports: 0, cultural: 0, externalAcademicEvents: 0, extraCurricularEvents: 0, coCurricularEvents: 0, details: "" }
       },
       attributeIX: {
-        phdConferred: { count: 3, details: "Ph.D. degrees conferred." },
-        newGuides: { count: 2, details: "Recognized Ph.D. research supervisors." },
-        newScholars: { count: 4, details: "New scholars enrolled." },
-        papersPublished: { scopus: 18, wos: 10, ugcCare: 8, details: "Publications in peer-reviewed journals." },
-        conferencesPresented: { indexed: 15, nonIndexed: 4, details: "Conference papers presented." },
-        books: { published: 2, edited: 1, chaptersContributed: 5, details: "Books and chapters authored." },
-        patents: { applied: 3, granted: 1, details: "Patents filed and granted." },
-        copyrights: { count: 3, details: "Software copyrights registered." },
-        oer: { count: 4, details: "Open Educational Resources produced." }
+        phdConferred: { count: 0, details: "" },
+        newGuides: { count: 0, details: "" },
+        newScholars: { count: 0, details: "" },
+        papersPublished: { scopus: 0, wos: 0, ugcCare: 0, details: "" },
+        conferencesPresented: { indexed: 0, nonIndexed: 0, details: "" },
+        books: { published: 0, edited: 0, chaptersContributed: 0, details: "" },
+        patents: { applied: 0, granted: 0, details: "" },
+        copyrights: { count: 0, details: "" },
+        oer: { count: 0, details: "" }
       },
       studentsOutcomes2026: {
-        ug: { strength: 120, onCampus: 68, offCampus: 18, higherStudies: 22, entrepreneur: 5, others: 7 },
-        pg: { strength: 58, onCampus: 36, offCampus: 10, higherStudies: 6, entrepreneur: 3, others: 3 },
-        phd: { strength: 6, onCampus: 0, offCampus: 4, higherStudies: 1, entrepreneur: 1, others: 0 }
+        ug: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        pg: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        phd: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 }
       },
       qualitativePresentation: {
-        signatureAchievements: [
-          { title: "Significant Research Grants Mobilized", impact: "Upgraded advanced departmental research laboratory." },
-          { title: "Patents and IPR Registered", impact: "Strengthened innovation culture among faculty and scholars." },
-          { title: "High Placement Conversion Rate", impact: "Over 80% eligible students placed in top organizations." }
-        ],
-        uniqueness: "Holistic student formation blending rigorous academic standards with industry-focused practical exposure and Jesuit values.",
+        signatureAchievements: [],
+        uniqueness: "",
         statusOfActivities: {
-          basedOnAAA2025_2026: [
-            { eventActivity: "Increase publication count in indexed journals", monthYear: "July 2026", status: "Completed", remarks: "Indexed publications grew by 40%." },
-            { eventActivity: "Strengthen industry MoUs and student internships", monthYear: "September 2026", status: "Completed", remarks: "Signed 2 new industry MoUs and placed 80+ interns." }
-          ],
-          basedOnFacultyOrientation2026: [
-            { eventActivity: "Implement Four-Quadrant E-Content Creation", monthYear: "August 2026", status: "Completed", remarks: "E-content modules uploaded on institutional LMS." },
-            { eventActivity: "Mandatory MOOC enrollment for outgoing batch", monthYear: "September 2026", status: "Completed", remarks: "Cycle I enrollment achieved 90%+." }
-          ]
+          basedOnAAA2025_2026: [],
+          basedOnFacultyOrientation2026: []
         },
-        statusAAA2025_2026: [
-          { recommendation: "Increase publication count in indexed journals", status: "Fully Completed", evidence: "Indexed publications grew by 40%." },
-          { recommendation: "Strengthen industry MoUs and student internships", status: "Fully Completed", evidence: "Signed 2 new industry MoUs and placed 80+ interns." }
-        ],
-        bestPractices: [
-          {
-            title: "Industry Mentored Capstone Projects",
-            objectives: "To provide real-world problem-solving experience under corporate guidance.",
-            context: "Bridging the gap between theory and industry implementation.",
-            practice: "Pairing final year student groups with industry mentors with continuous milestone tracking.",
-            evidence: "High internship conversion and quality project demonstrations.",
-            resourcesRequired: "Corporate network, mentorship coordination cell."
-          }
-        ],
+        statusAAA2025_2026: [],
+        bestPractices: [],
         swoc: {
-          strengths: ["Dedicated faculty with high research credentials", "Up-to-date curriculum aligned with emerging trends", "Strong student mentoring and support system"],
-          weaknesses: ["Revenue from consultancy needs expansion", "Need for higher international academic collaborations"],
-          opportunities: ["Emerging technological avenues for interdisciplinary research", "Industry funded labs and skill incubators"],
-          challenges: ["Fast-paced curriculum obsolescence", "Balancing academic rigor with diverse student entry levels"]
+          strengths: [],
+          weaknesses: [],
+          opportunities: [],
+          challenges: []
         },
         futurePlans: {
-          shortTerm: ["Establish Center of Excellence in emerging field", "Attain 100% faculty Ph.D. qualification"],
-          longTerm: ["Launch international collaborative program", "Establish student startup innovation pod"]
+          shortTerm: [],
+          longTerm: []
         },
         pillars: {
-          ptm: { meetingsConducted: 2, dates: "Semester I & II PTM dates", parentAttendancePercentage: 85, keyFeedback: "Positive feedback on mentoring and academic progress.", actionTaken: "Enhanced aptitude training and communication skill modules." },
-          feedback: { studentRating: 4.6, parentRating: 4.5, alumniRating: 4.7, employerRating: 4.6, actionTakenReport: "Curricular updates incorporated based on stakeholder recommendations." },
-          teachingLearning: { innovations: "Flipped classrooms, LMS interactive quizzes, blended learning modules.", ictToolsUsed: "Moodle LMS, Google Suite, Virtual Labs." },
-          assessmentProcess: { reforms: "Bloom's Taxonomy mapped question design, transparent evaluation rubrics, continuous CIA feedback." },
-          remedialTeaching: { strategy: "Early diagnostic tests, peer-assisted study groups, bilingual coaching sessions.", impact: "Significant improvement in end-semester pass rates." },
-          studentSupport: { mentoringRatio: "1:20", supportMeasures: "Structured mentoring, counseling support, scholarship distribution." },
-          guidanceCompExam: { initiatives: "Specialized coaching for GATE, NET, and competitive public service exams." },
-          sustainability: { initiatives: "Paperless assessments, energy conservation protocols, e-waste recycling." }
+          ptm: { meetingsConducted: 0, dates: "", parentAttendancePercentage: 0, keyFeedback: "", actionTaken: "" },
+          feedback: { studentRating: 0, parentRating: 0, alumniRating: 0, employerRating: 0, actionTakenReport: "" },
+          teachingLearning: { innovations: "", ictToolsUsed: "" },
+          assessmentProcess: { reforms: "" },
+          remedialTeaching: { strategy: "", impact: "" },
+          studentSupport: { mentoringRatio: "", supportMeasures: "" },
+          guidanceCompExam: { initiatives: "" },
+          sustainability: { initiatives: "" }
         }
       },
       panelReview: {
-        expertName: "External Expert, Academic Reviewer",
-        deanName: "School Dean",
-        iqacCoordinator: "IQAC Coordinator",
-        administratorName: "Principal / Administrator",
-        scores: { curriculum: 5, faculty: 4, resources: 4, learningTeaching: 5, extendedCurricular: 4, research: 5, presentationQuality: 5, complianceAAA: 5 },
-        overallGrade: "A+",
-        commendations: "Strong research progress, commendable student support practices, and impactful curriculum.",
-        recommendations: "Scale up consultancy projects and expand international academic tie-ups."
+        expertName: "",
+        deanName: "",
+        iqacCoordinator: "",
+        administratorName: "",
+        comments: "",
+        rating: 0
       }
     };
   }
-
   // --- Meeting Agenda & Question Selection Management ---
   getAllAttributesMetadata() {
     return [

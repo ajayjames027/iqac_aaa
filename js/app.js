@@ -30,6 +30,7 @@ class App {
 
     // Setup Department Dropdown
     this.refreshDeptDropdown();
+    this.refreshYearSelectors();
 
     // Default view: if admin, open Admin Dashboard; else open Department Attributes Hub
     if (window.authManager && window.authManager.isAdmin()) {
@@ -120,6 +121,11 @@ class App {
       case 'dept-profile':
         this.renderDeptProfile();
         break;
+      case 'dept-data':
+        if (window.adminDashboard) {
+          window.adminDashboard.renderDepartmentDataPage('dept-data-container');
+        }
+        break;
     }
   }
 
@@ -152,6 +158,91 @@ class App {
     });
 
     // Render active view
+    if (viewName === 'dept-data' && window.adminDashboard) {
+      window.adminDashboard.renderDepartmentDataPage('dept-data-container');
+    }
+    this.onDataUpdated(window.dataStore.data);
+  }
+
+  refreshYearSelectors() {
+    if (!window.dataStore) return;
+    const activeYear = window.dataStore.getActiveYear();
+    const years = window.dataStore.getAcademicYearsList();
+
+    const optionsHtml = years.map(y => `
+      <option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>
+    `).join('') + '<option value="__NEW__">+ Add New Year...</option><option value="__DELETE__">🗑️ Delete Active Year...</option>';
+
+    // Top global selector
+    const topSel = document.getElementById('top-active-year-selector');
+    if (topSel) topSel.innerHTML = optionsHtml;
+
+    // Admin selector
+    const adminSel = document.getElementById('admin-active-year-selector');
+    if (adminSel) adminSel.innerHTML = optionsHtml;
+
+    // Dept data selector
+    const deptDataSel = document.getElementById('dept-data-active-year-selector');
+    if (deptDataSel) deptDataSel.innerHTML = optionsHtml;
+  }
+
+  async onGlobalYearChange(val) {
+    if (val === '__NEW__') {
+      const newYear = await window.showPromptDialog(
+        'Enter New Academic Year in format YYYY - YYYY (e.g. 2027 - 2028):',
+        '',
+        'Add Academic Year',
+        { placeholder: '2027 - 2028', confirmText: 'Add Year' }
+      );
+      if (newYear && newYear.trim()) {
+        window.dataStore.addAcademicYear(newYear.trim());
+        window.dataStore.setActiveYear(newYear.trim());
+        window.showToast(`Academic Year "${newYear.trim()}" created successfully!`, 'success', 3500, 'Academic Year Added');
+      }
+    } else if (val === '__DELETE__') {
+      await this.deleteActiveYear();
+      return;
+    } else if (val) {
+      window.dataStore.setActiveYear(val);
+      window.showToast(`Active Academic Year switched to "${val}". Previous year records safely preserved.`, 'success', 3500, 'Academic Year Switched');
+    }
+
+    this.refreshYearSelectors();
+    this.onDataUpdated(window.dataStore.data);
+  }
+
+  async deleteActiveYear() {
+    if (window.authManager && !window.authManager.isAdmin()) {
+      window.showToast('Access Restricted: Only IQAC Administrators can delete academic years.', 'error', 3500, 'Access Denied');
+      this.refreshYearSelectors();
+      return;
+    }
+
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+    const list = window.dataStore ? window.dataStore.getAcademicYearsList() : [];
+
+    if (list.length <= 1) {
+      window.showToast('Cannot delete the only remaining academic year.', 'warning', 3500, 'Delete Restricted');
+      this.refreshYearSelectors();
+      return;
+    }
+
+    const confirmed = await window.showConfirmDialog(
+      `Are you sure you want to permanently delete Academic Year "${activeYear}"?\n\nWARNING: All departmental records, audit data, and submissions for "${activeYear}" will be completely erased. This action cannot be undone.`,
+      `Delete Academic Year (${activeYear})`,
+      { confirmText: 'Yes, Delete Year & Erase Data', cancelText: 'Cancel', type: 'danger' }
+    );
+
+    if (confirmed) {
+      try {
+        const res = window.dataStore.deleteAcademicYear(activeYear);
+        window.showToast(`Academic Year "${activeYear}" and all its departmental records have been permanently erased. Switched to "${res.activeYear}".`, 'warning', 5000, 'Academic Year Deleted');
+      } catch (e) {
+        window.showToast('Error deleting academic year: ' + e.message, 'error', 3500, 'Delete Error');
+      }
+    }
+
+    this.refreshYearSelectors();
     this.onDataUpdated(window.dataStore.data);
   }
 

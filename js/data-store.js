@@ -72,6 +72,38 @@ class DataStore {
     return defaultYears;
   }
 
+  deleteAcademicYear(yearToDelete) {
+    const cleanYear = (yearToDelete || '').trim();
+    if (!cleanYear) throw new Error('Valid academic year string required');
+
+    const list = this.getAcademicYearsList();
+    if (list.length <= 1) {
+      throw new Error('Cannot delete the only existing academic year.');
+    }
+
+    // 1. Remove all year-scoped data from localStorage
+    const prefix = STORAGE_KEY_PREFIX + cleanYear + '_';
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // 2. Update years list
+    const updatedList = list.filter(y => y !== cleanYear);
+    localStorage.setItem(YEARS_LIST_KEY, JSON.stringify(updatedList));
+
+    // 3. Switch active year to first remaining
+    const nextYear = updatedList[0];
+    localStorage.setItem(ACTIVE_YEAR_KEY, nextYear);
+    this.setActiveYear(nextYear);
+
+    return { success: true, deletedYear: cleanYear, activeYear: nextYear, countRemoved: keysToRemove.length };
+  }
+
   addAcademicYear(yearStr) {
     const cleanYear = (yearStr || '').trim();
     if (!cleanYear) return this.getAcademicYearsList();
@@ -313,78 +345,51 @@ class DataStore {
     }
     if (!data.departmentInfo) data.departmentInfo = {};
     if (!data.departmentInfo.scholars) {
-      const total = data.departmentInfo.researchScholarsCount || 24;
       data.departmentInfo.scholars = {
-        fullTime: { male: Math.floor(total * 0.4), female: Math.floor(total * 0.3) },
-        partTime: { male: Math.floor(total * 0.15), female: Math.ceil(total * 0.15) }
+        fullTime: { male: 0, female: 0 },
+        partTime: { male: 0, female: 0 }
       };
     }
     if (!data.attributeI) data.attributeI = {};
     if (!data.attributeI.ptm) {
       data.attributeI.ptm = {
-        numberOfPTMs: 2,
-        parentsParticipated: 340,
-        details: "Conducted semester-wise parent-teacher meetings for UG & PG with academic progress review and digital feedback capture."
+        numberOfPTMs: 0,
+        parentsParticipated: 0,
+        details: ""
       };
     }
     if (!data.studentsOutcomes2026) {
       data.studentsOutcomes2026 = {
-        ug: { strength: 120, onCampus: 68, offCampus: 18, higherStudies: 22, entrepreneur: 5, others: 7 },
-        pg: { strength: 58, onCampus: 36, offCampus: 10, higherStudies: 6, entrepreneur: 3, others: 3 },
-        phd: { strength: 6, onCampus: 0, offCampus: 4, higherStudies: 1, entrepreneur: 1, others: 0 }
+        ug: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        pg: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 },
+        phd: { strength: 0, onCampus: 0, offCampus: 0, higherStudies: 0, entrepreneur: 0, others: 0 }
       };
     }
     if (!data.attributeIII) {
       data.attributeIII = {
-        researchFacility: [
-          { labName: "Research Computing & Advanced Analytics Lab", equipment: "High-Performance Workstation Nodes", facilityType: "New Facility", purchaseDate: "15.07.2026", amount: 450000 },
-          { labName: "IoT & Instrumentation Lab", equipment: "Microcontroller & Sensor Interface Kits", facilityType: "Existing", purchaseDate: "18.08.2026", amount: 185000 }
-        ],
+        researchFacility: [],
         departmentLibrary: {
-          booksPurchased: 125,
-          journalsPurchased: 15,
-          totalBooks: 3250,
-          totalJournals: 85,
-          facultyVisitsPerDay: 8,
-          studentVisitsPerDay: 45
+          booksPurchased: 0,
+          journalsPurchased: 0,
+          totalBooks: 0,
+          totalJournals: 0,
+          facultyVisitsPerDay: 0,
+          studentVisitsPerDay: 0
         }
       };
     }
     if (!data.attributeX) {
       data.attributeX = {
-        csrExtension: [
-          { activityName: "Green Campus Tree Plantation & Environmental Awareness", type: "Industry", agency: "ABC Industries Pvt. Ltd.", isCsr: "YES", beneficiaries: 240, amount: 75000 },
-          { activityName: "Plastic Waste Segregation & E-Waste Recycling Drive", type: "NGO", agency: "Tiruchirappalli Green Foundation", isCsr: "NO", beneficiaries: 180, amount: 35000 }
-        ],
+        csrExtension: [],
         greenInitiatives: {
-          paperlessCIA: "100% paperless internal assessments via Moodle LMS",
-          solarEnergyUsage: "Solar rooftop array powering 35% of departmental lab load",
-          plasticFreeCampus: "Single-use plastic banned across department blocks",
-          rainWaterHarvesting: "Operational rainwater harvesting sumps and recharge points"
+          paperlessCIA: "",
+          solarEnergyUsage: "",
+          plasticFreeCampus: "",
+          rainWaterHarvesting: ""
         }
       };
     }
     if (!data.qualitativePresentation) data.qualitativePresentation = {};
-    if (!data.qualitativePresentation.statusOfActivities) {
-      const oldAtr = data.qualitativePresentation.statusAAA2025_2026 || [];
-      data.qualitativePresentation.statusOfActivities = {
-        basedOnAAA2025_2026: oldAtr.length > 0 ? oldAtr.map(atr => ({
-          eventActivity: atr.recommendation || '',
-          monthYear: 'July 2026',
-          status: atr.status === 'In Progress' ? 'Not Completed' : 'Completed',
-          remarks: atr.evidence || ''
-        })) : [
-          { eventActivity: "Enhance Scopus/WoS publication output per faculty member", monthYear: "July 2026", status: "Completed", remarks: "Publications increased in Scopus and WoS" },
-          { eventActivity: "Establish active student chapters of international professional societies", monthYear: "September 2026", status: "Completed", remarks: "Inaugurated ACM & CSI branches" },
-          { eventActivity: "File for IPR and patents from PG student projects", monthYear: "October 2026", status: "Completed", remarks: "Patents and copyrights registered" }
-        ],
-        basedOnFacultyOrientation2026: [
-          { eventActivity: "Implement Four-Quadrant E-Content Creation (SWAYAM model)", monthYear: "August 2026", status: "Completed", remarks: "6 complete CC-BY e-content packages uploaded" },
-          { eventActivity: "Launch Outcome-Based Remedial Coaching for Slow Learners", monthYear: "July 2026", status: "Completed", remarks: "Conducted 30-hour peer-assisted learning clinics" },
-          { eventActivity: "Mandatory MOOC registration for final year UG and PG students", monthYear: "September 2026", status: "Completed", remarks: "Final year students registered in Cycle I" }
-        ]
-      };
-    }
     return data;
   }
 

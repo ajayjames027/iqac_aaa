@@ -10,7 +10,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.012em;
   background-color: #f8fafc;
   color: #1e293b;
   margin: 0;
@@ -170,4 +171,11 @@ table tbody tr:hover td {
 
 .dept-deadline-blink {
   animation: deptDeadlineBlink 1.8s infinite ease-in-out !important;
+}
+
+
+/* Collegiate Official Crest Typography */
+.college-crest-title, .academic-crest-heading {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.025em;
 }

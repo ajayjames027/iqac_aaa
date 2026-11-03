@@ -2417,7 +2417,7 @@ class AdminDashboard {
         <!-- Body: Sheet Records Review -->
         <div class="p-6 overflow-y-auto space-y-6 flex-1">
           ${sheets.map(s => {
-            const sData = deptData ? deptData[s.key] : null;
+            const sData = (deptData?.attributeFormData?.[card.id]?.[s.key]) || deptData?.[card.id]?.[s.key] || deptData?.[s.key] || null;
             const columns = s.columns || [];
 
             let rows = [];
@@ -2528,7 +2528,7 @@ class AdminDashboard {
     const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
     const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
 
-    // VIEW A: If a department is selected, show its attributes
+    // VIEW A: If a department is selected, show its 11 attributes
     if (this.selectedDeptForAttributes) {
       const dept = departments.find(d => (d.code || '').toLowerCase() === this.selectedDeptForAttributes.toLowerCase()) || {
         name: this.selectedDeptForAttributes,
@@ -2563,7 +2563,7 @@ class AdminDashboard {
                 ${dept.name}
               </h2>
               <p class="text-xs text-slate-600 mt-1">
-                Select any attribute card below to inspect data entered by ${dept.name}.
+                Select any attribute card below to inspect records entered by ${dept.name}.
               </p>
             </div>
 
@@ -2587,9 +2587,22 @@ class AdminDashboard {
               const totalSheets = (card.sheets || []).length;
               if (deptData && card.sheets) {
                 card.sheets.forEach(s => {
-                  const sData = deptData[s.key];
-                  if (Array.isArray(sData) && sData.length > 0) filledSheets++;
-                  else if (sData && typeof sData === 'object' && Object.keys(sData).length > 0) filledSheets++;
+                  const sData = (deptData.attributeFormData && deptData.attributeFormData[card.id]) ? deptData.attributeFormData[card.id][s.key] : deptData[s.key];
+                  if (s.type === 'profile') {
+                    const prof = sData?.profile || {};
+                    const fac = sData?.facultyDetails || [];
+                    if ((prof.department && prof.department.trim()) || (prof.hodName && prof.hodName.trim()) || (fac.some && fac.some(r => Number(r.male) > 0 || Number(r.female) > 0))) {
+                      filledSheets++;
+                    }
+                  } else if (Array.isArray(sData) && sData.length > 0) {
+                    if (sData.some(r => Object.entries(r).some(([k, v]) => k !== 'sno' && k !== 's_no' && String(v).trim() !== ''))) {
+                      filledSheets++;
+                    }
+                  } else if (sData && typeof sData === 'object' && Object.keys(sData).length > 0) {
+                    if (Object.values(sData).some(arr => Array.isArray(arr) && arr.some(r => Object.values(r).some(v => String(v).trim() !== '')))) {
+                      filledSheets++;
+                    }
+                  }
                 });
               }
               const isDone = totalSheets > 0 && filledSheets === totalSheets;
@@ -2615,7 +2628,7 @@ class AdminDashboard {
                   </div>
 
                   <div class="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-[11px] font-bold ${isDone ? 'text-emerald-700' : 'text-slate-500'}">
+                    <span class="text-[11px] font-bold ${isDone ? 'text-emerald-700' : (filledSheets > 0 ? 'text-blue-700' : 'text-slate-500')}">
                       ${isDone ? 'Completed' : (filledSheets > 0 ? 'In Progress' : 'Pending Entry')}
                     </span>
                     <span class="text-[11px] font-black text-[#26648E] group-hover:underline flex items-center gap-1">
@@ -2634,7 +2647,7 @@ class AdminDashboard {
       return;
     }
 
-    // VIEW B: Department Cards with ONLY Department Name & Details (Clean, Simple, Professional)
+    // VIEW B: Department Cards displaying ONLY department details (Clean & Simple)
     container.innerHTML = `
       <div class="space-y-6 animate-fadeIn">
         

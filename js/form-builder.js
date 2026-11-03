@@ -17,6 +17,37 @@ class FormBuilder {
     this.adminEditQuestionsMode = false; // Toggleable ONLY by Admin
     this.saveTimeout = null;
     this.academicYear = '2026–2027';
+    this.isCardsUnlocked = false;
+  }
+
+  unlockAttributeCards() {
+    this.isCardsUnlocked = true;
+    try { sessionStorage.setItem('IQAC_CARDS_UNLOCKED', 'true'); } catch (e) {}
+    const overlay = document.getElementById('cards-unlock-overlay');
+    const grid = document.getElementById('cards-grid-container');
+    if (overlay) {
+      overlay.style.opacity = '0';
+      overlay.style.transform = 'scale(0.95)';
+      overlay.style.pointerEvents = 'none';
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 400);
+    }
+    if (grid) {
+      grid.classList.remove('filter', 'blur-[5px]', 'opacity-40', 'pointer-events-none', 'select-none');
+    }
+    const indicator = document.getElementById('cards-lock-toggle-btn');
+    if (indicator) {
+      indicator.innerHTML = '<i data-lucide="unlock" class="w-3.5 h-3.5 text-emerald-600"></i><span>Workspace Unlocked</span>';
+      indicator.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 cursor-pointer shadow-2xs';
+      if (window.lucide) lucide.createIcons({ root: indicator });
+    }
+  }
+
+  toggleCardsLock() {
+    this.isCardsUnlocked = !this.isCardsUnlocked;
+    try { sessionStorage.setItem('IQAC_CARDS_UNLOCKED', this.isCardsUnlocked ? 'true' : 'false'); } catch (e) {}
+    this.render(window.dataStore?.data);
   }
 
   // Check if current logged-in user is IQAC Admin
@@ -910,6 +941,7 @@ class FormBuilder {
               </button>
             </div>
           ` : '<div></div>'}
+          </div>
         </div>
 
       </div>

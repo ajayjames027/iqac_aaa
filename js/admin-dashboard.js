@@ -10,6 +10,7 @@ class AdminDashboard {
     this.selectedAttributeForMatrix = 'att9'; // Default to Research
     this.facultySearchQuery = '';
     this.facultyDeptFilter = 'all';
+    this.selectedDeptForAttributes = null;
     this.comparisonCharts = {};
   }
 
@@ -376,7 +377,6 @@ class AdminDashboard {
 
         <!-- Admin Module Navigation Tabs -->
         <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-2">
-          ${this.renderAdminNavTab('dept_data', 'Department Data', 'folder-kanban')}
           ${this.renderAdminNavTab('access_control', 'Department & Admin Access Hub', 'key')}
           ${this.renderAdminNavTab('sub_control', 'Department Submissions & Control', 'check-square')}
           ${this.renderAdminNavTab('overview', 'Institutional Overview & Macro KPIs', 'bar-chart-3')}
@@ -1285,7 +1285,7 @@ class AdminDashboard {
 
   openAgendaConfigModal() {
     let existing = document.getElementById('agenda-config-modal');
-    if (existing) existing.remove();
+    if (existing) { if (typeof existing.remove === 'function') existing.remove(); else if (existing.parentNode) existing.parentNode.removeChild(existing); }
 
     const config = window.dataStore.getMeetingAgendaConfig();
     const allMetadata = window.dataStore.getAllAttributesMetadata();
@@ -2509,6 +2509,217 @@ class AdminDashboard {
     }
   }
 
+
+
+  // Select department to show attributes or null to show simple cards
+  selectDeptForAttributes(deptCode) {
+    this.selectedDeptForAttributes = deptCode;
+    this.renderDepartmentDataPage('dept-data-container');
+    if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Dedicated Department Data Page (Separate Navbar Item)
+  renderDepartmentDataPage(containerId = 'dept-data-container') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
+    const departments = db.departments && db.departments.length > 0 ? db.departments : this.departments;
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
+    const cardsSchema = window.dataStore ? window.dataStore.getAllCardsSchema() : [];
+
+    // VIEW A: If a department is selected, show its attributes
+    if (this.selectedDeptForAttributes) {
+      const dept = departments.find(d => (d.code || '').toLowerCase() === this.selectedDeptForAttributes.toLowerCase()) || {
+        name: this.selectedDeptForAttributes,
+        code: this.selectedDeptForAttributes,
+        status: 'draft'
+      };
+
+      const deptData = window.dataStore ? window.dataStore.getDepartmentDataForYear(dept.name, activeYear) : null;
+
+      container.innerHTML = `
+        <div class="space-y-6 animate-fadeIn">
+          <!-- Department Selected Header Bar -->
+          <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-2 flex-wrap">
+                <button 
+                  type="button" 
+                  onclick="adminDashboard.selectDeptForAttributes(null)" 
+                  class="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#26648E] font-black rounded-xl text-xs border border-slate-300 shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                  <span>Back to Department List</span>
+                </button>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0]">
+                  Academic Year: ${activeYear}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-200">
+                  ID: ${dept.code}
+                </span>
+              </div>
+              <h2 class="text-xl md:text-2xl font-black text-[#26648E] tracking-tight">
+                ${dept.name}
+              </h2>
+              <p class="text-xs text-slate-600 mt-1">
+                Select any attribute card below to inspect data entered by ${dept.name}.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button 
+                type="button" 
+                onclick="adminDashboard.exportDepartmentExcel('${dept.name.replace(/'/g, "\\'")}')" 
+                class="px-4 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer"
+                title="Download complete audit records for this department in Excel"
+              >
+                <i data-lucide="download" class="w-4 h-4 text-[#53D2DC]"></i>
+                <span>Download Department Audit (.xls)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- All Attributes Grid for Selected Department -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            ${cardsSchema.map(card => {
+              let filledSheets = 0;
+              const totalSheets = (card.sheets || []).length;
+              if (deptData && card.sheets) {
+                card.sheets.forEach(s => {
+                  const sData = deptData[s.key];
+                  if (Array.isArray(sData) && sData.length > 0) filledSheets++;
+                  else if (sData && typeof sData === 'object' && Object.keys(sData).length > 0) filledSheets++;
+                });
+              }
+              const isDone = totalSheets > 0 && filledSheets === totalSheets;
+
+              return `
+                <div 
+                  onclick="adminDashboard.inspectDepartmentAttributeData('${dept.name.replace(/'/g, "\\'")}', '${card.id}', '${card.cardTitle.replace(/'/g, "\\'")}')"
+                  class="bg-white rounded-2xl border border-slate-200 hover:border-[#26648E] hover:shadow-md transition p-5 flex flex-col justify-between cursor-pointer group shadow-2xs"
+                >
+                  <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                      <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${card.id === 'part_a' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-50 text-blue-900 border border-blue-200'}">
+                        ${card.cardCode}
+                      </span>
+                      <span class="text-[11px] font-bold ${isDone ? 'text-emerald-700' : (filledSheets > 0 ? 'text-blue-700' : 'text-slate-400')}">
+                        ${filledSheets} / ${totalSheets} Sheets
+                      </span>
+                    </div>
+
+                    <h3 class="text-sm font-black text-slate-900 group-hover:text-[#26648E] transition leading-snug mb-1">
+                      ${card.cardTitle}
+                    </h3>
+                  </div>
+
+                  <div class="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span class="text-[11px] font-bold ${isDone ? 'text-emerald-700' : 'text-slate-500'}">
+                      ${isDone ? 'Completed' : (filledSheets > 0 ? 'In Progress' : 'Pending Entry')}
+                    </span>
+                    <span class="text-[11px] font-black text-[#26648E] group-hover:underline flex items-center gap-1">
+                      <span>View Data</span>
+                      <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+
+      if (window.lucide) lucide.createIcons({ root: container });
+      return;
+    }
+
+    // VIEW B: Department Cards with ONLY Department Name & Details (Clean, Simple, Professional)
+    container.innerHTML = `
+      <div class="space-y-6 animate-fadeIn">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E] border border-[#fedba0]">
+                Academic Year: ${activeYear}
+              </span>
+              <span class="text-xs text-[#4F8FC0] font-black">
+                ${departments.length} Academic Departments
+              </span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
+              Department Data Hub
+            </h1>
+            <p class="text-xs text-slate-600 mt-1 font-medium">
+              Click on any department card below to view all of its attribute data records.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              onclick="adminDashboard.exportAllDepartmentsConsolidated()" 
+              class="px-4 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+            >
+              <i data-lucide="download" class="w-4 h-4 text-[#53D2DC]"></i>
+              <span>Export All Departments (.xls)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Department Cards Grid: Clean cards displaying ONLY department details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          ${departments.map(dept => `
+            <div 
+              onclick="adminDashboard.selectDeptForAttributes('${dept.code}')"
+              class="bg-white rounded-2xl border border-slate-200 hover:border-[#26648E] hover:shadow-lg transition-all duration-200 p-6 flex flex-col justify-between cursor-pointer group shadow-2xs"
+            >
+              <div class="space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="px-2.5 py-0.5 rounded-lg font-mono text-[11px] font-black bg-blue-50 text-[#26648E] border border-blue-200">
+                    ID: ${dept.code}
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    dept.status === 'submitted' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                  }">
+                    ${dept.status || 'Draft'}
+                  </span>
+                </div>
+
+                <div class="pt-1">
+                  <h3 class="text-base font-black text-slate-900 group-hover:text-[#26648E] transition leading-snug">
+                    ${dept.name}
+                  </h3>
+                  ${dept.hod_name ? `
+                    <p class="text-xs text-slate-500 font-semibold mt-1">
+                      HOD: ${dept.hod_name}
+                    </p>
+                  ` : ''}
+                </div>
+              </div>
+
+              <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 group-hover:text-[#26648E] transition">
+                  11 Attributes (Part-A & 1-10)
+                </span>
+                <span class="text-xs font-black text-[#26648E] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>View Attributes</span>
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons({ root: container });
+  }
+
 }
 
-// Global singleton instance
+window.AdminDashboard = AdminDashboard;
+

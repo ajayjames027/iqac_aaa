@@ -752,62 +752,46 @@ class FormBuilder {
   // ================= 2. ACTIVE ATTRIBUTE SHEETS VIEW (FULL WIDE) =================
   renderActiveAttributeSheetsView(data) {
     const card = this.getActiveCard();
-    if (!card) {
-      this.backToCards();
-      return;
-    }
+    if (!card) return;
 
     const sheets = card.sheets || [];
-    const activeSheet = this.getActiveSheet() || sheets[0];
+    const activeSheet = this.getActiveSheet();
+    const cardData = this.getCardData(card.id);
     const isAdmin = this.isAdmin();
     const deptName = window.dataStore?.activeDepartment || 'Department';
-    const cardData = this.getCardData(card.id);
-    const { finishedCount, totalSheets } = this.getCompletionStats(card);
+    const { finishedCount, totalSheets, percentage } = this.getCompletionStats(card);
 
     this.container.innerHTML = `
-      <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn">
+      <div class="space-y-6 w-full animate-fadeIn">
         
-        <!-- Academic Royal Header Banner -->
-        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white px-6 py-5 border-b border-[#26648E]/40 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full shadow-xs">
+        <!-- Top Sticky Header for Active Card -->
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] rounded-2xl p-5 text-white shadow-md border border-white/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <button 
               type="button" 
               onclick="formBuilder.backToCards()" 
-              class="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 border border-white/20 shrink-0 shadow-xs backdrop-blur-xs"
-              title="Return to Attributes Cards"
+              class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/20 shrink-0" 
+              title="Return to Attribute Cards Gallery"
             >
               <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              <span>Back to Cards</span>
             </button>
-
             <div>
-              <div class="flex items-center flex-wrap gap-2 mb-1">
-                <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950">
-                  AAA ${this.academicYear}
-                </span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-900 text-blue-200 border border-blue-700">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
                   ${card.cardCode}
                 </span>
-                <span class="text-slate-500">•</span>
-                <span class="text-xs text-emerald-300 font-bold">${finishedCount}/${totalSheets} Completed</span>
+                <span class="text-xs text-blue-200 font-semibold">${finishedCount}/${totalSheets} Sheets Completed</span>
               </div>
-              <h2 class="text-lg md:text-xl font-black tracking-tight flex items-center gap-2 text-white">
-                <span>${card.cardTitle}</span>
+              <h2 class="text-xl font-black tracking-tight text-white">
+                ${card.cardTitle}
               </h2>
             </div>
           </div>
 
-          <div class="flex items-center flex-wrap gap-2">
+          <div class="flex items-center gap-2">
             <span class="card-save-indicator text-xs px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-saved
             </span>
-
-            
-
-            <button type="button" onclick="formBuilder.exportCurrentCardToExcel()" class="text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span>Export (.xls)</span>
-            </button>
           </div>
         </div>
 
@@ -815,7 +799,7 @@ class FormBuilder {
 
         <!-- Role Access Control Banner -->
         ${isAdmin ? `
-          <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 rounded-xl border">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-ping"></span>
               <span class="text-xs font-bold text-purple-900">IQAC Admin Mode:</span>
@@ -837,11 +821,11 @@ class FormBuilder {
             </div>
           </div>
         ` : `
-          <div class="bg-blue-50 border-b border-blue-200 px-6 py-2 flex items-center justify-between text-xs text-blue-900">
+          <div class="bg-blue-50 border border-blue-200 px-6 py-2.5 rounded-xl flex items-center justify-between text-xs text-blue-900">
             <div class="flex items-center gap-2">
               <i data-lucide="lock" class="w-4 h-4 text-blue-600"></i>
               <span class="font-bold">Department Data Entry Mode (${deptName}):</span>
-              <span class="text-blue-700">Questions are locked. Fill data into the fields below and click <strong>Review & Save All Records</strong> at the bottom of the card to save.</span>
+              <span class="text-blue-700">Questions are locked. Fill data into the fields below and click <strong>Review & Save All Records</strong> at the bottom.</span>
             </div>
             <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-200">
               Read-Only Questions
@@ -851,7 +835,7 @@ class FormBuilder {
 
         <!-- Horizontal Sheets Navigation Tabs -->
         ${sheets.length > 1 ? `
-          <div class="px-4 py-2 bg-slate-100/90 border-b border-slate-200 overflow-x-auto flex items-center gap-1 text-xs font-semibold scrollbar-thin w-full">
+          <div class="px-4 py-2 bg-slate-100/90 border border-slate-200 rounded-xl overflow-x-auto flex items-center gap-1.5 text-xs font-semibold scrollbar-thin w-full">
             ${sheets.map(s => {
               const isActive = s.key === this.activeSheetKey;
               const sData = cardData[s.key];
@@ -885,65 +869,43 @@ class FormBuilder {
         ` : ''}
 
         <!-- Active Sheet Content (Full Wide) -->
-        <div class="p-6 space-y-6 w-full">
+        <div class="p-6 bg-white rounded-2xl border border-slate-200 space-y-6 w-full shadow-2xs">
           ${activeSheet ? this.renderActiveSheetContent(activeSheet, cardData[activeSheet.key], isAdmin) : '<div class="text-slate-500">No sheet selected.</div>'}
         </div>
 
-        <!-- Footer Bar: Single Consolidated "Review & Save All" + Direct Download Options -->
-        <div class="bg-gradient-to-r from-slate-50 via-white to-blue-50/30 border-t border-slate-200 px-6 py-5 flex flex-wrap items-center justify-between gap-4 w-full shadow-xs">
-          <div class="flex items-center flex-wrap gap-2.5">
+        <!-- Footer Bar with Dedicated Review & Save Button and Prev/Next Navigation -->
+        <div class="bg-white rounded-2xl border border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 w-full shadow-2xs">
+          <div class="flex items-center gap-3">
             <button 
               type="button" 
               onclick="formBuilder.backToCards()" 
-              class="text-xs px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              class="text-xs px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <i data-lucide="arrow-left" class="w-4 h-4"></i>
               <span>Return to All Cards</span>
             </button>
 
-            <!-- ONLY ONE Primary Save Button at the End of the Attribute -->
+            <!-- Primary Save Button at the End of the Attribute -->
             <button 
               type="button" 
               onclick="formBuilder.reviewAndSaveAllCurrentAttribute()" 
               class="text-xs px-5 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-black rounded-xl transition flex items-center gap-2 shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50 cursor-pointer"
-              title="Review and permanently save all sheets and records in this attribute"
+              title="Review and save all records in this attribute"
             >
               <i data-lucide="check-check" class="w-4 h-4 text-[#53D2DC]"></i>
               <span>Review & Save All Records</span>
-            </button>
-
-            <!-- Download Current Attribute Data -->
-            <button 
-              type="button" 
-              onclick="formBuilder.exportCurrentCardToExcel()" 
-              class="text-xs px-4 py-2.5 bg-[#4F8FC0] hover:bg-[#3a7ba9] text-white font-bold rounded-xl transition flex items-center gap-2 shadow-xs cursor-pointer"
-              title="Download all sheets in this attribute as Excel"
-            >
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>Download Attribute Data (.xls)</span>
-            </button>
-
-            <!-- Download Complete Audit (All 1-10 Attributes) -->
-            <button 
-              type="button" 
-              onclick="formBuilder.exportAllAttributesToExcel()" 
-              class="text-xs px-3.5 py-2.5 bg-white hover:bg-slate-50 text-[#26648E] font-bold border border-[#4F8FC0]/30 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Download complete audit records across all 10 attributes and Part-A"
-            >
-              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
-              <span>Download Complete Audit (All Attributes)</span>
             </button>
           </div>
 
           ${sheets.length > 1 ? `
             <div class="flex items-center gap-2">
-              <button type="button" onclick="formBuilder.navigateSheet(-1)" class="text-xs px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-300 rounded-lg transition flex items-center gap-1">
+              <button type="button" onclick="formBuilder.navigateSheet(-1)" class="text-xs px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1">
                 <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
               </button>
               <span class="text-xs text-slate-500 font-medium">
                 ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
               </span>
-              <button type="button" onclick="formBuilder.navigateSheet(1)" class="text-xs px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center gap-1">
+              <button type="button" onclick="formBuilder.navigateSheet(1)" class="text-xs px-3.5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl transition flex items-center gap-1">
                 Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
               </button>
             </div>
@@ -1120,6 +1082,194 @@ class FormBuilder {
           </div>
 
           
+        </div>
+
+        <!-- Section 1: Department Info Fields (NO placeholders) -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-4 flex items-center gap-2">
+            <i data-lucide="building" class="w-4 h-4 text-blue-600"></i>
+            Department Profile Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Department</label>
+              <input type="text" value="${prof.department || ''}" onchange="formBuilder.updateProfileField('department', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Shift</label>
+              <select onchange="formBuilder.updateProfileField('shift', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-semibold">
+                <option value="Shift I" ${prof.shift === 'Shift I' ? 'selected' : ''}>Shift I</option>
+                <option value="Shift II" ${prof.shift === 'Shift II' ? 'selected' : ''}>Shift II</option>
+                <option value="Shift I & Shift II" ${prof.shift === 'Shift I & Shift II' || !prof.shift ? 'selected' : ''}>Shift I & Shift II (Both)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Programmes Offered (UG, PG, PhD)</label>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">UG Programmes:</span>
+                  <input type="text" value="${prof.programmes?.ug || ''}" onchange="formBuilder.updateProfileField('programmes.ug', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">PG Programmes:</span>
+                  <input type="text" value="${prof.programmes?.pg || ''}" onchange="formBuilder.updateProfileField('programmes.pg', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 font-medium">PhD Programmes:</span>
+                  <input type="text" value="${prof.programmes?.phd || ''}" onchange="formBuilder.updateProfileField('programmes.phd', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white" />
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Name of the Head / Coordinator</label>
+              <input type="text" value="${prof.hodName || ''}" onchange="formBuilder.updateProfileField('hodName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Faculty Details Table -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+            Faculty Details
+          </h4>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white w-full">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <th class="p-2.5">Faculty Details / Category</th>
+                  <th class="p-2.5 w-28 text-center">Male</th>
+                  <th class="p-2.5 w-28 text-center">Female</th>
+                  <th class="p-2.5 w-28 text-center bg-slate-200/50">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${facRows.map((fr, idx) => {
+                  const m = Number(fr.male) || 0;
+                  const f = Number(fr.female) || 0;
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="p-2.5 font-medium text-slate-800">${fr.label}</td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${m}" onchange="formBuilder.updateFacultyDetail(${idx}, 'male', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${f}" onchange="formBuilder.updateFacultyDetail(${idx}, 'female', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-purple-700" />
+                      </td>
+                      <td id="fac-total-${idx}" class="p-2.5 text-center font-bold text-slate-900 bg-slate-50">
+                        ${m + f}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 3: Student Details Table -->
+        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 w-full">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-600"></i>
+            Student Details (Total No. of Students)
+          </h4>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white w-full">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <th class="p-2.5">Level</th>
+                  <th class="p-2.5 w-24 text-center">Male</th>
+                  <th class="p-2.5 w-24 text-center">Female</th>
+                  <th class="p-2.5 w-24 text-center">Other Gender</th>
+                  <th class="p-2.5 w-24 text-center">Other States</th>
+                  <th class="p-2.5 w-24 text-center">Other Countries</th>
+                  <th class="p-2.5 w-24 text-center bg-slate-200/50">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${stuRows.map((sr, idx) => {
+                  const m = Number(sr.male) || 0;
+                  const f = Number(sr.female) || 0;
+                  const og = Number(sr.otherGender) || 0;
+                  const os = Number(sr.otherStates) || 0;
+                  const oc = Number(sr.otherCountries) || 0;
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="p-2.5 font-bold text-slate-800">${sr.programme}</td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${m}" onchange="formBuilder.updateStudentDetail(${idx}, 'male', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${f}" onchange="formBuilder.updateStudentDetail(${idx}, 'female', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded font-semibold text-purple-700" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${og}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherGender', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${os}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherStates', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td class="p-2 text-center">
+                        <input type="number" min="0" value="${oc}" onchange="formBuilder.updateStudentDetail(${idx}, 'otherCountries', this.value)" class="w-20 text-center text-xs p-1.5 border border-slate-300 rounded" />
+                      </td>
+                      <td id="stu-total-${idx}" class="p-2.5 text-center font-bold text-slate-900 bg-slate-50">
+                        ${m + f + og}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          
+        </div>
+      </div>
+    `;
+  }
+
+  // ================= 2. STANDARD TABLE SHEETS =================
+  renderStandardTableSheet(sheet, sheetData, isEditQuestions) {
+    const rows = Array.isArray(sheetData) ? sheetData : (sheet.rows || []);
+    const columns = sheet.columns || [];
+
+    return `
+      <div class="space-y-4 w-full">
+        <!-- Sheet Title & Instructions -->
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div class="flex-1">
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Question Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Instruction / Note (Admin)</label>
+                <input type="text" value="${sheet.instruction || sheet.note || ''}" onchange="formBuilder.updateSchemaInstruction('${sheet.key}', this.value)" class="w-full text-xs px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+                ${sheet.note ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">${sheet.note}</span>` : ''}
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">${sheet.title}</h3>
+              ${sheet.instruction ? `<p class="text-xs text-slate-500 mt-0.5">${sheet.instruction}</p>` : ''}
+            `}
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            ${isEditQuestions ? `
+              <button type="button" onclick="formBuilder.addColumnToSchema('${sheet.key}')" class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Question Column
+              </button>
+            ` : ''}
+            
+            <button type="button" onclick="formBuilder.addTableRow('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-[#4F8FC0] hover:bg-[#3a7ca9] text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Data Row
+            </button>
+
+            
           </div>
         </div>
 
@@ -1174,6 +1324,35 @@ class FormBuilder {
 
         <div class="pt-2 flex items-center justify-between">
           <span class="text-xs text-slate-500 font-medium">${rows.length} ${rows.length === 1 ? 'row' : 'rows'} entered</span>
+          
+        </div>
+      </div>
+    `;
+  }
+
+  // ================= 3. MULTI-TABLE SHEET (SHEET 1.2) =================
+  renderMultiTableSheet(sheet, sheetData, isEditQuestions) {
+    const sections = sheet.sections || [];
+
+    return `
+      <div class="space-y-8 w-full">
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div>
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Sheet Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">${sheet.title}</h3>
+            `}
+          </div>
+
           
         </div>
 
@@ -1253,6 +1432,42 @@ class FormBuilder {
 
         <div class="pt-2 flex justify-end">
           
+        </div>
+      </div>
+    `;
+  }
+
+  // ================= 4. BATCH TABLE SHEETS (1.5 & 1.6) =================
+  renderBatchTableSheet(sheet, sheetData, isEditQuestions) {
+    const batches = sheet.batches || [];
+    const columns = sheet.columns || [];
+
+    return `
+      <div class="space-y-8 w-full">
+        <div class="border-b border-slate-200 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+          <div>
+            ${isEditQuestions ? `
+              <div class="space-y-1.5">
+                <label class="block text-[11px] font-bold text-purple-900 uppercase">Edit Sheet Title (Admin)</label>
+                <input type="text" value="${sheet.title || ''}" onchange="formBuilder.updateSchemaTitle('${sheet.key}', this.value)" class="w-full text-sm font-bold px-3 py-1.5 border border-purple-300 rounded bg-purple-50" />
+              </div>
+            ` : `
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800">
+                  ${sheet.badge || sheet.key}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">${sheet.title}</h3>
+            `}
+          </div>
+
+          <div class="flex items-center gap-2">
+            ${isEditQuestions ? `
+              <button type="button" onclick="formBuilder.addColumnToSchema('${sheet.key}')" class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Question Column
+              </button>
+            ` : ''}
+            
           </div>
         </div>
 
@@ -1322,7 +1537,9 @@ class FormBuilder {
           `;
         }).join('')}
 
-
+        <div class="pt-2 flex justify-end">
+          
+        </div>
       </div>
     `;
   }
@@ -1456,26 +1673,267 @@ class FormBuilder {
 
   // Consolidated single save for entire attribute card
   reviewAndSaveAllCurrentAttribute() {
-    if (this.isSubmissionLocked()) {
-      window.showToast('The submission deadline has expired. Records are locked in read-only mode.', 'warning', 4000, 'Deadline Locked');
-      return;
-    }
-
     const card = this.getActiveCard();
     if (!card) return;
+    this.openReviewPrintPreviewModal(card.id);
+  }
 
+  // Full-page PDF/Print-Style Audit Review Sheet Modal
+  openReviewPrintPreviewModal(cardId) {
+    const schema = this.getMasterSchema();
+    const card = schema.find(c => c.id === cardId);
+    if (!card) return;
+
+    const deptName = window.dataStore?.activeDepartment || 'Department';
+    const cardData = this.getCardData(card.id);
+    const sheets = card.sheets || [];
+
+    // Remove existing if any
+    const existing = document.getElementById('review-save-preview-modal');
+    if (existing) {
+      if (typeof existing.remove === 'function') existing.remove();
+      else if (existing.parentNode) existing.parentNode.removeChild(existing);
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'review-save-preview-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn';
+
+    modal.innerHTML = `
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-300 max-w-5xl w-full my-6 overflow-hidden flex flex-col max-h-[92vh]">
+        
+        <!-- Document Print Header (College Audit Format) -->
+        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white p-6 shrink-0 flex items-center justify-between gap-4 border-b border-white/20">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-16 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+              <img src="assets/weblogo.png" alt="College Crest" class="h-full w-auto object-contain" />
+            </div>
+            <div>
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
+                  Audit Review Sheet
+                </span>
+                <span class="text-xs text-blue-100 font-semibold">
+                  A.Y. ${this.academicYear}
+                </span>
+              </div>
+              <h2 class="text-lg font-black tracking-tight leading-snug">
+                St. Joseph's College (Autonomous), Tiruchirappalli
+              </h2>
+              <p class="text-xs text-blue-100">
+                Internal Quality Assurance Cell (IQAC) &bull; Annual Academic Audit (AAA)
+              </p>
+            </div>
+          </div>
+
+          <div class="text-right shrink-0 hidden sm:block">
+            <span class="px-3 py-1 rounded-xl bg-white/15 text-white text-xs font-mono font-bold block mb-1">
+              ${card.cardCode}
+            </span>
+            <span class="text-[11px] text-blue-200">
+              ${new Date().toLocaleDateString('en-GB')}
+            </span>
+          </div>
+        </div>
+
+        <!-- Meta Sub-bar -->
+        <div class="bg-[#f0f5f9] px-6 py-3 border-b border-[#4F8FC0]/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div>
+            <span class="text-slate-500 font-semibold">Department:</span>
+            <strong class="text-[#26648E] font-black ml-1">${deptName}</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 font-semibold">Attribute:</span>
+            <strong class="text-slate-900 font-bold ml-1">${card.cardTitle}</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 font-semibold">Total Sheets:</span>
+            <span class="px-2 py-0.5 rounded bg-white text-slate-800 font-bold border border-slate-200 ml-1">
+              ${sheets.length}
+            </span>
+          </div>
+        </div>
+
+        <!-- Print-Style Sheet Preview Body -->
+        <div class="p-6 overflow-y-auto space-y-8 flex-1 bg-white font-sans text-slate-800 text-xs">
+          
+          <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-amber-700 shrink-0"></i>
+            <span>
+              <strong>Verification Preview:</strong> Please review all data entered below for <strong>${card.cardTitle}</strong>. When satisfied, click <strong>Save All Records</strong> at the bottom to confirm.
+            </span>
+          </div>
+
+          ${sheets.map((s, sIdx) => {
+            const sData = cardData[s.key];
+            return `
+              <div class="space-y-3 pb-6 border-b border-slate-200 last:border-b-0">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="text-sm font-black text-[#26648E] flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-[#26648E] text-white flex items-center justify-center text-xs font-mono font-bold shrink-0">
+                      ${sIdx + 1}
+                    </span>
+                    <span>${s.title || s.sheetName || s.key}</span>
+                  </h4>
+                </div>
+
+                <!-- Content by Sheet Type -->
+                ${this.renderSheetPrintPreview(s, sData)}
+              </div>
+            `;
+          }).join('')}
+
+        </div>
+
+        <!-- Footer Action Bar -->
+        <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between gap-4 shrink-0">
+          <button 
+            type="button" 
+            onclick="formBuilder.closeReviewModal()" 
+            class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <i data-lucide="x" class="w-4 h-4"></i>
+            <span>Return to Edit</span>
+          </button>
+
+          <button 
+            type="button" 
+            onclick="formBuilder.confirmAndSaveCardRecords('${card.id}')" 
+            class="px-6 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-black rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50 flex items-center gap-2 cursor-pointer"
+          >
+            <i data-lucide="check-check" class="w-4 h-4 text-[#53D2DC]"></i>
+            <span>Save All Records</span>
+          </button>
+        </div>
+
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons({ root: modal });
+  }
+
+  // Render individual sheet in clean document print format
+  renderSheetPrintPreview(sheet, sheetData) {
+    if (sheet.type === 'profile') {
+      const prof = sheetData?.profile || sheet.profileQuestions || {};
+      const facRows = sheetData?.facultyDetails || sheet.facultyDetails?.rows || [];
+      const stuRows = sheetData?.studentDetails || sheet.studentDetails?.rows || [];
+
+      return `
+        <div class="space-y-4">
+          <!-- Profile Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Department</span><strong class="text-slate-800">${prof.department || '-'}</strong></div>
+            <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Shift</span><strong class="text-slate-800">${prof.shift || '-'}</strong></div>
+            <div><span class="text-slate-400 block text-[10px] uppercase font-bold">HOD Name</span><strong class="text-slate-800">${prof.hodName || '-'}</strong></div>
+            <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Coordinator</span><strong class="text-slate-800">${prof.coordinatorName || '-'}</strong></div>
+          </div>
+
+          <!-- Faculty Cadres Table -->
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-100 font-bold text-slate-700 border-b">
+                <tr>
+                  <th class="p-2">Cadre Designation</th>
+                  <th class="p-2 text-right">Male</th>
+                  <th class="p-2 text-right">Female</th>
+                  <th class="p-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${facRows.map(r => `
+                  <tr>
+                    <td class="p-2 font-medium">${r.cadre || '-'}</td>
+                    <td class="p-2 text-right font-mono">${r.male ?? 0}</td>
+                    <td class="p-2 text-right font-mono">${r.female ?? 0}</td>
+                    <td class="p-2 text-right font-mono font-bold">${(Number(r.male)||0) + (Number(r.female)||0)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    if (sheet.type === 'table') {
+      const rows = Array.isArray(sheetData) ? sheetData : (sheet.rows || []);
+      const columns = sheet.columns || [];
+
+      if (!rows || rows.length === 0) {
+        return '<div class="p-3 bg-slate-50 rounded-lg text-slate-400 italic text-center">No records entered for this sheet.</div>';
+      }
+
+      return `
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 font-bold text-slate-700 border-b">
+              <tr>
+                ${columns.map(c => `<th class="p-2 whitespace-nowrap">${c.label}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${rows.map(r => `
+                <tr>
+                  ${columns.map(c => `<td class="p-2 font-medium">${r[c.key] !== undefined && r[c.key] !== '' ? r[c.key] : '-'}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    if (sheet.type === 'multi_table') {
+      const sections = sheet.sections || [];
+      return sections.map(sec => {
+        const rows = (sheetData && Array.isArray(sheetData[sec.id])) ? sheetData[sec.id] : (sec.rows || []);
+        const columns = sec.columns || [];
+
+        return `
+          <div class="space-y-2 mt-3">
+            <h5 class="text-xs font-black text-slate-700 uppercase tracking-wider">${sec.title}</h5>
+            ${(!rows || rows.length === 0) ? '<div class="p-2.5 bg-slate-50 rounded text-slate-400 italic text-center">No rows recorded</div>' : `
+              <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="bg-slate-100 font-bold text-slate-700 border-b">
+                    <tr>${columns.map(c => `<th class="p-2 whitespace-nowrap">${c.label}</th>`).join('')}</tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${rows.map(r => `
+                      <tr>${columns.map(c => `<td class="p-2 font-medium">${r[c.key] !== undefined && r[c.key] !== '' ? r[c.key] : '-'}</td>`).join('')}</tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+    }
+
+    return '<div class="p-3 bg-slate-50 rounded-lg text-slate-500 font-medium">Sheet records available</div>';
+  }
+
+  closeReviewModal() {
+    const modal = document.getElementById('review-save-preview-modal');
+    if (modal) {
+      if (typeof modal.remove === 'function') modal.remove();
+      else if (modal.parentNode) modal.parentNode.removeChild(modal);
+    }
+  }
+
+  confirmAndSaveCardRecords(cardId) {
+    const card = this.getMasterSchema().find(c => c.id === cardId);
     if (window.dataStore) {
       window.dataStore.saveCurrentData();
     }
-
+    this.closeReviewModal();
     this.showSaveIndicator();
-    const stats = this.getCompletionStats(card);
-    window.showToast(
-      `All records for ${card.cardTitle} have been reviewed and successfully saved! (${stats.finishedCount}/${stats.totalSheets} Sheets Completed)`,
-      'success',
-      4000,
-      'Attribute Records Saved'
-    );
+
+    const title = card ? card.cardTitle : 'Attribute';
+    window.showToast(`All records for ${title} have been verified and saved successfully!`, 'success', 4000, 'All Records Saved');
     this.render(window.dataStore?.data);
   }
 
@@ -1498,3 +1956,6 @@ class FormBuilder {
 }
 
 // Global instance
+
+
+window.FormBuilder = FormBuilder;

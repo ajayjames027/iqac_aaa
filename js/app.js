@@ -127,7 +127,7 @@ class App {
     this.currentView = viewName;
 
     // Hide all view containers
-    const views = ['admin', 'form', 'dashboard', 'filter', 'dept-profile'];
+    const views = ['admin', 'form', 'dashboard', 'filter', 'dept-profile', 'dept-data'];
     views.forEach(v => {
       const el = document.getElementById(`view-${v}`);
       if (el) {

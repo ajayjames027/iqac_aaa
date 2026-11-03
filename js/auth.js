@@ -161,6 +161,10 @@ class AuthManager {
     this.notify();
   }
 
+  getUser() {
+    return this.user;
+  }
+
   isAdmin() {
     return this.user && this.user.role === 'admin';
   }
@@ -173,6 +177,7 @@ class AuthManager {
     const userRoleBadge = document.getElementById('user-role-badge');
     const userNameLabel = document.getElementById('user-name-label');
     const adminNavBtn = document.getElementById('nav-btn-admin');
+    const deptDataNavBtn = document.getElementById('nav-btn-dept-data');
     const filterNavBtn = document.getElementById('nav-btn-filter');
     const dashboardNavBtn = document.getElementById('nav-btn-dashboard');
     const deptProfileNavBtn = document.getElementById('nav-btn-dept-profile');
@@ -202,6 +207,10 @@ class AuthManager {
       if (dashboardNavBtn) {
         if (isAdmin) dashboardNavBtn.classList.remove('hidden');
         else dashboardNavBtn.classList.add('hidden');
+      }
+      if (deptDataNavBtn) {
+        if (isAdmin) deptDataNavBtn.classList.remove('hidden');
+        else deptDataNavBtn.classList.add('hidden');
       }
       if (adminNavBtn) {
         if (isAdmin) adminNavBtn.classList.remove('hidden');

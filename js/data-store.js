@@ -47,38 +47,14 @@ class DataStore {
       }
     }
 
-    // First check embedded sample data (guarantees 100% offline file:// support with zero CORS issues)
-    if (window.CS_SAMPLE_DATA) {
-      this.data = this.ensureSchema(JSON.parse(JSON.stringify(window.CS_SAMPLE_DATA)));
-      this.activeDepartment = this.data.departmentInfo.departmentName;
-      this.saveCurrentData();
-      this.notify();
-      return;
-    }
-
-    // Fallback: Try fetching cs_sample.json if embedded data is not available
-    try {
-      const resp = await fetch('sample-data/cs_sample.json');
-      if (resp.ok) {
-        this.data = this.ensureSchema(await resp.json());
-        this.activeDepartment = this.data.departmentInfo.departmentName;
-        this.saveCurrentData();
-        this.notify();
-        return;
-      }
-    } catch (e) {
-      console.warn('Fetch sample error (running on file:// or network restriction):', e);
-    }
-
-    // Fallback inline template if fetch fails
-    this.data = this.ensureSchema(this.createDefaultData('PG & Research Department of Computer Science'));
-    this.activeDepartment = this.data.departmentInfo.departmentName;
+    // Clean blank template ready for production deployment (no dummy records)
+    this.data = this.ensureSchema(this.createDefaultData(activeDeptName));
+    this.activeDepartment = activeDeptName;
     this.saveCurrentData();
     this.notify();
   }
 
-
-    // ================= ACADEMIC YEAR MANAGEMENT & PERSISTENCE =================
+  // ================= ACADEMIC YEAR MANAGEMENT & PERSISTENCE =================
   getActiveYear() {
     return localStorage.getItem(ACTIVE_YEAR_KEY) || DEFAULT_ACTIVE_YEAR;
   }

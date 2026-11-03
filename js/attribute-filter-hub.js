@@ -710,3 +710,6 @@ class AttributeFilterHub {
     URL.revokeObjectURL(url);
   }
 }
+
+
+window.AttributeFilterHub = AttributeFilterHub;

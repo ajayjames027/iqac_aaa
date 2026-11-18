@@ -17,36 +17,15 @@ class FormBuilder {
     this.adminEditQuestionsMode = false; // Toggleable ONLY by Admin
     this.saveTimeout = null;
     this.academicYear = '2026–2027';
-    this.isCardsUnlocked = false;
+    this.isCardsUnlocked = true;
   }
 
   unlockAttributeCards() {
     this.isCardsUnlocked = true;
-    try { sessionStorage.setItem('IQAC_CARDS_UNLOCKED', 'true'); } catch (e) {}
-    const overlay = document.getElementById('cards-unlock-overlay');
-    const grid = document.getElementById('cards-grid-container');
-    if (overlay) {
-      overlay.style.opacity = '0';
-      overlay.style.transform = 'scale(0.95)';
-      overlay.style.pointerEvents = 'none';
-      setTimeout(() => {
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      }, 400);
-    }
-    if (grid) {
-      grid.classList.remove('filter', 'blur-[5px]', 'opacity-40', 'pointer-events-none', 'select-none');
-    }
-    const indicator = document.getElementById('cards-lock-toggle-btn');
-    if (indicator) {
-      indicator.innerHTML = '<i data-lucide="unlock" class="w-3.5 h-3.5 text-emerald-600"></i><span>Workspace Unlocked</span>';
-      indicator.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 cursor-pointer shadow-2xs';
-      if (window.lucide) lucide.createIcons({ root: indicator });
-    }
   }
 
   toggleCardsLock() {
-    this.isCardsUnlocked = !this.isCardsUnlocked;
-    try { sessionStorage.setItem('IQAC_CARDS_UNLOCKED', this.isCardsUnlocked ? 'true' : 'false'); } catch (e) {}
+    this.isCardsUnlocked = true;
     this.render(window.dataStore?.data);
   }
 
@@ -685,28 +664,23 @@ class FormBuilder {
     }
   }
 
-  // ================= 1. CARDS GALLERY VIEW =================
+  // ================= 1. CARDS GALLERY VIEW (FULL PAGE & ARCTIC FROST THEME) =================
   renderCardsGalleryView(data) {
     const cards = this.getMasterSchema();
     const isAdmin = this.isAdmin();
     const deptName = window.dataStore?.activeDepartment || 'Department';
     this.academicYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
-
-    try {
-      if (sessionStorage.getItem('IQAC_CARDS_UNLOCKED') === 'true') {
-        this.isCardsUnlocked = true;
-      }
-    } catch (e) {}
-    const isUnlocked = this.isCardsUnlocked;
+    this.isCardsUnlocked = true;
 
     this.container.innerHTML = `
       <div class="w-full space-y-6 animate-fadeIn">
         
-        <!-- Simple & Professional Header Banner with Academic Year & Workspace Tools -->
-        <div class="bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 rounded-2xl p-5 sm:p-6 border border-[#4F8FC0]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Clean Arctic Frost Header Banner -->
+        <div class="bg-white/85 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-              <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-2.5 py-1 rounded-lg border border-[#fedba0] shadow-2xs">
+              <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-3 py-1 rounded-xl border border-[#fedba0] shadow-2xs">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
                 <span class="text-xs font-black text-[#26648E]">Active Year:</span>
                 <select 
                   id="form-active-year-selector" 
@@ -729,32 +703,18 @@ class FormBuilder {
                   <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
                 </button>
               </div>
-
-              <button 
-                id="cards-lock-toggle-btn"
-                type="button" 
-                onclick="formBuilder.toggleCardsLock()" 
-                class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isUnlocked ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-700 border border-slate-300'} cursor-pointer shadow-2xs"
-                title="${isUnlocked ? 'Lock / Soft-Blur workspace cards' : 'Unlock cards'}"
-              >
-                <i data-lucide="${isUnlocked ? 'unlock' : 'lock'}" class="w-3.5 h-3.5"></i>
-                <span>${isUnlocked ? 'Workspace Unlocked' : 'Workspace Locked'}</span>
-              </button>
             </div>
 
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
               Annual Academic Audit (AAA) ${this.academicYear}
             </h1>
-            <p class="text-xs text-slate-600 mt-1 font-medium">
-              Review and submit quality assurance records across all 11 audit attributes.
-            </p>
           </div>
 
-          <div class="flex items-center gap-2.5 flex-wrap">
+          <div class="flex items-center gap-2.5">
             <button 
               type="button" 
               onclick="formBuilder.exportAllAttributesConsolidated()" 
-              class="px-4 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer"
+              class="px-5 py-2.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#26648E]/25 hover:shadow-lg flex items-center gap-2 cursor-pointer"
               title="Download consolidated audit report for all attributes in Excel"
             >
               <i data-lucide="download" class="w-4 h-4 text-[#53D2DC]"></i>
@@ -765,101 +725,75 @@ class FormBuilder {
 
         ${this.renderDeadlineNoticeBanner()}
 
-        <!-- Container for Blurred Cards Grid + Floating Central Unlock Overlay -->
-        <div class="relative w-full min-h-[460px]">
-          ${!isUnlocked ? `
-            <div id="cards-unlock-overlay" class="absolute inset-0 z-20 flex items-center justify-center p-4 transition-all duration-500">
-              <div class="bg-white/95 backdrop-blur-md border border-[#4F8FC0]/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl space-y-4 animate-fadeIn">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#26648E] to-[#4F8FC0] text-white flex items-center justify-center mx-auto shadow-lg shadow-[#26648E]/30 ring-4 ring-[#FFE3B3]">
-                  <i data-lucide="shield-check" class="w-8 h-8 text-[#FFE3B3]"></i>
-                </div>
-                <div class="space-y-1">
-                  <h2 class="text-xl md:text-2xl font-black text-[#26648E] tracking-tight">
-                    Attribute Forms Workspace
-                  </h2>
-                  <p class="text-xs text-slate-600 font-medium max-w-md mx-auto">
-                    All 11 Institutional Audit Attributes are ready for data entry. Click below to smoothly unlock the workspace.
-                  </p>
-                </div>
-                <button 
-                  type="button" 
-                  onclick="formBuilder.unlockAttributeCards()" 
-                  class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-[#26648E] to-[#1b4b6d] hover:from-[#1b4b6d] hover:to-[#26648E] text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-[#26648E]/30 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 mx-auto cursor-pointer border border-[#53D2DC]/40"
-                >
-                  <i data-lucide="lock-keyhole-open" class="w-4 h-4 text-[#FFE3B3]"></i>
-                  <span>Unlock & Access All Attributes</span>
-                </button>
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Cards Grid with Exact Finished Count (e.g. 0/11) -->
-          <div id="cards-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full ${!isUnlocked ? 'filter blur-[6px] opacity-40 pointer-events-none select-none' : ''} transition-all duration-500">
+        <!-- Full-Page Wide Cards Grid (Simple, Clean, Micro-Animated) -->
+        <div id="cards-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           ${cards.map(card => {
             const isPartA = card.id === 'part_a';
             const { finishedCount, totalSheets, percentage } = this.getCompletionStats(card);
             const isAllFinished = totalSheets > 0 && finishedCount === totalSheets;
 
             return `
-              <div class="bg-white rounded-2xl border ${isPartA ? 'border-amber-300 shadow-md ring-1 ring-amber-300/30' : 'border-slate-200 shadow-xs'} hover:shadow-lg hover:border-blue-500 transition-all duration-200 flex flex-col justify-between overflow-hidden group">
-                
-                <div class="p-5">
-                  <div class="flex items-center justify-between gap-2 mb-2.5">
-                    <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider ${
+              <div 
+                onclick="formBuilder.openCard('${card.id}')"
+                class="arctic-card flex flex-col justify-between overflow-hidden group cursor-pointer"
+              >
+                <div class="p-6 space-y-4">
+                  <!-- Header: Code & Completion Badges -->
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider ${
                       isPartA 
-                        ? 'bg-amber-100 text-amber-950 border border-amber-300' 
-                        : 'bg-blue-50 text-blue-900 border border-blue-200'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200' 
+                        : 'bg-blue-50 text-[#1e40af] border border-blue-200/80'
                     }">
                       ${card.cardCode}
                     </span>
                     
-                    <span class="text-[11px] font-bold ${isAllFinished ? 'text-emerald-700' : 'text-blue-700'} flex items-center gap-1">
-                      <i data-lucide="${isAllFinished ? 'check-circle' : 'file-spreadsheet'}" class="w-3.5 h-3.5 ${isAllFinished ? 'text-emerald-600' : 'text-blue-600'}"></i>
-                      <span>${finishedCount} / ${totalSheets} Finished</span>
+                    <span class="text-xs font-bold ${isAllFinished ? 'text-emerald-700' : 'text-slate-500'} flex items-center gap-1.5">
+                      <i data-lucide="${isAllFinished ? 'check-circle' : 'file-spreadsheet'}" class="w-3.5 h-3.5 ${isAllFinished ? 'text-emerald-600' : 'text-slate-400'}"></i>
+                      <span>${finishedCount} / ${totalSheets} Sheets</span>
                     </span>
                   </div>
 
-                  <h3 class="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition mb-1.5 flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg ${isPartA ? 'bg-amber-500 text-amber-950' : 'bg-blue-100 text-blue-700'} flex items-center justify-center font-bold shrink-0">
-                      <i data-lucide="${card.icon || 'file-text'}" class="w-3.5 h-3.5"></i>
+                  <!-- Attribute Title & Icon -->
+                  <div class="flex items-start gap-3 pt-1">
+                    <div class="w-10 h-10 rounded-xl ${isPartA ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-[#1e40af] border border-blue-200/60'} flex items-center justify-center font-bold shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                      <i data-lucide="${card.icon || 'file-text'}" class="w-5 h-5"></i>
                     </div>
-                    <span class="line-clamp-1">${card.cardTitle}</span>
-                  </h3>
+                    <h3 class="text-base font-bold text-slate-900 group-hover:text-[#1e40af] transition-colors leading-snug line-clamp-2">
+                      ${card.cardTitle}
+                    </h3>
+                  </div>
 
-
-
-                  <!-- Progress Bar -->
-                  <div class="space-y-1">
-                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                      <div class="h-full ${isAllFinished ? 'bg-emerald-500' : 'bg-blue-600'} transition-all duration-300" style="width: ${percentage}%"></div>
+                  <!-- Sleek Progress Bar -->
+                  <div class="space-y-1.5 pt-2">
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/70">
+                      <div class="h-full ${isAllFinished ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#26648E] to-[#2563eb]'} transition-all duration-300 rounded-full" style="width: ${percentage}%"></div>
                     </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold">
+                    <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
                       <span>${percentage}% Finished</span>
                       <span>${totalSheets} Total ${totalSheets === 1 ? 'Sheet' : 'Sheets'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                  <span class="text-[10px] font-bold ${isAllFinished ? 'text-emerald-700' : (finishedCount > 0 ? 'text-blue-700' : 'text-slate-400')}">
+                <!-- Footer Action Bar -->
+                <div class="px-6 py-3.5 bg-slate-50/70 border-t border-slate-100/90 flex items-center justify-between">
+                  <span class="text-[11px] font-bold ${isAllFinished ? 'text-emerald-700' : (finishedCount > 0 ? 'text-blue-700' : 'text-slate-400')}">
                     ${isAllFinished ? 'Completed' : (finishedCount > 0 ? `${finishedCount} of ${totalSheets} filled` : 'Pending entry')}
                   </span>
 
-                  <button 
-                    type="button" 
-                    onclick="formBuilder.openCard('${card.id}')"
-                    class="px-3.5 py-1.5 ${isPartA ? 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-black' : 'bg-blue-600 hover:bg-blue-700 text-white font-bold'} text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 group-hover:translate-x-0.5"
+                  <span 
+                    class="px-3.5 py-1.5 ${isPartA ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold' : 'bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold'} text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 group-hover:shadow-md group-hover:translate-x-0.5"
                   >
                     <span>${isPartA ? 'Open Profile' : 'Fill Attribute'}</span>
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                  </button>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
+                  </span>
                 </div>
 
               </div>
             `;
           }).join('')}
         </div>
-
       </div>
     `;
   }

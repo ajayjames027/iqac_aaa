@@ -1320,7 +1320,11 @@ class FormBuilder {
             <button type="button" onclick="formBuilder.addTableRow('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-[#4F8FC0] hover:bg-[#3a7ca9] text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Data Row
             </button>
-            <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}')" class="text-xs px-3.5 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm shadow-[#26648E]/20 hover:shadow-md cursor-pointer" title="Bulk Import data via Excel/CSV file upload or template insertion">
+            <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', null, 'excel')" class="text-xs px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-700/20 hover:shadow-md cursor-pointer" title="Directly open Excel interactive template sheet to insert data">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-300"></i>
+              <span>Insert Direct to Excel</span>
+            </button>
+            <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', null, 'file')" class="text-xs px-3.5 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm shadow-[#26648E]/20 hover:shadow-md cursor-pointer" title="Bulk Import data via Excel/CSV file upload">
               <i data-lucide="file-up" class="w-3.5 h-3.5 text-[#53D2DC]"></i>
               <span>Bulk Import</span>
             </button>
@@ -1432,7 +1436,11 @@ class FormBuilder {
                   <button type="button" onclick="formBuilder.addMultiTableRow('${sheet.key}', '${sec.id}')" class="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Row
                   </button>
-                  <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${sec.id}')" class="text-xs px-3 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Bulk Import data for this section">
+                  <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${sec.id}', 'excel')" class="text-xs px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Directly open Excel interactive template sheet to insert data">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-300"></i>
+                    <span>Insert Direct to Excel</span>
+                  </button>
+                  <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${sec.id}', 'file')" class="text-xs px-3 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Bulk Import data via file upload">
                     <i data-lucide="file-up" class="w-3.5 h-3.5 text-[#53D2DC]"></i>
                     <span>Bulk Import</span>
                   </button>
@@ -1544,7 +1552,11 @@ class FormBuilder {
                 <button type="button" onclick="formBuilder.addBatchTableRow('${sheet.key}', '${bat.id}')" class="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                   <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Student
                 </button>
-                <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${bat.id}')" class="text-xs px-3 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Bulk Import data for this batch">
+                <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${bat.id}', 'excel')" class="text-xs px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Directly open Excel interactive template sheet to insert data">
+                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-300"></i>
+                  <span>Insert Direct to Excel</span>
+                </button>
+                <button type="button" onclick="formBuilder.openBulkImportModal('${sheet.key}', '${bat.id}', 'file')" class="text-xs px-3 py-1.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer" title="Bulk Import data via file upload">
                   <i data-lucide="file-up" class="w-3.5 h-3.5 text-[#53D2DC]"></i>
                   <span>Bulk Import</span>
                 </button>
@@ -2081,8 +2093,8 @@ class FormBuilder {
     window.showToast(`Question Template for ${sheet.sheetName || sheet.key} downloaded successfully!`, 'success', 4000, 'Template Ready');
   }
 
-  // Open the Bulk Import Modal (with File Upload & Insert Data in Template options)
-  openBulkImportModal(sheetKey, targetId = null) {
+  // Open the Bulk Import / Direct Excel Modal
+  openBulkImportModal(sheetKey, targetId = null, initialTab = 'excel') {
     const card = this.getActiveCard();
     const sheet = (card?.sheets || []).find(s => s.key === sheetKey) || this.getActiveSheet();
     if (!sheet) return;
@@ -2094,90 +2106,219 @@ class FormBuilder {
     this._pendingBulkRows = [];
     this._currentBulkSheetKey = sheetKey;
     this._currentBulkTargetId = targetId;
+    this._currentBulkCols = cols;
 
     const modal = document.createElement('div');
     modal.id = 'bulk-import-modal';
-    modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fadeIn overflow-y-auto';
+    modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-3 sm:p-5 animate-fadeIn overflow-y-auto';
 
     modal.innerHTML = `
-      <div class="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full overflow-hidden my-8 flex flex-col max-h-[92vh]">
+      <div class="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl max-w-5xl md:max-w-6xl w-full overflow-hidden my-6 flex flex-col max-h-[94vh]">
         
         <!-- Header -->
         <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white p-5 flex items-center justify-between gap-4 shrink-0 shadow-xs">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 shadow-2xs">
-              <i data-lucide="file-up" class="w-5 h-5 text-[#53D2DC]"></i>
+              <i data-lucide="file-spreadsheet" class="w-5 h-5 text-[#53D2DC]"></i>
             </div>
             <div>
               <div class="flex items-center gap-2 mb-0.5">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
                   ${card.cardCode} • ${sheet.sheetName || sheet.key}
                 </span>
-                <span class="text-xs text-blue-100 font-semibold">${cols.length} Columns</span>
+                <span class="text-xs text-blue-100 font-semibold">${cols.length} Question Columns</span>
               </div>
-              <h3 class="text-lg font-black tracking-tight text-white">
-                Bulk Import Records
+              <h3 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                <span>Direct Excel Template & Bulk Import</span>
               </h3>
             </div>
           </div>
 
-          <button 
-            type="button" 
-            onclick="formBuilder.closeBulkImportModal()" 
-            class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
-            title="Close modal"
-          >
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-
-        <!-- Question Template Bar with Direct Download Button -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div class="flex items-center gap-2">
-            <i data-lucide="info" class="w-4 h-4 text-blue-600 shrink-0"></i>
-            <p class="text-xs text-blue-900 font-medium">
-              Download the official question template matching this sheet's exact column headers:
-            </p>
+            <button 
+              type="button" 
+              onclick="formBuilder.downloadQuestionTemplate('${sheetKey}', '${targetId || ''}')" 
+              class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Download offline template CSV"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5 text-blue-200"></i>
+              <span class="hidden sm:inline">Download Template (.csv)</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="formBuilder.closeBulkImportModal()" 
+              class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
+              title="Close modal"
+            >
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
           </div>
-          <button 
-            type="button" 
-            onclick="formBuilder.downloadQuestionTemplate('${sheetKey}', '${targetId || ''}')" 
-            class="px-4 py-2 bg-white hover:bg-blue-100 text-[#1e40af] border border-blue-300 font-bold rounded-xl text-xs flex items-center gap-2 shadow-xs transition shrink-0 cursor-pointer"
-            title="Download formatted CSV file with this sheet's question headers"
-          >
-            <i data-lucide="download" class="w-3.5 h-3.5 text-blue-600"></i>
-            <span>Download Question Template (.csv)</span>
-          </button>
         </div>
 
         <!-- 2 Main Import Options (Tabs) -->
-        <div class="px-6 pt-4 border-b border-slate-200 bg-slate-50/70 flex items-center gap-4 text-xs font-bold shrink-0">
+        <div class="px-6 pt-3.5 border-b border-slate-200 bg-slate-50/80 flex items-center gap-5 text-xs font-bold shrink-0">
+          <button 
+            type="button" 
+            id="tab-btn-insert-template" 
+            onclick="formBuilder.switchBulkImportTab('excel')"
+            class="pb-3 border-b-2 ${initialTab === 'excel' ? 'border-emerald-600 text-emerald-800' : 'border-transparent text-slate-500 hover:text-slate-800'} flex items-center gap-2 transition cursor-pointer font-bold"
+          >
+            <i data-lucide="table-2" class="w-4 h-4 ${initialTab === 'excel' ? 'text-emerald-600' : 'text-slate-400'}"></i>
+            <span>Option 2: Insert Direct to Excel</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">Interactive</span>
+          </button>
+
           <button 
             type="button" 
             id="tab-btn-file-upload" 
             onclick="formBuilder.switchBulkImportTab('file')"
-            class="pb-3 border-b-2 border-[#26648E] text-[#26648E] flex items-center gap-2 transition cursor-pointer"
+            class="pb-3 border-b-2 ${initialTab === 'file' ? 'border-[#26648E] text-[#26648E]' : 'border-transparent text-slate-500 hover:text-slate-800'} flex items-center gap-2 transition cursor-pointer font-bold"
           >
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+            <i data-lucide="upload-cloud" class="w-4 h-4 ${initialTab === 'file' ? 'text-[#26648E]' : 'text-slate-400'}"></i>
             <span>Option 1: File Upload (.xlsx, .csv, .json)</span>
-          </button>
-          
-          <button 
-            type="button" 
-            id="tab-btn-insert-template" 
-            onclick="formBuilder.switchBulkImportTab('paste')"
-            class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition cursor-pointer"
-          >
-            <i data-lucide="clipboard-paste" class="w-4 h-4"></i>
-            <span>Option 2: Insert Data in Template (Copy-Paste)</span>
           </button>
         </div>
 
         <!-- Tab Content Body (Scrollable) -->
-        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+        <div class="p-5 md:p-6 space-y-4 overflow-y-auto flex-1">
           
-          <!-- TAB 1: File Upload -->
-          <div id="bulk-tab-file-panel" class="space-y-4">
+          <!-- TAB 2: INSERT DIRECT TO EXCEL (Primary Spreadsheet Grid) -->
+          <div id="bulk-tab-excel-panel" class="${initialTab === 'excel' ? '' : 'hidden'} space-y-4">
+            
+            <!-- Excel Grid Ribbon / Action Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/90 p-3 rounded-2xl border border-slate-200">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-black text-xs shadow-2xs">
+                  X
+                </div>
+                <div>
+                  <h4 class="text-xs font-black text-slate-800">
+                    Excel Sheet Template: ${sheet.sheetName || sheet.key}
+                  </h4>
+                  <p class="text-[11px] text-slate-500">
+                    Type directly into cells, press Tab/Enter to navigate, or copy rows in Excel and press Ctrl+V
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-wrap">
+                <button 
+                  type="button" 
+                  onclick="formBuilder.addExcelGridRow()" 
+                  class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  title="Add one blank row to the sheet"
+                >
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>Add Row</span>
+                </button>
+
+                <button 
+                  type="button" 
+                  onclick="formBuilder.addExcelGridRows(5)" 
+                  class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  title="Add 5 blank rows to the sheet"
+                >
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-blue-600"></i>
+                  <span>+5 Rows</span>
+                </button>
+
+                <button 
+                  type="button" 
+                  onclick="formBuilder.pasteClipboardToExcelGrid()" 
+                  class="px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  title="Paste table rows copied from Excel or Google Sheets"
+                >
+                  <i data-lucide="clipboard-paste" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>Paste from Excel</span>
+                </button>
+
+                <button 
+                  type="button" 
+                  onclick="formBuilder.clearExcelGrid()" 
+                  class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  title="Clear all rows in this grid"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+                  <span>Clear</span>
+                </button>
+
+                <span id="excel-grid-count-badge" class="px-2.5 py-1 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-black">
+                  0 / 5 Rows Filled
+                </span>
+              </div>
+            </div>
+
+            <!-- Interactive Spreadsheet Grid -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-300 bg-white shadow-xs max-h-[460px] scrollbar-thin">
+              <table id="bulk-excel-grid-table" class="w-full text-left text-xs border-collapse font-sans select-text">
+                <thead class="sticky top-0 z-10">
+                  <!-- Excel Column Letters: A, B, C, D... -->
+                  <tr class="bg-slate-200 border-b border-slate-300 text-slate-500 font-bold text-[11px] select-none">
+                    <th class="w-12 px-2 py-1 text-center bg-slate-300 border-r border-slate-300 font-mono">#</th>
+                    ${cols.map((c, i) => `
+                      <th class="px-3 py-1 text-center border-r border-slate-300 font-mono ${c.width || 'min-w-[170px]'}">
+                        ${String.fromCharCode(65 + (i % 26))}
+                      </th>
+                    `).join('')}
+                    <th class="w-10 px-2 py-1 text-center bg-slate-300">Del</th>
+                  </tr>
+                  <!-- Template Question Titles -->
+                  <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-800 font-bold text-xs select-none">
+                    <th class="w-12 px-2 py-2.5 text-center bg-slate-200 border-r border-slate-300">S.No</th>
+                    ${cols.map(c => {
+                      const opts = this.getDropdownOptions(c.label, c.key);
+                      return `
+                        <th class="px-3 py-2.5 border-r border-slate-300 ${c.width || 'min-w-[170px]'}">
+                          <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-slate-900 font-bold">${c.label}</span>
+                            ${opts ? `<span class="px-1.5 py-0.2 rounded text-[9px] bg-blue-100 text-blue-700 font-bold shrink-0">Dropdown</span>` : ''}
+                          </div>
+                        </th>
+                      `;
+                    }).join('')}
+                    <th class="w-10 px-2 py-2.5 text-center text-slate-400">Del</th>
+                  </tr>
+                </thead>
+                <tbody id="bulk-excel-grid-tbody" class="divide-y divide-slate-200">
+                  <!-- Injected via renderExcelGridRows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Under-Excel Import Controls & Execution Button -->
+            <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 p-4 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div class="space-y-1">
+                <div class="flex items-center gap-4 text-xs font-semibold text-slate-700">
+                  <span class="text-slate-800 font-black">Import Mode:</span>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="excel-grid-import-mode" value="append" checked class="text-emerald-600 focus:ring-0 cursor-pointer" />
+                    <span>Append to existing sheet rows</span>
+                  </label>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="excel-grid-import-mode" value="replace" class="text-emerald-600 focus:ring-0 cursor-pointer" />
+                    <span>Replace all existing rows</span>
+                  </label>
+                </div>
+                <p class="text-[11px] text-emerald-800 font-medium flex items-center gap-1">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  Data entered directly in the grid above will be validated and inserted into <strong>${sheet.sheetName || sheet.key}</strong>.
+                </p>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="formBuilder.importFromExcelGrid('${sheetKey}', '${targetId || ''}')" 
+                class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black rounded-xl text-xs transition shadow-md shadow-emerald-700/25 flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-emerald-200"></i>
+                <span id="excel-grid-import-btn-label">Import Data into Sheet</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- TAB 1: File Upload (.xlsx, .csv, .json) -->
+          <div id="bulk-tab-file-panel" class="${initialTab === 'file' ? '' : 'hidden'} space-y-4">
             <div 
               class="dropzone-area rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3"
               onclick="document.getElementById('bulk-import-file-input').click()"
@@ -2209,99 +2350,65 @@ class FormBuilder {
               <span id="bulk-file-status-text" class="font-bold"></span>
               <button type="button" onclick="document.getElementById('bulk-import-file-input').value=''; document.getElementById('bulk-file-status').classList.add('hidden'); formBuilder._pendingBulkRows=[];" class="text-xs text-rose-600 hover:underline">Remove</button>
             </div>
-          </div>
 
-          <!-- TAB 2: Insert Data in Template (Quick Paste) -->
-          <div id="bulk-tab-paste-panel" class="hidden space-y-4">
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-bold text-slate-700">
-                  Paste Rows Copied from Excel / Google Sheets:
-                </label>
-                <span class="text-[11px] text-slate-400 font-medium">Tab-separated or comma-separated</span>
+            <!-- Live Parsed Rows Preview Table -->
+            <div id="bulk-import-preview-container" class="hidden space-y-2">
+              <div class="flex items-center justify-between">
+                <span id="bulk-preview-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
+                  0 Rows Parsed
+                </span>
+                <span class="text-[11px] text-slate-400">Previewing first 5 rows</span>
+              </div>
+              
+              <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white max-h-48 scrollbar-thin">
+                <table id="bulk-import-preview-table" class="w-full text-left text-xs border-collapse">
+                  <!-- Injected dynamically -->
+                </table>
               </div>
 
-              <!-- Columns pills guide -->
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 mb-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">Expected Column Order:</span>
-                <div class="flex flex-wrap gap-1.5">
-                  ${cols.map((c, i) => `
-                    <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-bold text-[10px] shadow-2xs">
-                      ${i + 1}. ${c.label}
-                    </span>
-                  `).join('')}
+              <!-- File Upload Action Bar -->
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-4 text-xs font-semibold text-slate-700">
+                  <span class="text-slate-500 font-bold">Import Mode:</span>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="bulk-file-import-mode" value="append" checked class="text-blue-600 focus:ring-0 cursor-pointer" />
+                    <span>Append to existing rows</span>
+                  </label>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="bulk-file-import-mode" value="replace" class="text-blue-600 focus:ring-0 cursor-pointer" />
+                    <span>Replace existing rows</span>
+                  </label>
                 </div>
+
+                <button 
+                  type="button" 
+                  id="bulk-import-file-execute-btn"
+                  onclick="formBuilder.executeBulkFileImport('${sheetKey}', '${targetId || ''}')" 
+                  disabled
+                  class="px-5 py-2.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-black rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <i data-lucide="check" class="w-4 h-4 text-[#53D2DC]"></i>
+                  <span>Import Uploaded Records</span>
+                </button>
               </div>
-
-              <textarea 
-                id="bulk-import-paste-textarea" 
-                rows="6" 
-                class="w-full text-xs font-mono p-3 border border-slate-300 rounded-xl bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" 
-                placeholder="Select rows in Excel, press Ctrl+C, then paste here..."
-              ></textarea>
             </div>
 
-            <button 
-              type="button" 
-              onclick="formBuilder.previewPastedBulkData('${sheetKey}', '${targetId || ''}')" 
-              class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center gap-2 border border-slate-300 transition cursor-pointer"
-            >
-              <i data-lucide="eye" class="w-3.5 h-3.5 text-[#26648E]"></i>
-              <span>Parse & Preview Data</span>
-            </button>
-          </div>
-
-          <!-- Live Parsed Rows Preview Table -->
-          <div id="bulk-import-preview-container" class="hidden space-y-2">
-            <div class="flex items-center justify-between">
-              <span id="bulk-preview-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
-                0 Rows Parsed
-              </span>
-              <span class="text-[11px] text-slate-400">Previewing first 5 rows</span>
-            </div>
-            
-            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white max-h-48 scrollbar-thin">
-              <table id="bulk-import-preview-table" class="w-full text-left text-xs border-collapse">
-                <!-- Injected dynamically -->
-              </table>
-            </div>
           </div>
 
         </div>
 
-        <!-- Footer Actions -->
-        <div class="bg-slate-50 p-5 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-          <div class="flex items-center gap-4 text-xs font-semibold text-slate-700">
-            <span class="text-slate-500 font-bold">Import Mode:</span>
-            <label class="flex items-center gap-1.5 cursor-pointer">
-              <input type="radio" name="bulk-import-mode" value="append" checked class="text-blue-600 focus:ring-0 cursor-pointer" />
-              <span>Append to existing rows</span>
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer">
-              <input type="radio" name="bulk-import-mode" value="replace" class="text-blue-600 focus:ring-0 cursor-pointer" />
-              <span>Replace existing rows</span>
-            </label>
-          </div>
-
-          <div class="flex items-center gap-2 justify-end">
-            <button 
-              type="button" 
-              onclick="formBuilder.closeBulkImportModal()" 
-              class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button 
-              type="button" 
-              id="bulk-import-execute-btn"
-              onclick="formBuilder.executeBulkImport('${sheetKey}', '${targetId || ''}')" 
-              disabled
-              class="px-5 py-2.5 bg-gradient-to-r from-[#26648E] to-[#1e40af] hover:from-[#1b4b6d] hover:to-[#1e3a8a] text-white font-black rounded-xl text-xs transition shadow-md shadow-[#26648E]/25 flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <i data-lucide="check" class="w-4 h-4 text-[#53D2DC]"></i>
-              <span id="bulk-import-btn-label">Import Records into Sheet</span>
-            </button>
-          </div>
+        <!-- Footer -->
+        <div class="bg-slate-50 p-4 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <p class="text-xs text-slate-500 font-medium">
+            Official IQAC Audit Format • St. Joseph's College (Autonomous)
+          </p>
+          <button 
+            type="button" 
+            onclick="formBuilder.closeBulkImportModal()" 
+            class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 transition cursor-pointer"
+          >
+            Close
+          </button>
         </div>
 
       </div>
@@ -2309,198 +2416,393 @@ class FormBuilder {
 
     document.body.appendChild(modal);
     if (window.lucide) lucide.createIcons({ root: modal });
-  }
 
-  closeBulkImportModal() {
-    const modal = document.getElementById('bulk-import-modal');
-    if (modal) {
-      modal.classList.add('opacity-0');
-      setTimeout(() => modal.remove(), 200);
+    // Populate initial rows for the interactive Excel grid
+    this.renderInitialExcelGridRows(cols, 5);
+
+    // Setup paste listener on the table for clipboard paste
+    const table = document.getElementById('bulk-excel-grid-table');
+    if (table) {
+      table.addEventListener('paste', (e) => this.handleExcelGridPaste(e));
     }
   }
 
-  switchBulkImportTab(tab) {
-    const fileTab = document.getElementById('tab-btn-file-upload');
-    const pasteTab = document.getElementById('tab-btn-insert-template');
-    const filePanel = document.getElementById('bulk-tab-file-panel');
-    const pastePanel = document.getElementById('bulk-tab-paste-panel');
 
-    if (tab === 'file') {
-      fileTab.className = 'pb-3 border-b-2 border-[#26648E] text-[#26648E] flex items-center gap-2 transition cursor-pointer font-bold';
-      pasteTab.className = 'pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition cursor-pointer font-semibold';
-      filePanel.classList.remove('hidden');
-      pastePanel.classList.add('hidden');
-    } else {
-      pasteTab.className = 'pb-3 border-b-2 border-[#26648E] text-[#26648E] flex items-center gap-2 transition cursor-pointer font-bold';
-      fileTab.className = 'pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition cursor-pointer font-semibold';
-      pastePanel.classList.remove('hidden');
-      filePanel.classList.add('hidden');
+  // ================= INTERACTIVE EXCEL GRID HELPERS =================
+
+  renderInitialExcelGridRows(cols, rowCount = 5) {
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (let r = 0; r < rowCount; r++) {
+      this.appendExcelRowToDOM(r, cols);
     }
-    if (window.lucide) lucide.createIcons();
+    this.updateExcelGridCounter();
+    if (window.lucide) lucide.createIcons({ root: tbody });
   }
 
-  handleBulkFileDrop(event, sheetKey, targetId) {
-    const files = event.dataTransfer.files;
-    if (files.length > 0) {
-      this.processBulkFile(files[0], sheetKey, targetId);
-    }
-  }
+  appendExcelRowToDOM(rIdx, cols) {
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
 
-  handleBulkFileSelected(event, sheetKey, targetId) {
-    const file = event.target.files[0];
-    if (file) {
-      this.processBulkFile(file, sheetKey, targetId);
-    }
-  }
+    const tr = document.createElement('tr');
+    tr.id = `excel-grid-row-${rIdx}`;
+    tr.className = 'hover:bg-blue-50/40 transition border-b border-slate-200';
 
-  processBulkFile(file, sheetKey, targetId) {
-    const targetCols = this.getColumnsForImport(sheetKey, targetId);
-    const reader = new FileReader();
+    // 1. S.No Row Header
+    let rowHtml = `
+      <td class="w-12 px-2 py-1.5 text-center bg-slate-100 border-r border-slate-300 font-mono font-bold text-slate-600 text-xs select-none">
+        ${rIdx + 1}
+      </td>
+    `;
 
-    reader.onload = (e) => {
-      const content = e.target.result;
-      let rows = [];
+    // 2. Data Cells
+    cols.forEach((col, cIdx) => {
+      const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+      const opts = this.getDropdownOptions(col.label, col.key);
 
-      try {
-        if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(content);
-          rows = Array.isArray(parsed) ? parsed : (parsed.rows || []);
-        } else {
-          rows = this.parseDelimitedText(content, targetCols);
-        }
-      } catch (err) {
-        window.showToast('Could not parse file: ' + err.message, 'error', 4000, 'Parse Error');
-        return;
+      if (isSno) {
+        rowHtml += `
+          <td class="px-2 py-1 border-r border-slate-200 bg-slate-50 text-center font-bold text-slate-500">
+            <input 
+              type="text" 
+              value="${rIdx + 1}" 
+              readonly 
+              data-row="${rIdx}" 
+              data-col="${col.key}" 
+              class="w-full text-center bg-transparent border-0 outline-none text-slate-500 text-xs font-bold"
+            />
+          </td>
+        `;
+      } else if (opts && Array.isArray(opts) && opts.length > 0) {
+        // Datalist input for dropdown columns: allows clicking dropdown OR typing/pasting directly
+        const listId = `dl-excel-${col.key}-${rIdx}`;
+        rowHtml += `
+          <td class="px-1.5 py-1 border-r border-slate-200">
+            <input 
+              type="text" 
+              list="${listId}" 
+              data-row="${rIdx}" 
+              data-col="${col.key}" 
+              oninput="formBuilder.updateExcelGridCounter()"
+              onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
+              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-white border border-slate-200 rounded focus:border-emerald-600 focus:bg-emerald-50/20 focus:ring-1 focus:ring-emerald-500 outline-none transition" 
+              placeholder="${col.label}..."
+            />
+            <datalist id="${listId}">
+              ${opts.map(o => `<option value="${o}"></option>`).join('')}
+            </datalist>
+          </td>
+        `;
+      } else {
+        rowHtml += `
+          <td class="px-1.5 py-1 border-r border-slate-200">
+            <input 
+              type="text" 
+              data-row="${rIdx}" 
+              data-col="${col.key}" 
+              oninput="formBuilder.updateExcelGridCounter()"
+              onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
+              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-white border border-slate-200 rounded focus:border-emerald-600 focus:bg-emerald-50/20 focus:ring-1 focus:ring-emerald-500 outline-none transition" 
+              placeholder="${col.label}..."
+            />
+          </td>
+        `;
       }
+    });
 
-      this._pendingBulkRows = rows;
-      this.renderBulkImportPreview(rows, targetCols, file.name);
-    };
+    // 3. Delete Row Button
+    rowHtml += `
+      <td class="w-10 px-1 py-1 text-center">
+        <button 
+          type="button" 
+          onclick="formBuilder.deleteExcelGridRow(${rIdx})" 
+          class="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer" 
+          title="Delete row"
+        >
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </td>
+    `;
 
-    reader.readAsText(file);
+    tr.innerHTML = rowHtml;
+    tbody.appendChild(tr);
   }
 
-  previewPastedBulkData(sheetKey, targetId) {
-    const textarea = document.getElementById('bulk-import-paste-textarea');
-    if (!textarea) return;
-    const text = textarea.value.trim();
-    if (!text) {
-      window.showToast('Please paste data rows into the box first.', 'warning', 3000, 'Paste Required');
+  addExcelGridRow() {
+    const cols = this._currentBulkCols || [];
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    const currentRows = tbody.querySelectorAll('tr').length;
+    this.appendExcelRowToDOM(currentRows, cols);
+    this.updateExcelGridCounter();
+    if (window.lucide) lucide.createIcons({ root: tbody });
+
+    // Focus first input in new row
+    const firstInput = tbody.querySelector(`tr:last-child input:not([readonly])`);
+    if (firstInput) firstInput.focus();
+  }
+
+  addExcelGridRows(count = 5) {
+    const cols = this._currentBulkCols || [];
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    for (let i = 0; i < count; i++) {
+      const currentRows = tbody.querySelectorAll('tr').length;
+      this.appendExcelRowToDOM(currentRows, cols);
+    }
+    this.updateExcelGridCounter();
+    if (window.lucide) lucide.createIcons({ root: tbody });
+  }
+
+  deleteExcelGridRow(rIdx) {
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    if (rows.length <= 1) {
+      this.clearExcelGrid();
       return;
     }
+    if (rows[rIdx]) rows[rIdx].remove();
 
-    const targetCols = this.getColumnsForImport(sheetKey, targetId);
-    const rows = this.parseDelimitedText(text, targetCols);
-    this._pendingBulkRows = rows;
-    this.renderBulkImportPreview(rows, targetCols, 'Pasted Data');
-  }
+    // Re-index remaining rows
+    const remaining = tbody.querySelectorAll('tr');
+    const cols = this._currentBulkCols || [];
+    remaining.forEach((tr, newIdx) => {
+      tr.id = `excel-grid-row-${newIdx}`;
+      const headerCell = tr.querySelector('td:first-child');
+      if (headerCell) headerCell.textContent = String(newIdx + 1);
 
-  // Universal parser for CSV, TSV (Excel clipboard), and Comma text
-  parseDelimitedText(text, targetCols) {
-    const rawLines = text.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (rawLines.length === 0) return [];
-
-    const firstLine = rawLines[0];
-    const delim = firstLine.includes('\t') ? '\t' : ',';
-
-    let startIdx = 0;
-    const firstTokens = firstLine.split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
-    
-    // Check if first line matches any column headers
-    const isHeaderRow = firstTokens.some(tok => 
-      targetCols.some(col => 
-        col.label.toLowerCase().includes(tok.toLowerCase()) || 
-        col.key.toLowerCase() === tok.toLowerCase()
-      )
-    );
-    if (isHeaderRow) {
-      startIdx = 1;
-    }
-
-    const parsedRows = [];
-    for (let i = startIdx; i < rawLines.length; i++) {
-      const tokens = rawLines[i].split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
-      if (tokens.every(t => t === '')) continue;
-
-      const row = {};
-      targetCols.forEach((col, cIdx) => {
-        if (col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no') {
-          row[col.key] = String(parsedRows.length + 1);
-        } else {
-          row[col.key] = tokens[cIdx] !== undefined ? tokens[cIdx] : '';
+      tr.querySelectorAll('input').forEach(inp => {
+        inp.setAttribute('data-row', String(newIdx));
+        const colKey = inp.getAttribute('data-col');
+        if (colKey === 'sno' || colKey === 's_no' || colKey === 'sl_no') {
+          inp.value = String(newIdx + 1);
         }
       });
-      parsedRows.push(row);
-    }
-    return parsedRows;
+
+      const delBtn = tr.querySelector('button');
+      if (delBtn) delBtn.setAttribute('onclick', `formBuilder.deleteExcelGridRow(${newIdx})`);
+    });
+
+    this.updateExcelGridCounter();
   }
 
-  renderBulkImportPreview(rows, targetCols, sourceName = '') {
-    const previewContainer = document.getElementById('bulk-import-preview-container');
-    const previewTable = document.getElementById('bulk-import-preview-table');
-    const countBadge = document.getElementById('bulk-preview-count-badge');
-    const executeBtn = document.getElementById('bulk-import-execute-btn');
-    const statusBox = document.getElementById('bulk-file-status');
-    const statusText = document.getElementById('bulk-file-status-text');
+  clearExcelGrid() {
+    const cols = this._currentBulkCols || [];
+    this.renderInitialExcelGridRows(cols, 5);
+    window.showToast('Excel grid reset to 5 empty rows.', 'info', 2000, 'Grid Reset');
+  }
 
-    if (!rows || rows.length === 0) {
-      window.showToast('No valid data rows found in input.', 'warning', 3500, 'No Records');
-      if (executeBtn) executeBtn.disabled = true;
-      if (previewContainer) previewContainer.classList.add('hidden');
+  updateExcelGridCounter() {
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    const trs = tbody.querySelectorAll('tr');
+    let filledCount = 0;
+
+    trs.forEach(tr => {
+      const inputs = tr.querySelectorAll('input:not([readonly])');
+      const isFilled = Array.from(inputs).some(inp => (inp.value || '').trim() !== '');
+      if (isFilled) filledCount++;
+    });
+
+    const badge = document.getElementById('excel-grid-count-badge');
+    if (badge) {
+      badge.textContent = `${filledCount} / ${trs.length} Rows Filled`;
+      if (filledCount > 0) {
+        badge.className = 'px-2.5 py-1 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-black';
+      } else {
+        badge.className = 'px-2.5 py-1 bg-slate-100 border border-slate-300 text-slate-600 rounded-lg text-xs font-semibold';
+      }
+    }
+
+    const btnLabel = document.getElementById('excel-grid-import-btn-label');
+    if (btnLabel) {
+      btnLabel.textContent = filledCount > 0 ? `Import ${filledCount} Records into Sheet` : 'Import Data into Sheet';
+    }
+  }
+
+  handleExcelCellKeyDown(event, rIdx, colKey) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const nextInput = document.querySelector(`input[data-row="${rIdx + 1}"][data-col="${colKey}"]`);
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+      } else {
+        // Last row: automatically add new row and focus
+        this.addExcelGridRow();
+        setTimeout(() => {
+          const addedInput = document.querySelector(`input[data-row="${rIdx + 1}"][data-col="${colKey}"]`);
+          if (addedInput) {
+            addedInput.focus();
+            addedInput.select();
+          }
+        }, 50);
+      }
+    }
+  }
+
+  handleExcelGridPaste(event) {
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+    const text = clipboardData.getData('text');
+    if (!text || (!text.includes('\\t') && !text.includes('\\n') && !text.includes(','))) return;
+
+    // Check if target is an input
+    const target = event.target;
+    let startRow = 0;
+    let startColKey = null;
+
+    if (target && target.tagName === 'INPUT' && target.hasAttribute('data-row')) {
+      startRow = parseInt(target.getAttribute('data-row'), 10) || 0;
+      startColKey = target.getAttribute('data-col');
+    }
+
+    event.preventDefault();
+    this.fillExcelGridFromText(text, startRow, startColKey);
+  }
+
+  async pasteClipboardToExcelGrid() {
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          this.fillExcelGridFromText(text, 0, null);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Clipboard direct read not permitted, prompting user:', e);
+    }
+
+    const text = prompt('Paste your copied table rows from Excel or Google Sheets here (Ctrl+V):');
+    if (text && text.trim()) {
+      this.fillExcelGridFromText(text, 0, null);
+    }
+  }
+
+  fillExcelGridFromText(text, startRowIdx = 0, startColKey = null) {
+    if (!text || !text.trim()) return;
+    const cols = this._currentBulkCols || [];
+    if (!cols || cols.length === 0) return;
+
+    const lines = text.trim().split(/\\r?\\n/).filter(l => l.trim().length > 0);
+    if (lines.length === 0) return;
+
+    // Detect delimiter: tab or comma
+    const delimiter = lines[0].includes('\\t') ? '\\t' : ',';
+    const firstTokens = lines[0].split(delimiter).map(t => t.trim().replace(/^[\"']|[\"']$/g, ''));
+
+    // Check if first row is header
+    let rowStartIndex = 0;
+    const matchesHeader = firstTokens.some(tok => {
+      const lower = tok.toLowerCase();
+      return cols.some(c => (c.label || '').toLowerCase().includes(lower) || (c.key || '').toLowerCase() === lower);
+    });
+    if (matchesHeader) {
+      rowStartIndex = 1;
+    }
+
+    const dataLines = lines.slice(rowStartIndex);
+    if (dataLines.length === 0) {
+      window.showToast('No data rows found in pasted text.', 'warning', 3000, 'Paste Notice');
       return;
     }
 
-    if (statusBox && statusText && sourceName) {
-      statusText.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 inline mr-1 text-emerald-600"></i> Loaded "${sourceName}": ${rows.length} valid rows`;
-      statusBox.classList.remove('hidden');
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+
+    // Ensure enough rows exist in table
+    const requiredRows = startRowIdx + dataLines.length;
+    let existingCount = tbody.querySelectorAll('tr').length;
+    while (existingCount < requiredRows) {
+      this.appendExcelRowToDOM(existingCount, cols);
+      existingCount++;
     }
 
-    if (countBadge) {
-      countBadge.textContent = `${rows.length} Valid Records Detected`;
+    // Determine starting column index
+    let colStartIdx = 0;
+    if (startColKey) {
+      const foundIdx = cols.findIndex(c => c.key === startColKey);
+      if (foundIdx !== -1) colStartIdx = foundIdx;
     }
 
-    if (executeBtn) {
-      executeBtn.disabled = false;
-      const btnLabel = document.getElementById('bulk-import-btn-label');
-      if (btnLabel) btnLabel.textContent = `Import ${rows.length} Records into Sheet`;
-    }
+    // Populate cells
+    let populatedCount = 0;
+    dataLines.forEach((line, lineOffset) => {
+      const targetRow = startRowIdx + lineOffset;
+      const tokens = line.split(delimiter).map(t => t.trim().replace(/^[\"']|[\"']$/g, ''));
 
-    // Render Preview Table (first 5 rows)
-    const previewRows = rows.slice(0, 5);
-    if (previewTable) {
-      previewTable.innerHTML = `
-        <thead class="bg-slate-100 border-b border-slate-200">
-          <tr>
-            ${targetCols.map(c => `<th class="p-2 font-bold text-slate-700 whitespace-nowrap">${c.label}</th>`).join('')}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          ${previewRows.map(r => `
-            <tr class="hover:bg-slate-50">
-              ${targetCols.map(c => `<td class="p-2 text-slate-800 whitespace-nowrap truncate max-w-[150px]">${r[c.key] || '<span class="text-slate-300">-</span>'}</td>`).join('')}
-            </tr>
-          `).join('')}
-        </tbody>
-      `;
-    }
+      // If tokens count matches columns without sno, adjust
+      let offset = 0;
+      if (tokens.length === cols.length - 1 && (cols[0].key === 'sno' || cols[0].key === 's_no' || cols[0].key === 'sl_no')) {
+        offset = 1;
+      }
 
-    if (previewContainer) {
-      previewContainer.classList.remove('hidden');
-    }
+      tokens.forEach((val, tIdx) => {
+        const cIdx = colStartIdx + tIdx + offset;
+        if (cIdx < cols.length) {
+          const colKey = cols[cIdx].key;
+          const input = tbody.querySelector(`input[data-row="${targetRow}"][data-col="${colKey}"]:not([readonly])`);
+          if (input) {
+            input.value = val;
+            populatedCount++;
+          }
+        }
+      });
+    });
 
-    if (window.lucide) lucide.createIcons();
+    this.updateExcelGridCounter();
+    if (window.lucide) lucide.createIcons({ root: tbody });
+    window.showToast(`Pasted ${dataLines.length} rows successfully into Excel grid!`, 'success', 3500, 'Excel Data Loaded');
   }
 
-  // Execute the import into state store and update view
-  executeBulkImport(sheetKey, targetId = null) {
-    const rows = this._pendingBulkRows || [];
+  // Import directly from the Excel Grid into the sheet
+  importFromExcelGrid(sheetKey, targetId = null) {
+    const tbody = document.getElementById('bulk-excel-grid-tbody');
+    if (!tbody) return;
+    const cols = this._currentBulkCols || this.getColumnsForImport(sheetKey, targetId);
+
+    const rows = [];
+    const trs = tbody.querySelectorAll('tr');
+
+    trs.forEach((tr, rIdx) => {
+      const rowObj = {};
+      let hasData = false;
+
+      cols.forEach(col => {
+        const input = tr.querySelector(`input[data-col="${col.key}"]`);
+        const val = input ? (input.value || '').trim() : '';
+        rowObj[col.key] = val;
+
+        const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+        if (!isSno && val !== '') {
+          hasData = true;
+        }
+      });
+
+      if (hasData) {
+        rows.push(rowObj);
+      }
+    });
+
     if (rows.length === 0) {
-      window.showToast('No records to import.', 'warning', 3000, 'Import Notice');
+      window.showToast('Please enter or paste at least one record into the Excel grid before importing.', 'warning', 4000, 'Grid Empty');
       return;
     }
 
-    const modeRadio = document.querySelector('input[name="bulk-import-mode"]:checked');
+    const modeRadio = document.querySelector('input[name="excel-grid-import-mode"]:checked');
     const importMode = modeRadio ? modeRadio.value : 'append';
+
+    this._pendingBulkRows = rows;
+    this.executeBulkImportWithMode(sheetKey, targetId, importMode);
+  }
+
+  // Execute import of records with explicit mode
+  executeBulkImportWithMode(sheetKey, targetId = null, importMode = 'append') {
+    const rows = this._pendingBulkRows || [];
+    if (rows.length === 0) return;
 
     const card = this.getActiveCard();
     if (!card) return;
@@ -2543,8 +2845,169 @@ class FormBuilder {
 
     this.triggerAutoSave();
     this.closeBulkImportModal();
-    window.showToast(`Successfully imported ${rows.length} records into ${sheet.sheetName || sheetKey}!`, 'success', 4000, 'Bulk Import Complete');
+    window.showToast(`Successfully imported ${rows.length} records into ${sheet.sheetName || sheetKey}!`, 'success', 4000, 'Import Complete');
     this.render(window.dataStore?.data);
+  }
+
+
+  handleBulkFileDrop(event, sheetKey, targetId) {
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      this.processBulkFile(files[0], sheetKey, targetId);
+    }
+  }
+
+  handleBulkFileSelected(event, sheetKey, targetId) {
+    const file = event.target.files[0];
+    if (file) {
+      this.processBulkFile(file, sheetKey, targetId);
+    }
+  }
+
+  processBulkFile(file, sheetKey, targetId) {
+    const targetCols = this.getColumnsForImport(sheetKey, targetId);
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const content = e.target.result;
+      let rows = [];
+
+      try {
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(content);
+          rows = Array.isArray(parsed) ? parsed : (parsed.rows || []);
+        } else {
+          rows = this.parseDelimitedText(content, targetCols);
+        }
+      } catch (err) {
+        window.showToast('Could not parse file: ' + err.message, 'error', 4000, 'Parse Error');
+        return;
+      }
+
+      this._pendingBulkRows = rows;
+      this.renderBulkImportPreview(rows, targetCols, file.name);
+    };
+
+    reader.readAsText(file);
+  }
+
+  // Universal parser for CSV, TSV (Excel clipboard), and Comma text
+  parseDelimitedText(text, targetCols) {
+    const rawLines = text.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (rawLines.length === 0) return [];
+
+    const firstLine = rawLines[0];
+    const delim = firstLine.includes('\t') ? '\t' : ',';
+
+    let startIdx = 0;
+    const firstTokens = firstLine.split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
+    
+    // Check if first line matches any column headers
+    const isHeaderRow = firstTokens.some(tok => 
+      targetCols.some(col => 
+        (col.label || '').toLowerCase().includes(tok.toLowerCase()) || 
+        (col.key || '').toLowerCase() === tok.toLowerCase()
+      )
+    );
+    if (isHeaderRow) {
+      startIdx = 1;
+    }
+
+    const parsedRows = [];
+    for (let i = startIdx; i < rawLines.length; i++) {
+      const tokens = rawLines[i].split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
+      if (tokens.every(t => t === '')) continue;
+
+      const row = {};
+      targetCols.forEach((col, cIdx) => {
+        if (col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no') {
+          row[col.key] = String(parsedRows.length + 1);
+        } else {
+          row[col.key] = tokens[cIdx] !== undefined ? tokens[cIdx] : '';
+        }
+      });
+      parsedRows.push(row);
+    }
+    return parsedRows;
+  }
+
+  renderBulkImportPreview(rows, targetCols, sourceName = '') {
+    const previewContainer = document.getElementById('bulk-import-preview-container');
+    const previewTable = document.getElementById('bulk-import-preview-table');
+    const countBadge = document.getElementById('bulk-preview-count-badge');
+    const executeBtn = document.getElementById('bulk-import-file-execute-btn') || document.getElementById('bulk-import-execute-btn');
+    const statusBox = document.getElementById('bulk-file-status');
+    const statusText = document.getElementById('bulk-file-status-text');
+
+    if (!rows || rows.length === 0) {
+      window.showToast('No valid data rows found in input.', 'warning', 3500, 'No Records');
+      if (executeBtn) executeBtn.disabled = true;
+      if (previewContainer) previewContainer.classList.add('hidden');
+      return;
+    }
+
+    if (statusBox && statusText) {
+      statusText.textContent = `✓ ${sourceName ? sourceName + ': ' : ''}${rows.length} rows detected and ready for import`;
+      statusBox.classList.remove('hidden');
+    }
+
+    if (countBadge) {
+      countBadge.textContent = `${rows.length} Rows Parsed`;
+    }
+
+    if (previewTable) {
+      const previewRows = rows.slice(0, 5);
+      previewTable.innerHTML = `
+        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+          <tr>
+            ${targetCols.map(c => `<th class="p-2 whitespace-nowrap">${c.label}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          ${previewRows.map(r => `
+            <tr class="hover:bg-slate-50">
+              ${targetCols.map(c => `<td class="p-2 text-slate-700 whitespace-nowrap">${r[c.key] || '<span class="text-slate-300">-</span>'}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+    }
+
+    if (executeBtn) executeBtn.disabled = false;
+    if (previewContainer) previewContainer.classList.remove('hidden');
+  }
+
+
+  // File Upload execute wrapper
+  executeBulkFileImport(sheetKey, targetId = null) {
+    const modeRadio = document.querySelector('input[name="bulk-file-import-mode"]:checked');
+    const importMode = modeRadio ? modeRadio.value : 'append';
+    this.executeBulkImportWithMode(sheetKey, targetId, importMode);
+  }
+
+  switchBulkImportTab(tab) {
+    const fileTab = document.getElementById('tab-btn-file-upload');
+    const excelTab = document.getElementById('tab-btn-insert-template');
+    const filePanel = document.getElementById('bulk-tab-file-panel');
+    const excelPanel = document.getElementById('bulk-tab-excel-panel');
+
+    if (tab === 'file') {
+      fileTab.className = 'pb-3 border-b-2 border-[#26648E] text-[#26648E] flex items-center gap-2 transition cursor-pointer font-bold';
+      excelTab.className = 'pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition cursor-pointer font-bold';
+      filePanel.classList.remove('hidden');
+      excelPanel.classList.add('hidden');
+    } else {
+      excelTab.className = 'pb-3 border-b-2 border-emerald-600 text-emerald-800 flex items-center gap-2 transition cursor-pointer font-bold';
+      fileTab.className = 'pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition cursor-pointer font-bold';
+      excelPanel.classList.remove('hidden');
+      filePanel.classList.add('hidden');
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
+
+  executeBulkImport(sheetKey, targetId = null) {
+    this.importFromExcelGrid(sheetKey, targetId);
   }
 
 }

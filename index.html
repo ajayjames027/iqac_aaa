@@ -29,7 +29,7 @@
   <div class="aura-layer-2" aria-hidden="true"></div>
 
   <!-- ================= 1. DISTINCT LIGHT-TINTED LEFT SIDEBAR WITH PALETTE THEME ================= -->
-  <aside id="app-sidebar" class="w-72 bg-[#f0f5f9]/85 backdrop-blur-md text-slate-800 shrink-0 flex flex-col justify-between border-r border-[#4F8FC0]/25 transition-all duration-300 z-50 sticky top-0 h-screen overflow-y-auto shadow-xs">
+  <aside id="app-sidebar" class="hidden w-72 bg-[#f0f5f9]/90 backdrop-blur-md text-slate-800 shrink-0 flex flex-col justify-between border-r border-[#4F8FC0]/25 transition-all duration-300 z-50 sticky top-0 h-screen overflow-y-auto shadow-xs">
     <div class="p-5 space-y-6">
       
       <!-- Institutional Logo & Header (Vertical Stack: Small Logo on Top, Details Below) -->
@@ -132,7 +132,7 @@
   <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-transparent relative z-1">
     
     <!-- Top Action Bar with Floating Blinking Sidebar Toggle Button -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-[#4F8FC0]/20 sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between shadow-2xs">
+    <header class="bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 px-5 py-3 flex items-center justify-between shadow-xs transition-all">
       
       <!-- Blinking / Glowing Hide-Show Toggle Button -->
       <div class="flex items-center gap-3">
@@ -143,35 +143,15 @@
           title="Toggle Left Menu Sidebar"
           class="sidebar-blink-btn px-3 py-1.5 bg-[#FFE3B3] hover:bg-[#ffe0a3] text-[#26648E] font-black rounded-xl text-xs flex items-center gap-2 shadow-sm transition transform active:scale-95 cursor-pointer border border-[#fedba0] ring-2 ring-[#53D2DC]/60"
         >
-          <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-4 h-4 text-[#26648E]"></i>
-          <span id="sidebar-toggle-text">Hide Menu</span>
+          <i data-lucide="panel-left-open" id="sidebar-toggle-icon" class="w-4 h-4 text-[#26648E]"></i>
+          <span id="sidebar-toggle-text">Show Menu</span>
         </button>
 
         <span class="text-xs font-extrabold text-[#26648E] tracking-tight hidden sm:inline">
           Annual Academic Audit (AAA)
         </span>
 
-        <!-- Active Academic Year Selector with Delete Trash Option -->
-        <div class="flex items-center gap-1.5 bg-gradient-to-r from-[#26648E]/10 via-[#4F8FC0]/10 to-[#FFE3B3]/25 px-2.5 py-1 rounded-xl border border-[#4F8FC0]/30 shadow-2xs">
-          <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
-          <span class="text-[11px] font-bold text-slate-700 hidden md:inline">Active Year:</span>
-          <select 
-            id="top-active-year-selector" 
-            onchange="app.onGlobalYearChange(this.value)" 
-            class="text-xs font-black text-[#26648E] bg-transparent outline-none cursor-pointer pr-1"
-            title="Switch Active Academic Year"
-          >
-            <!-- Populated dynamically by app.refreshYearSelectors() -->
-          </select>
-          <button 
-            type="button" 
-            onclick="app.deleteActiveYear()" 
-            class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200 cursor-pointer"
-            title="Delete Active Academic Year and erase all its data"
-          >
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
-          </button>
-        </div>
+        
       </div>
 
       <!-- Right Header Actions: Active Department Name Badge & Print -->

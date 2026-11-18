@@ -172,7 +172,7 @@ class AdminDashboard {
           status: d.status || 'draft',
           is_locked: d.is_locked || false,
           last_updated: d.last_updated || '2026-10-31 10:00',
-          metrics: d.metrics || { publications: 20, grants_lakhs: 10.0, patents: 1, vac_cc: 2, mooc_pct: '80%', scholars: 12, placement_pct: '75%', equipments_count: 2, equipments_lakhs: 15.0, library_books: 1500, library_footfall: 80, csr_events: 2, csr_funds_lakhs: 2.0 },
+          metrics: d.metrics || { publications: 0, grants_lakhs: 0, patents: 0, vac_cc: 0, mooc_pct: '0%', scholars: 0, placement_pct: '0%', equipments_count: 0, equipments_lakhs: 0, library_books: 0, library_footfall: 0, csr_events: 0, csr_funds_lakhs: 0 },
           evaluation: d.evaluation || { grade: null, score: null }
         }));
       }
@@ -338,38 +338,7 @@ class AdminDashboard {
               <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#53D2DC]/20 text-[#136168] border border-[#53D2DC]/50 uppercase tracking-wide">
                 IQAC Central Admin Console
               </span>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-600">Active Year:</span>
-                <select 
-                  id="admin-active-year-selector" 
-                  onchange="adminDashboard.onYearSelectChange(this.value)"
-                  class="text-xs font-black px-2.5 py-1 rounded-lg bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs outline-none cursor-pointer"
-                  title="Switch Active Academic Year (Data is preserved separately for each year)"
-                >
-                  ${(window.dataStore ? window.dataStore.getAcademicYearsList() : ['2026 - 2027']).map(y => `
-                    <option value="${y}" ${y === (window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027') ? 'selected' : ''}>
-                      ${y}
-                    </option>
-                  `).join('')}
-                  <option value="__NEW__">+ Add New Academic Year...</option>
-                </select>
-              </div>
-            </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#26648E]">
-              Admin & Access Hub
-            </h1>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="adminDashboard.showAddDeptModal()" class="px-3.5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl text-xs shadow-md shadow-[#26648E]/25 transition flex items-center gap-1.5 whitespace-nowrap">
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              <span>Add Department</span>
-            </button>
-            <button type="button" onclick="adminDashboard.loadData()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition flex items-center gap-1.5 whitespace-nowrap border border-slate-700">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              <span>Refresh</span>
-            </button>
-          </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs">Active Year: ${activeYear}</span>
         </div>
 
         <!-- Submission Deadline Controller Banner -->

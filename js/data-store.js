@@ -28,7 +28,7 @@ class DataStore {
   // Initialize store: check if data exists in localStorage, else load sample
   async init() {
     // Guaranteed automatic one-time wipe of legacy dummy data across all departments & years
-    const PURGE_FLAG = 'IQAC_AAA_CLEAN_DEPLOY_PURGE_V10_ZERO_STATE';
+    const PURGE_FLAG = 'IQAC_AAA_CLEAN_DEPLOY_PURGE_V16_ZERO_STATE';
     if (localStorage.getItem(PURGE_FLAG) !== 'completed') {
       try {
         const toRemove = [];
@@ -36,17 +36,43 @@ class DataStore {
           const k = localStorage.key(i);
           if (k && (
             k.startsWith('IQAC_AAA_DATA_') || 
-            k === 'IQAC_USERS_DB' || 
             k.startsWith('IQAC_AAA_MASTER_') || 
             k.startsWith('IQAC_AAA_ATTR') ||
-            k === 'IQAC_AUTH_USER' ||
-            k === 'IQAC_CARDS_UNLOCKED' ||
-            k === 'IQAC_AAA_ACTIVE_DEPT'
+            k === 'IQAC_CARDS_UNLOCKED'
           )) {
             toRemove.push(k);
           }
         }
         toRemove.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+
+      // Reset existing departments in users DB to clean zero-data state
+      try {
+        const rawUsers = localStorage.getItem('IQAC_USERS_DB');
+        if (rawUsers) {
+          const udb = JSON.parse(rawUsers);
+          if (udb && Array.isArray(udb.departments)) {
+            udb.departments.forEach(d => {
+              d.status = 'draft';
+              d.last_updated = '-';
+              d.is_locked = false;
+            });
+            if (!udb.departments.some(d => d.code === 'thomas')) {
+              udb.departments.push({
+                id: Date.now(),
+                code: 'thomas',
+                name: 'Department of THOMAS',
+                school: 'School of Computing Sciences',
+                hod_name: 'Thomas Darwin',
+                password: 'sjc123',
+                is_locked: false,
+                status: 'draft',
+                last_updated: '-'
+              });
+            }
+            localStorage.setItem('IQAC_USERS_DB', JSON.stringify(udb));
+          }
+        }
       } catch (e) {}
 
       localStorage.setItem(ACTIVE_YEAR_KEY, '2026 - 2027');
@@ -237,7 +263,19 @@ class DataStore {
   getAllCardsSchema() {
     try {
       const saved = localStorage.getItem('IQAC_AAA_MASTER_CARDS_SCHEMA');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(c => {
+            (c.sheets || []).forEach(s => {
+              if (s.rows && s.rows.length > 0) s.rows = [];
+              if (s.sections) s.sections.forEach(sec => { if (sec.rows) sec.rows = []; });
+              if (s.batches) s.batches.forEach(bat => { if (bat.rows) bat.rows = []; });
+            });
+          });
+          return parsed;
+        }
+      }
     } catch (e) {
       console.warn('Error reading saved master cards schema:', e);
     }
@@ -1100,7 +1138,7 @@ class DataStore {
           hod_name: 'Dr. S. Albert Rabara',
           password: 'sjc123',
           is_locked: false,
-          status: 'submitted',
+          status: 'draft',
           last_updated: '2026-10-30 11:30'
         },
         {
@@ -1111,7 +1149,7 @@ class DataStore {
           hod_name: 'Dr. F. R. Alexander Pravin Durai',
           password: 'sjc123',
           is_locked: false,
-          status: 'submitted',
+          status: 'draft',
           last_updated: '2026-10-30 10:15'
         },
         {
@@ -1122,7 +1160,7 @@ class DataStore {
           hod_name: 'Dr. N. Lawrence',
           password: 'sjc123',
           is_locked: false,
-          status: 'in_progress',
+          status: 'draft',
           last_updated: '2026-10-29 14:20'
         },
         {
@@ -1155,7 +1193,7 @@ class DataStore {
           hod_name: 'Dr. K. Lingammal',
           password: 'sjc123',
           is_locked: false,
-          status: 'in_progress',
+          status: 'draft',
           last_updated: '2026-10-29 16:45'
         },
         {
@@ -1177,7 +1215,7 @@ class DataStore {
           hod_name: 'Dr. S. Sujatha',
           password: 'sjc123',
           is_locked: false,
-          status: 'submitted',
+          status: 'draft',
           last_updated: '2026-10-30 08:50'
         }
       ],

@@ -249,3 +249,16 @@ table tbody tr:hover td {
   font-family: 'Cinzel', serif;
   letter-spacing: 0.025em;
 }
+
+
+/* Arctic Frost Glassmorphic Dropzone & Bulk Import Styles */
+.dropzone-area {
+  border: 2px dashed rgba(79, 143, 192, 0.5);
+  background: rgba(239, 246, 255, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dropzone-area:hover, .dropzone-area.dragover {
+  border-color: #2563eb;
+  background: rgba(219, 234, 254, 0.7);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+}

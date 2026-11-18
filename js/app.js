@@ -173,17 +173,9 @@ class App {
       <option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>
     `).join('') + '<option value="__NEW__">+ Add New Year...</option><option value="__DELETE__">🗑️ Delete Active Year...</option>';
 
-    // Top global selector
-    const topSel = document.getElementById('top-active-year-selector');
-    if (topSel) topSel.innerHTML = optionsHtml;
-
-    // Admin selector
-    const adminSel = document.getElementById('admin-active-year-selector');
-    if (adminSel) adminSel.innerHTML = optionsHtml;
-
-    // Dept data selector
-    const deptDataSel = document.getElementById('dept-data-active-year-selector');
-    if (deptDataSel) deptDataSel.innerHTML = optionsHtml;
+    // Only inside the Attribute Forms page
+    const formSel = document.getElementById('form-active-year-selector');
+    if (formSel) formSel.innerHTML = optionsHtml;
   }
 
   async onGlobalYearChange(val) {

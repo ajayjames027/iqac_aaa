@@ -245,6 +245,31 @@ class AuthManager {
           deptSwitcher.classList.add('hidden');
         }
       }
+
+      // Department layout: Left sidebar is removed, navbar is on top
+      const sidebar = document.getElementById('app-sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+      if (sidebar) {
+        sidebar.classList.add('hidden');
+      }
+      if (sidebarToggleBtn) {
+        sidebarToggleBtn.classList.add('hidden');
+      }
+
+      // Top Navbar links visibility based on role
+      const topAdminBtn = document.getElementById('topnav-btn-admin');
+      const topDeptDataBtn = document.getElementById('topnav-btn-dept-data');
+      const topFilterBtn = document.getElementById('topnav-btn-filter');
+      const topDashBtn = document.getElementById('topnav-btn-dashboard');
+      const topProfileBtn = document.getElementById('topnav-btn-dept-profile');
+      const topFormBtn = document.getElementById('topnav-btn-form');
+
+      if (topAdminBtn) topAdminBtn.classList.toggle('hidden', !isAdmin);
+      if (topDeptDataBtn) topDeptDataBtn.classList.toggle('hidden', !isAdmin);
+      if (topFilterBtn) topFilterBtn.classList.toggle('hidden', !isAdmin);
+      if (topDashBtn) topDashBtn.classList.toggle('hidden', !isAdmin);
+      if (topProfileBtn) topProfileBtn.classList.toggle('hidden', !isDept);
+      if (topFormBtn) topFormBtn.classList.remove('hidden');
     }
   }
 

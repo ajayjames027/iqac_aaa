@@ -155,6 +155,16 @@ class App {
           btn.classList.add('text-slate-700', 'hover:text-[#26648E]', 'hover:bg-white', 'bg-white/80', 'border', 'border-slate-200', 'shadow-2xs', 'font-semibold');
         }
       }
+
+      // Update Top Navbar Buttons
+      const topBtn = document.getElementById(`topnav-btn-${v}`);
+      if (topBtn) {
+        if (v === viewName) {
+          topBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer bg-[#26648E] text-white shadow-xs';
+        } else {
+          topBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer text-slate-700 hover:text-[#26648E] hover:bg-white/80';
+        }
+      }
     });
 
     // Render active view

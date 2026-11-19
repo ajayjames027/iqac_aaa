@@ -800,7 +800,7 @@ class FormBuilder {
     `;
   }
 
-  // ================= 2. ACTIVE ATTRIBUTE SHEETS VIEW (FULL WIDE) =================
+  // ================= 2. ACTIVE ATTRIBUTE SHEETS VIEW (SIMPLE & CLEAN) =================
   renderActiveAttributeSheetsView(data) {
     const card = this.getActiveCard();
     if (!card) return;
@@ -810,83 +810,55 @@ class FormBuilder {
     const cardData = this.getCardData(card.id);
     const isAdmin = this.isAdmin();
     const deptName = window.dataStore?.activeDepartment || 'Department';
-    const { finishedCount, totalSheets, percentage } = this.getCompletionStats(card);
+    const { finishedCount, totalSheets } = this.getCompletionStats(card);
 
     this.container.innerHTML = `
-      <div class="space-y-6 w-full animate-fadeIn">
+      <div class="space-y-4 w-full animate-fadeIn">
         
-        <!-- Top Sticky Header for Active Card -->
-        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] rounded-2xl p-5 text-white shadow-md border border-white/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Clean Streamlined Header (No Nested Boxes) -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div class="flex items-center gap-3">
             <button 
               type="button" 
               onclick="formBuilder.backToCards()" 
-              class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/20 shrink-0" 
+              class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#26648E] border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs cursor-pointer shrink-0" 
               title="Return to Attribute Cards Gallery"
             >
               <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              <span>All Attributes</span>
             </button>
             <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
                   ${card.cardCode}
                 </span>
-                <span class="text-xs text-blue-200 font-semibold">${finishedCount}/${totalSheets} Sheets Completed</span>
+                <span class="text-xs text-slate-500 font-bold">${finishedCount} of ${totalSheets} Sheets Finished</span>
               </div>
-              <h2 class="text-xl font-black tracking-tight text-white">
+              <h2 class="text-xl font-black tracking-tight text-slate-900">
                 ${card.cardTitle}
               </h2>
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <span class="card-save-indicator text-xs px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-saved
+          <div class="flex items-center gap-2.5">
+            <span class="card-save-indicator text-xs px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-medium flex items-center gap-1.5 shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Auto-saved
             </span>
+            <button 
+              type="button" 
+              onclick="formBuilder.openReviewAndSaveModal('${card.id}')" 
+              class="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+              title="Review full attribute print sheet and save all records"
+            >
+              <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+              <span>Review & Save All</span>
+            </button>
           </div>
         </div>
 
-        ${this.renderDeadlineNoticeBanner()}
-
-        <!-- Role Access Control Banner -->
-        ${isAdmin ? `
-          <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 rounded-xl border">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-ping"></span>
-              <span class="text-xs font-bold text-purple-900">IQAC Admin Mode:</span>
-              <span class="text-xs text-purple-700">Toggle question editing to customize question text, subtitles, and column headers.</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="formBuilder.toggleAdminEditQuestionsMode()" class="text-xs px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition ${this.adminEditQuestionsMode ? 'bg-purple-600 text-white shadow-sm' : 'bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300'}">
-                <i data-lucide="${this.adminEditQuestionsMode ? 'check' : 'edit-3'}" class="w-3.5 h-3.5"></i>
-                <span>${this.adminEditQuestionsMode ? 'Done Editing Questions' : 'Edit Questions / Column Headers'}</span>
-              </button>
-              ${this.adminEditQuestionsMode ? `
-                <button type="button" onclick="formBuilder.saveQuestionSchema()" class="text-xs px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-1">
-                  <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Save Template
-                </button>
-                <button type="button" onclick="formBuilder.resetQuestionSchemaToDefault()" class="text-xs px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold rounded-lg transition flex items-center gap-1">
-                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset to Excel
-                </button>
-              ` : ''}
-            </div>
-          </div>
-        ` : `
-          <div class="bg-blue-50 border border-blue-200 px-6 py-2.5 rounded-xl flex items-center justify-between text-xs text-blue-900">
-            <div class="flex items-center gap-2">
-              <i data-lucide="lock" class="w-4 h-4 text-blue-600"></i>
-              <span class="font-bold">Department Data Entry Mode (${deptName}):</span>
-              <span class="text-blue-700">Questions are locked. Fill data into the fields below and click <strong>Review & Save All Records</strong> at the bottom.</span>
-            </div>
-            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-200">
-              Read-Only Questions
-            </span>
-          </div>
-        `}
-
-        <!-- Horizontal Sheets Navigation Tabs -->
+        <!-- Horizontal Sheets Navigation Tabs (Clean Pill Style, No Nested Box) -->
         ${sheets.length > 1 ? `
-          <div class="px-4 py-2 bg-slate-100/90 border border-slate-200 rounded-xl overflow-x-auto flex items-center gap-1.5 text-xs font-semibold scrollbar-thin w-full">
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none w-full">
             ${sheets.map(s => {
               const isActive = s.key === this.activeSheetKey;
               const sData = cardData[s.key];
@@ -900,10 +872,10 @@ class FormBuilder {
                 <button 
                   type="button" 
                   onclick="formBuilder.switchSheet('${s.key}')" 
-                  class="px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 whitespace-nowrap transition ${
+                  class="px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer text-xs ${
                     isActive 
-                      ? 'bg-[#26648E] text-white font-black shadow-sm border border-[#26648E]' 
-                      : 'bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold'
+                      ? 'bg-[#26648E] text-white font-black shadow-xs' 
+                      : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold'
                   }"
                 >
                   <i data-lucide="${s.type === 'profile' ? 'user-check' : 'table'}" class="w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-blue-600'}"></i>
@@ -919,56 +891,36 @@ class FormBuilder {
           </div>
         ` : ''}
 
-        <!-- Active Sheet Content (Full Wide) -->
-        <div class="p-6 bg-white rounded-2xl border border-slate-200 space-y-6 w-full shadow-2xs">
+        <!-- Active Sheet Content (Clean Table View Without Stacked Nested Wrapper Boxes) -->
+        <div class="w-full">
           ${activeSheet ? this.renderActiveSheetContent(activeSheet, cardData[activeSheet.key], isAdmin) : '<div class="text-slate-500">No sheet selected.</div>'}
         </div>
 
-        <!-- Footer Bar with Dedicated Review & Save Button and Prev/Next Navigation -->
-        <div class="bg-white rounded-2xl border border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 w-full shadow-2xs">
-          <div class="flex items-center gap-3">
-            <button 
-              type="button" 
-              onclick="formBuilder.backToCards()" 
-              class="text-xs px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              <span>Return to All Cards</span>
+        <!-- Minimal Navigation Footer -->
+        ${sheets.length > 1 ? `
+          <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
+            <button type="button" onclick="formBuilder.navigateSheet(-1)" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1 shadow-2xs">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
             </button>
-
-            <!-- Primary Save Button at the End of the Attribute -->
-            <button 
-              type="button" 
-              onclick="formBuilder.reviewAndSaveAllCurrentAttribute()" 
-              class="text-xs px-5 py-2.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-black rounded-xl transition flex items-center gap-2 shadow-md shadow-[#26648E]/25 ring-2 ring-[#53D2DC]/50 cursor-pointer"
-              title="Review and save all records in this attribute"
-            >
-              <i data-lucide="check-check" class="w-4 h-4 text-[#53D2DC]"></i>
-              <span>Review & Save All Records</span>
+            <span class="text-slate-500 font-medium">
+              ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
+            </span>
+            <button type="button" onclick="formBuilder.navigateSheet(1)" class="px-3.5 py-1.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl transition flex items-center gap-1 shadow-2xs">
+              Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </button>
           </div>
-
-          ${sheets.length > 1 ? `
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="formBuilder.navigateSheet(-1)" class="text-xs px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1">
-                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
-              </button>
-              <span class="text-xs text-slate-500 font-medium">
-                ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
-              </span>
-              <button type="button" onclick="formBuilder.navigateSheet(1)" class="text-xs px-3.5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl transition flex items-center gap-1">
-                Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          ` : '<div></div>'}
-          </div>
-        </div>
+        ` : ''}
 
       </div>
     `;
+
+    if (window.lucide) {
+      lucide.createIcons({ root: this.container });
+    }
   }
 
-  navigateSheet(direction) {
+
+    navigateSheet(direction) {
     const card = this.getActiveCard();
     if (!card || !card.sheets || card.sheets.length <= 1) return;
     const currIdx = card.sheets.findIndex(s => s.key === this.activeSheetKey);
@@ -2093,7 +2045,7 @@ class FormBuilder {
     window.showToast(`Question Template for ${sheet.sheetName || sheet.key} downloaded successfully!`, 'success', 4000, 'Template Ready');
   }
 
-  // Open the Bulk Import / Direct Excel Modal
+  // Open the Bulk Import / Direct Excel Modal (Redesigned like Original Excel for 1-Time Insertion)
   openBulkImportModal(sheetKey, targetId = null, initialTab = 'excel') {
     const card = this.getActiveCard();
     const sheet = (card?.sheets || []).find(s => s.key === sheetKey) || this.getActiveSheet();
@@ -2115,21 +2067,21 @@ class FormBuilder {
     modal.innerHTML = `
       <div class="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl max-w-5xl md:max-w-6xl w-full overflow-hidden my-6 flex flex-col max-h-[94vh]">
         
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-[#26648E] via-[#33729e] to-[#4F8FC0] text-white p-5 flex items-center justify-between gap-4 shrink-0 shadow-xs">
+        <!-- Header: Excel Green / College Blue Gradient -->
+        <div class="bg-gradient-to-r from-[#107c41] via-[#1b5e20] to-[#26648E] text-white p-5 flex items-center justify-between gap-4 shrink-0 shadow-xs">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 shadow-2xs">
-              <i data-lucide="file-spreadsheet" class="w-5 h-5 text-[#53D2DC]"></i>
+            <div class="w-10 h-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0 shadow-2xs font-black text-sm">
+              <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-200"></i>
             </div>
             <div>
               <div class="flex items-center gap-2 mb-0.5">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FFE3B3] text-[#26648E]">
                   ${card.cardCode} • ${sheet.sheetName || sheet.key}
                 </span>
-                <span class="text-xs text-blue-100 font-semibold">${cols.length} Question Columns</span>
+                <span class="text-xs text-emerald-100 font-semibold">${cols.length} Columns</span>
               </div>
               <h3 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
-                <span>Direct Excel Template & Bulk Import</span>
+                <span>Excel Direct Template & Bulk Importer</span>
               </h3>
             </div>
           </div>
@@ -2138,11 +2090,11 @@ class FormBuilder {
             <button 
               type="button" 
               onclick="formBuilder.downloadQuestionTemplate('${sheetKey}', '${targetId || ''}')" 
-              class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+              class="px-3.5 py-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
               title="Download offline template CSV"
             >
-              <i data-lucide="download" class="w-3.5 h-3.5 text-blue-200"></i>
-              <span class="hidden sm:inline">Download Template (.csv)</span>
+              <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-200"></i>
+              <span class="hidden sm:inline">Download Question Template (.csv)</span>
             </button>
             <button 
               type="button" 
@@ -2165,7 +2117,7 @@ class FormBuilder {
           >
             <i data-lucide="table-2" class="w-4 h-4 ${initialTab === 'excel' ? 'text-emerald-600' : 'text-slate-400'}"></i>
             <span>Option 2: Insert Direct to Excel</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">Interactive</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">1-Click Fast Import</span>
           </button>
 
           <button 
@@ -2182,110 +2134,120 @@ class FormBuilder {
         <!-- Tab Content Body (Scrollable) -->
         <div class="p-5 md:p-6 space-y-4 overflow-y-auto flex-1">
           
-          <!-- TAB 2: INSERT DIRECT TO EXCEL (Primary Spreadsheet Grid) -->
+          <!-- TAB 2: INSERT DIRECT TO EXCEL (1-Click Paste & Spreadsheet Table) -->
           <div id="bulk-tab-excel-panel" class="${initialTab === 'excel' ? '' : 'hidden'} space-y-4">
             
-            <!-- Excel Grid Ribbon / Action Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/90 p-3 rounded-2xl border border-slate-200">
-              <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-black text-xs shadow-2xs">
-                  X
-                </div>
-                <div>
-                  <h4 class="text-xs font-black text-slate-800">
-                    Excel Sheet Template: ${sheet.sheetName || sheet.key}
-                  </h4>
-                  <p class="text-[11px] text-slate-500">
-                    Type directly into cells, press Tab/Enter to navigate, or copy rows in Excel and press Ctrl+V
-                  </p>
+            <!-- Quick Excel Paste Zone (1-Time Insertion for Entire Sheet) -->
+            <div class="bg-emerald-50/40 p-4 rounded-2xl border border-emerald-200 space-y-2">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <label class="text-xs font-black text-emerald-950 flex items-center gap-2">
+                  <i data-lucide="clipboard" class="w-4 h-4 text-emerald-700"></i>
+                  <span>Copy from Microsoft Excel (Ctrl+C) and Paste Below (Ctrl+V) to Insert All Data at Once:</span>
+                </label>
+                <div class="flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    onclick="formBuilder.pasteClipboardToExcelGrid()" 
+                    class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  >
+                    <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i>
+                    <span>1-Click Paste from Clipboard</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="formBuilder.clearExcelGrid()" 
+                    class="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-semibold rounded-xl text-xs flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>Reset</span>
+                  </button>
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 flex-wrap">
-                <button 
-                  type="button" 
-                  onclick="formBuilder.addExcelGridRow()" 
-                  class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-                  title="Add one blank row to the sheet"
-                >
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-600"></i>
-                  <span>Add Row</span>
-                </button>
-
-                <button 
-                  type="button" 
-                  onclick="formBuilder.addExcelGridRows(5)" 
-                  class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-                  title="Add 5 blank rows to the sheet"
-                >
-                  <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-blue-600"></i>
-                  <span>+5 Rows</span>
-                </button>
-
-                <button 
-                  type="button" 
-                  onclick="formBuilder.pasteClipboardToExcelGrid()" 
-                  class="px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-                  title="Paste table rows copied from Excel or Google Sheets"
-                >
-                  <i data-lucide="clipboard-paste" class="w-3.5 h-3.5 text-emerald-600"></i>
-                  <span>Paste from Excel</span>
-                </button>
-
-                <button 
-                  type="button" 
-                  onclick="formBuilder.clearExcelGrid()" 
-                  class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
-                  title="Clear all rows in this grid"
-                >
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
-                  <span>Clear</span>
-                </button>
-
-                <span id="excel-grid-count-badge" class="px-2.5 py-1 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-black">
-                  0 / 5 Rows Filled
-                </span>
+              <!-- Multi-line Excel Raw Table Paste Box -->
+              <textarea 
+                id="excel-bulk-paste-input" 
+                rows="3" 
+                oninput="formBuilder.onExcelBulkPasteInput(this.value)"
+                placeholder="Paste tabular rows directly from Excel or Google Sheets here... (All columns and rows will be parsed into the spreadsheet grid below in 1 second!)"
+                class="w-full text-xs font-mono p-3 border border-emerald-300 rounded-xl bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-none transition"
+              ></textarea>
+              
+              <!-- Columns Guide Pill Bar -->
+              <div class="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 pt-0.5">
+                <span class="font-bold text-slate-700">Aligned Columns:</span>
+                ${cols.map((c, i) => `
+                  <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-600">
+                    ${i + 1}. ${c.label}
+                  </span>
+                `).join('')}
               </div>
             </div>
 
-            <!-- Interactive Spreadsheet Grid -->
-            <div class="overflow-x-auto rounded-2xl border border-slate-300 bg-white shadow-xs max-h-[460px] scrollbar-thin">
-              <table id="bulk-excel-grid-table" class="w-full text-left text-xs border-collapse font-sans select-text">
-                <thead class="sticky top-0 z-10">
-                  <!-- Excel Column Letters: A, B, C, D... -->
-                  <tr class="bg-slate-200 border-b border-slate-300 text-slate-500 font-bold text-[11px] select-none">
-                    <th class="w-12 px-2 py-1 text-center bg-slate-300 border-r border-slate-300 font-mono">#</th>
-                    ${cols.map((c, i) => `
-                      <th class="px-3 py-1 text-center border-r border-slate-300 font-mono ${c.width || 'min-w-[170px]'}">
-                        ${String.fromCharCode(65 + (i % 26))}
-                      </th>
-                    `).join('')}
-                    <th class="w-10 px-2 py-1 text-center bg-slate-300">Del</th>
-                  </tr>
-                  <!-- Template Question Titles -->
-                  <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-800 font-bold text-xs select-none">
-                    <th class="w-12 px-2 py-2.5 text-center bg-slate-200 border-r border-slate-300">S.No</th>
-                    ${cols.map(c => {
-                      const opts = this.getDropdownOptions(c.label, c.key);
-                      return `
-                        <th class="px-3 py-2.5 border-r border-slate-300 ${c.width || 'min-w-[170px]'}">
-                          <div class="flex items-center justify-between gap-1.5">
-                            <span class="text-slate-900 font-bold">${c.label}</span>
-                            ${opts ? `<span class="px-1.5 py-0.2 rounded text-[9px] bg-blue-100 text-blue-700 font-bold shrink-0">Dropdown</span>` : ''}
-                          </div>
+            <!-- Live Excel Spreadsheet Table (Original Excel Format) -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="table" class="w-4 h-4 text-emerald-700"></i>
+                    <span>Spreadsheet Preview & Inline Editor</span>
+                  </span>
+                  <span id="excel-grid-count-badge" class="px-2.5 py-0.5 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-full text-xs font-black">
+                    0 Records Ready
+                  </span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    onclick="formBuilder.addExcelGridRow()" 
+                    class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1 shadow-2xs transition cursor-pointer"
+                  >
+                    <i data-lucide="plus" class="w-3 h-3 text-emerald-600"></i> Add Row
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="formBuilder.addExcelGridRows(5)" 
+                    class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-lg text-xs flex items-center gap-1 shadow-2xs transition cursor-pointer"
+                  >
+                    <i data-lucide="plus-circle" class="w-3 h-3 text-blue-600"></i> +5 Rows
+                  </button>
+                </div>
+              </div>
+
+              <!-- Real Excel-styled Grid Container -->
+              <div class="overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-xs max-h-[380px] scrollbar-thin">
+                <table id="bulk-excel-grid-table" class="w-full text-left text-xs border-collapse font-sans select-text">
+                  <thead class="sticky top-0 z-10">
+                    <!-- Row 1: Excel Column Letters (A, B, C...) -->
+                    <tr class="bg-slate-200 border-b border-slate-300 text-slate-500 font-bold text-[10px] select-none">
+                      <th class="w-12 px-2 py-1 text-center bg-slate-300 border-r border-slate-300 font-mono">#</th>
+                      ${cols.map((c, i) => `
+                        <th class="px-3 py-1 text-center border-r border-slate-300 font-mono ${c.width || 'min-w-[160px]'}">
+                          ${String.fromCharCode(65 + (i % 26))}
                         </th>
-                      `;
-                    }).join('')}
-                    <th class="w-10 px-2 py-2.5 text-center text-slate-400">Del</th>
-                  </tr>
-                </thead>
-                <tbody id="bulk-excel-grid-tbody" class="divide-y divide-slate-200">
-                  <!-- Injected via renderExcelGridRows -->
-                </tbody>
-              </table>
+                      `).join('')}
+                      <th class="w-10 px-2 py-1 text-center bg-slate-300">Del</th>
+                    </tr>
+                    <!-- Row 2: Template Question Titles -->
+                    <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-800 font-bold text-xs select-none">
+                      <th class="w-12 px-2 py-2 text-center bg-slate-200 border-r border-slate-300">S.No</th>
+                      ${cols.map(c => `
+                        <th class="px-3 py-2 border-r border-slate-300 ${c.width || 'min-w-[160px]'}">
+                          <span class="block text-slate-900 font-bold">${c.label}</span>
+                        </th>
+                      `).join('')}
+                      <th class="w-10 px-2 py-2 text-center text-slate-400">Del</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bulk-excel-grid-tbody" class="divide-y divide-slate-200">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <!-- Under-Excel Import Controls & Execution Button -->
+            <!-- Under-Excel Import Controls & 1-Time Execution Button -->
             <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 p-4 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
               <div class="space-y-1">
                 <div class="flex items-center gap-4 text-xs font-semibold text-slate-700">
@@ -2301,17 +2263,17 @@ class FormBuilder {
                 </div>
                 <p class="text-[11px] text-emerald-800 font-medium flex items-center gap-1">
                   <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
-                  Data entered directly in the grid above will be validated and inserted into <strong>${sheet.sheetName || sheet.key}</strong>.
+                  Clicking below will insert all records directly into <strong>${sheet.sheetName || sheet.key}</strong> in one time.
                 </p>
               </div>
 
               <button 
                 type="button" 
                 onclick="formBuilder.importFromExcelGrid('${sheetKey}', '${targetId || ''}')" 
-                class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black rounded-xl text-xs transition shadow-md shadow-emerald-700/25 flex items-center gap-2 shrink-0 cursor-pointer"
+                class="px-7 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black rounded-xl text-xs transition shadow-md shadow-emerald-700/25 flex items-center gap-2 shrink-0 cursor-pointer"
               >
-                <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-emerald-200"></i>
-                <span id="excel-grid-import-btn-label">Import Data into Sheet</span>
+                <i data-lucide="check-check" class="w-4 h-4 text-emerald-200"></i>
+                <span id="excel-grid-import-btn-label">Import All Records into Sheet</span>
               </button>
             </div>
 
@@ -2417,20 +2379,23 @@ class FormBuilder {
     document.body.appendChild(modal);
     if (window.lucide) lucide.createIcons({ root: modal });
 
-    // Populate initial rows for the interactive Excel grid
-    this.renderInitialExcelGridRows(cols, 5);
-
-    // Setup paste listener on the table for clipboard paste
-    const table = document.getElementById('bulk-excel-grid-table');
-    if (table) {
-      table.addEventListener('paste', (e) => this.handleExcelGridPaste(e));
-    }
+    // Render initial 3 rows ready for typing or pasting
+    this.renderInitialExcelGridRows(cols, 3);
   }
 
+  // Live input handler when user pastes entire Excel table into the raw paste area
+  onExcelBulkPasteInput(text) {
+    if (!text || !text.trim()) {
+      const cols = this._currentBulkCols || [];
+      this.renderInitialExcelGridRows(cols, 3);
+      return;
+    }
+    this.fillExcelGridFromText(text, 0, null);
+  }
 
   // ================= INTERACTIVE EXCEL GRID HELPERS =================
 
-  renderInitialExcelGridRows(cols, rowCount = 5) {
+  renderInitialExcelGridRows(cols, rowCount = 3) {
     const tbody = document.getElementById('bulk-excel-grid-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -2441,13 +2406,13 @@ class FormBuilder {
     if (window.lucide) lucide.createIcons({ root: tbody });
   }
 
-  appendExcelRowToDOM(rIdx, cols) {
+  appendExcelRowToDOM(rIdx, cols, rowData = null) {
     const tbody = document.getElementById('bulk-excel-grid-tbody');
     if (!tbody) return;
 
     const tr = document.createElement('tr');
     tr.id = `excel-grid-row-${rIdx}`;
-    tr.className = 'hover:bg-blue-50/40 transition border-b border-slate-200';
+    tr.className = 'hover:bg-emerald-50/30 transition border-b border-slate-200';
 
     // 1. S.No Row Header
     let rowHtml = `
@@ -2456,9 +2421,10 @@ class FormBuilder {
       </td>
     `;
 
-    // 2. Data Cells
+    // 2. Data Cells (Direct Excel Spreadsheet Cells)
     cols.forEach((col, cIdx) => {
       const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+      const cellVal = rowData ? (rowData[col.key] || '') : '';
       const opts = this.getDropdownOptions(col.label, col.key);
 
       if (isSno) {
@@ -2466,7 +2432,7 @@ class FormBuilder {
           <td class="px-2 py-1 border-r border-slate-200 bg-slate-50 text-center font-bold text-slate-500">
             <input 
               type="text" 
-              value="${rIdx + 1}" 
+              value="${cellVal || (rIdx + 1)}" 
               readonly 
               data-row="${rIdx}" 
               data-col="${col.key}" 
@@ -2475,18 +2441,18 @@ class FormBuilder {
           </td>
         `;
       } else if (opts && Array.isArray(opts) && opts.length > 0) {
-        // Datalist input for dropdown columns: allows clicking dropdown OR typing/pasting directly
         const listId = `dl-excel-${col.key}-${rIdx}`;
         rowHtml += `
-          <td class="px-1.5 py-1 border-r border-slate-200">
+          <td class="px-1 py-0.5 border-r border-slate-200">
             <input 
               type="text" 
               list="${listId}" 
+              value="${cellVal}" 
               data-row="${rIdx}" 
               data-col="${col.key}" 
               oninput="formBuilder.updateExcelGridCounter()"
               onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
-              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-white border border-slate-200 rounded focus:border-emerald-600 focus:bg-emerald-50/20 focus:ring-1 focus:ring-emerald-500 outline-none transition" 
+              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition font-medium" 
               placeholder="${col.label}..."
             />
             <datalist id="${listId}">
@@ -2496,14 +2462,15 @@ class FormBuilder {
         `;
       } else {
         rowHtml += `
-          <td class="px-1.5 py-1 border-r border-slate-200">
+          <td class="px-1 py-0.5 border-r border-slate-200">
             <input 
               type="text" 
+              value="${cellVal}" 
               data-row="${rIdx}" 
               data-col="${col.key}" 
               oninput="formBuilder.updateExcelGridCounter()"
               onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
-              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-white border border-slate-200 rounded focus:border-emerald-600 focus:bg-emerald-50/20 focus:ring-1 focus:ring-emerald-500 outline-none transition" 
+              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition font-medium" 
               placeholder="${col.label}..."
             />
           </td>
@@ -2538,7 +2505,6 @@ class FormBuilder {
     this.updateExcelGridCounter();
     if (window.lucide) lucide.createIcons({ root: tbody });
 
-    // Focus first input in new row
     const firstInput = tbody.querySelector(`tr:last-child input:not([readonly])`);
     if (firstInput) firstInput.focus();
   }
@@ -2567,7 +2533,6 @@ class FormBuilder {
 
     // Re-index remaining rows
     const remaining = tbody.querySelectorAll('tr');
-    const cols = this._currentBulkCols || [];
     remaining.forEach((tr, newIdx) => {
       tr.id = `excel-grid-row-${newIdx}`;
       const headerCell = tr.querySelector('td:first-child');
@@ -2590,8 +2555,10 @@ class FormBuilder {
 
   clearExcelGrid() {
     const cols = this._currentBulkCols || [];
-    this.renderInitialExcelGridRows(cols, 5);
-    window.showToast('Excel grid reset to 5 empty rows.', 'info', 2000, 'Grid Reset');
+    const pasteBox = document.getElementById('excel-bulk-paste-input');
+    if (pasteBox) pasteBox.value = '';
+    this.renderInitialExcelGridRows(cols, 3);
+    window.showToast('Excel grid reset.', 'info', 2000, 'Grid Cleared');
   }
 
   updateExcelGridCounter() {
@@ -2608,17 +2575,17 @@ class FormBuilder {
 
     const badge = document.getElementById('excel-grid-count-badge');
     if (badge) {
-      badge.textContent = `${filledCount} / ${trs.length} Rows Filled`;
+      badge.textContent = `${filledCount} Records Ready`;
       if (filledCount > 0) {
-        badge.className = 'px-2.5 py-1 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-black';
+        badge.className = 'px-2.5 py-0.5 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-full text-xs font-black';
       } else {
-        badge.className = 'px-2.5 py-1 bg-slate-100 border border-slate-300 text-slate-600 rounded-lg text-xs font-semibold';
+        badge.className = 'px-2.5 py-0.5 bg-slate-100 border border-slate-300 text-slate-500 rounded-full text-xs font-semibold';
       }
     }
 
     const btnLabel = document.getElementById('excel-grid-import-btn-label');
     if (btnLabel) {
-      btnLabel.textContent = filledCount > 0 ? `Import ${filledCount} Records into Sheet` : 'Import Data into Sheet';
+      btnLabel.textContent = filledCount > 0 ? `Import All (${filledCount} Records) into Sheet` : 'Import All Records into Sheet';
     }
   }
 
@@ -2630,7 +2597,6 @@ class FormBuilder {
         nextInput.focus();
         nextInput.select();
       } else {
-        // Last row: automatically add new row and focus
         this.addExcelGridRow();
         setTimeout(() => {
           const addedInput = document.querySelector(`input[data-row="${rIdx + 1}"][data-col="${colKey}"]`);
@@ -2643,42 +2609,27 @@ class FormBuilder {
     }
   }
 
-  handleExcelGridPaste(event) {
-    const clipboardData = event.clipboardData || window.clipboardData;
-    if (!clipboardData) return;
-    const text = clipboardData.getData('text');
-    if (!text || (!text.includes('\\t') && !text.includes('\\n') && !text.includes(','))) return;
-
-    // Check if target is an input
-    const target = event.target;
-    let startRow = 0;
-    let startColKey = null;
-
-    if (target && target.tagName === 'INPUT' && target.hasAttribute('data-row')) {
-      startRow = parseInt(target.getAttribute('data-row'), 10) || 0;
-      startColKey = target.getAttribute('data-col');
-    }
-
-    event.preventDefault();
-    this.fillExcelGridFromText(text, startRow, startColKey);
-  }
-
   async pasteClipboardToExcelGrid() {
     try {
       if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
         const text = await navigator.clipboard.readText();
         if (text && text.trim()) {
+          const pasteBox = document.getElementById('excel-bulk-paste-input');
+          if (pasteBox) pasteBox.value = text;
           this.fillExcelGridFromText(text, 0, null);
           return;
         }
       }
     } catch (e) {
-      console.warn('Clipboard direct read not permitted, prompting user:', e);
+      console.warn('Clipboard direct read not permitted:', e);
     }
 
-    const text = prompt('Paste your copied table rows from Excel or Google Sheets here (Ctrl+V):');
-    if (text && text.trim()) {
-      this.fillExcelGridFromText(text, 0, null);
+    // Fallback: Focus paste input so user can press Ctrl+V
+    const pasteBox = document.getElementById('excel-bulk-paste-input');
+    if (pasteBox) {
+      pasteBox.focus();
+      pasteBox.select();
+      window.showToast('Press Ctrl+V to paste your Excel table rows into the box.', 'info', 3000, 'Paste Here');
     }
   }
 
@@ -2687,12 +2638,12 @@ class FormBuilder {
     const cols = this._currentBulkCols || [];
     if (!cols || cols.length === 0) return;
 
-    const lines = text.trim().split(/\\r?\\n/).filter(l => l.trim().length > 0);
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
     if (lines.length === 0) return;
 
     // Detect delimiter: tab or comma
-    const delimiter = lines[0].includes('\\t') ? '\\t' : ',';
-    const firstTokens = lines[0].split(delimiter).map(t => t.trim().replace(/^[\"']|[\"']$/g, ''));
+    const delimiter = lines[0].includes('\t') ? '\t' : ',';
+    const firstTokens = lines[0].split(delimiter).map(t => t.trim().replace(/^["']|["']$/g, ''));
 
     // Check if first row is header
     let rowStartIndex = 0;
@@ -2713,52 +2664,38 @@ class FormBuilder {
     const tbody = document.getElementById('bulk-excel-grid-tbody');
     if (!tbody) return;
 
-    // Ensure enough rows exist in table
-    const requiredRows = startRowIdx + dataLines.length;
-    let existingCount = tbody.querySelectorAll('tr').length;
-    while (existingCount < requiredRows) {
-      this.appendExcelRowToDOM(existingCount, cols);
-      existingCount++;
-    }
+    // Reset table and fill all rows cleanly
+    tbody.innerHTML = '';
 
-    // Determine starting column index
-    let colStartIdx = 0;
-    if (startColKey) {
-      const foundIdx = cols.findIndex(c => c.key === startColKey);
-      if (foundIdx !== -1) colStartIdx = foundIdx;
-    }
-
-    // Populate cells
-    let populatedCount = 0;
-    dataLines.forEach((line, lineOffset) => {
-      const targetRow = startRowIdx + lineOffset;
-      const tokens = line.split(delimiter).map(t => t.trim().replace(/^[\"']|[\"']$/g, ''));
-
-      // If tokens count matches columns without sno, adjust
+    dataLines.forEach((line, rIdx) => {
+      const tokens = line.split(delimiter).map(t => t.trim().replace(/^["']|["']$/g, ''));
+      
+      // Auto-adjust offset if tokens match without sno
       let offset = 0;
       if (tokens.length === cols.length - 1 && (cols[0].key === 'sno' || cols[0].key === 's_no' || cols[0].key === 'sl_no')) {
         offset = 1;
       }
 
-      tokens.forEach((val, tIdx) => {
-        const cIdx = colStartIdx + tIdx + offset;
-        if (cIdx < cols.length) {
-          const colKey = cols[cIdx].key;
-          const input = tbody.querySelector(`input[data-row="${targetRow}"][data-col="${colKey}"]:not([readonly])`);
-          if (input) {
-            input.value = val;
-            populatedCount++;
-          }
+      const rowObj = {};
+      cols.forEach((col, cIdx) => {
+        const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+        if (isSno) {
+          rowObj[col.key] = String(rIdx + 1);
+        } else {
+          const tokenIdx = cIdx - offset;
+          rowObj[col.key] = (tokenIdx >= 0 && tokens[tokenIdx] !== undefined) ? tokens[tokenIdx] : '';
         }
       });
+
+      this.appendExcelRowToDOM(rIdx, cols, rowObj);
     });
 
     this.updateExcelGridCounter();
     if (window.lucide) lucide.createIcons({ root: tbody });
-    window.showToast(`Pasted ${dataLines.length} rows successfully into Excel grid!`, 'success', 3500, 'Excel Data Loaded');
+    window.showToast(`✓ ${dataLines.length} rows loaded from Excel! Ready to import.`, 'success', 3500, 'Excel Data Loaded');
   }
 
-  // Import directly from the Excel Grid into the sheet
+  // Import directly from the Excel Grid into the active sheet
   importFromExcelGrid(sheetKey, targetId = null) {
     const tbody = document.getElementById('bulk-excel-grid-tbody');
     if (!tbody) return;
@@ -2788,7 +2725,7 @@ class FormBuilder {
     });
 
     if (rows.length === 0) {
-      window.showToast('Please enter or paste at least one record into the Excel grid before importing.', 'warning', 4000, 'Grid Empty');
+      window.showToast('Please paste or enter at least one record before importing.', 'warning', 4000, 'Grid Empty');
       return;
     }
 
@@ -2849,135 +2786,6 @@ class FormBuilder {
     this.render(window.dataStore?.data);
   }
 
-
-  handleBulkFileDrop(event, sheetKey, targetId) {
-    const files = event.dataTransfer.files;
-    if (files.length > 0) {
-      this.processBulkFile(files[0], sheetKey, targetId);
-    }
-  }
-
-  handleBulkFileSelected(event, sheetKey, targetId) {
-    const file = event.target.files[0];
-    if (file) {
-      this.processBulkFile(file, sheetKey, targetId);
-    }
-  }
-
-  processBulkFile(file, sheetKey, targetId) {
-    const targetCols = this.getColumnsForImport(sheetKey, targetId);
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      const content = e.target.result;
-      let rows = [];
-
-      try {
-        if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(content);
-          rows = Array.isArray(parsed) ? parsed : (parsed.rows || []);
-        } else {
-          rows = this.parseDelimitedText(content, targetCols);
-        }
-      } catch (err) {
-        window.showToast('Could not parse file: ' + err.message, 'error', 4000, 'Parse Error');
-        return;
-      }
-
-      this._pendingBulkRows = rows;
-      this.renderBulkImportPreview(rows, targetCols, file.name);
-    };
-
-    reader.readAsText(file);
-  }
-
-  // Universal parser for CSV, TSV (Excel clipboard), and Comma text
-  parseDelimitedText(text, targetCols) {
-    const rawLines = text.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (rawLines.length === 0) return [];
-
-    const firstLine = rawLines[0];
-    const delim = firstLine.includes('\t') ? '\t' : ',';
-
-    let startIdx = 0;
-    const firstTokens = firstLine.split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
-    
-    // Check if first line matches any column headers
-    const isHeaderRow = firstTokens.some(tok => 
-      targetCols.some(col => 
-        (col.label || '').toLowerCase().includes(tok.toLowerCase()) || 
-        (col.key || '').toLowerCase() === tok.toLowerCase()
-      )
-    );
-    if (isHeaderRow) {
-      startIdx = 1;
-    }
-
-    const parsedRows = [];
-    for (let i = startIdx; i < rawLines.length; i++) {
-      const tokens = rawLines[i].split(delim).map(t => t.trim().replace(/^["']|["']$/g, ''));
-      if (tokens.every(t => t === '')) continue;
-
-      const row = {};
-      targetCols.forEach((col, cIdx) => {
-        if (col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no') {
-          row[col.key] = String(parsedRows.length + 1);
-        } else {
-          row[col.key] = tokens[cIdx] !== undefined ? tokens[cIdx] : '';
-        }
-      });
-      parsedRows.push(row);
-    }
-    return parsedRows;
-  }
-
-  renderBulkImportPreview(rows, targetCols, sourceName = '') {
-    const previewContainer = document.getElementById('bulk-import-preview-container');
-    const previewTable = document.getElementById('bulk-import-preview-table');
-    const countBadge = document.getElementById('bulk-preview-count-badge');
-    const executeBtn = document.getElementById('bulk-import-file-execute-btn') || document.getElementById('bulk-import-execute-btn');
-    const statusBox = document.getElementById('bulk-file-status');
-    const statusText = document.getElementById('bulk-file-status-text');
-
-    if (!rows || rows.length === 0) {
-      window.showToast('No valid data rows found in input.', 'warning', 3500, 'No Records');
-      if (executeBtn) executeBtn.disabled = true;
-      if (previewContainer) previewContainer.classList.add('hidden');
-      return;
-    }
-
-    if (statusBox && statusText) {
-      statusText.textContent = `✓ ${sourceName ? sourceName + ': ' : ''}${rows.length} rows detected and ready for import`;
-      statusBox.classList.remove('hidden');
-    }
-
-    if (countBadge) {
-      countBadge.textContent = `${rows.length} Rows Parsed`;
-    }
-
-    if (previewTable) {
-      const previewRows = rows.slice(0, 5);
-      previewTable.innerHTML = `
-        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-          <tr>
-            ${targetCols.map(c => `<th class="p-2 whitespace-nowrap">${c.label}</th>`).join('')}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          ${previewRows.map(r => `
-            <tr class="hover:bg-slate-50">
-              ${targetCols.map(c => `<td class="p-2 text-slate-700 whitespace-nowrap">${r[c.key] || '<span class="text-slate-300">-</span>'}</td>`).join('')}
-            </tr>
-          `).join('')}
-        </tbody>
-      `;
-    }
-
-    if (executeBtn) executeBtn.disabled = false;
-    if (previewContainer) previewContainer.classList.remove('hidden');
-  }
-
-
   // File Upload execute wrapper
   executeBulkFileImport(sheetKey, targetId = null) {
     const modeRadio = document.querySelector('input[name="bulk-file-import-mode"]:checked');
@@ -3004,7 +2812,6 @@ class FormBuilder {
     }
     if (window.lucide) lucide.createIcons();
   }
-
 
   executeBulkImport(sheetKey, targetId = null) {
     this.importFromExcelGrid(sheetKey, targetId);

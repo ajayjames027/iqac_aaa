@@ -2155,16 +2155,47 @@ class AdminDashboard {
 
   toggleDeptLock(code) {
     const db = window.dataStore ? window.dataStore.getUsersDB() : { departments: [] };
-    const dept = (db.departments || []).find(d => d.code === code);
+    const dept = (db.departments || []).find(d => 
+      (d.code || '').toLowerCase() === (code || '').toLowerCase() || 
+      (d.name || '').toLowerCase() === (code || '').toLowerCase()
+    ) || (this.departments || []).find(d => 
+      (d.code || '').toLowerCase() === (code || '').toLowerCase() || 
+      (d.name || '').toLowerCase() === (code || '').toLowerCase()
+    );
     if (!dept) return;
 
-    const newLockState = !dept.is_locked;
-    window.dataStore.updateDepartmentUser(code, { is_locked: newLockState });
-    window.dataStore.setDepartmentSubmissionStatus(dept.name, newLockState ? 'submitted' : 'draft', newLockState);
+    const statusObj = window.dataStore?.getDepartmentSubmissionStatus(dept.name) || { is_locked: false, status: 'draft' };
+    const isCurrentlyLocked = Boolean(dept.is_locked || statusObj.is_locked);
+    const newLockState = !isCurrentlyLocked;
 
-    window.showToast(`Department "${dept.name}" data submission has been ${newLockState ? 'LOCKED (Read-Only)' : 'UNLOCKED (Open for editing)'}.`, newLockState ? 'warning' : 'success', 3500, 'Status Updated');
+    if (window.dataStore?.updateDepartmentUser) {
+      window.dataStore.updateDepartmentUser(dept.code, { is_locked: newLockState });
+    }
+    dept.is_locked = newLockState;
+
+    if (window.dataStore?.setDepartmentSubmissionStatus) {
+      window.dataStore.setDepartmentSubmissionStatus(dept.name, {
+        is_locked: newLockState,
+        status: newLockState ? 'submitted' : (statusObj.status === 'submitted' ? 'unlocked_for_edit' : 'draft'),
+        unlocked_at: newLockState ? null : new Date().toISOString()
+      });
+    }
+
+    if (window.showToast) {
+      window.showToast(
+        `Department "${dept.name}" data submission has been ${newLockState ? 'LOCKED (Read-Only)' : 'UNLOCKED (Open for editing)'}.`,
+        newLockState ? 'warning' : 'success',
+        3500,
+        newLockState ? 'Department Locked' : 'Department Unlocked'
+      );
+    }
     this.render();
-    if (window.formBuilder) window.formBuilder.render(window.dataStore.data);
+    this.renderDepartmentDataPage('dept-data-container');
+    if (window.formBuilder) window.formBuilder.render(window.dataStore?.data);
+  }
+
+  toggleDeptLockFromCard(code) {
+    this.toggleDeptLock(code);
   }
 
 
@@ -2536,6 +2567,9 @@ class AdminDashboard {
       };
 
       const deptData = window.dataStore ? window.dataStore.getDepartmentDataForYear(dept.name, activeYear) : null;
+      const statusObj = window.dataStore ? window.dataStore.getDepartmentSubmissionStatus(dept.name) : { status: 'draft', is_locked: false };
+      const isCompleted = statusObj.status === 'submitted' || dept.status === 'submitted';
+      const isLocked = Boolean(statusObj.is_locked || dept.is_locked);
 
       container.innerHTML = `
         <div class="space-y-6 animate-fadeIn">
@@ -2566,7 +2600,28 @@ class AdminDashboard {
               </p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs ${
+                isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+              }">
+                <i data-lucide="${isCompleted ? 'check-circle-2' : 'clock'}" class="w-3.5 h-3.5 ${isCompleted ? 'text-emerald-600' : 'text-amber-700'}"></i>
+                <span>${isCompleted ? 'Completed & Submitted' : 'Draft / In Progress'}</span>
+              </span>
+
+              <button 
+                type="button" 
+                onclick="adminDashboard.toggleDeptLockFromCard('${dept.code}')" 
+                class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                  isLocked 
+                    ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300' 
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
+                }"
+                title="${isLocked ? 'Department is locked. Click to UNLOCK and allow department to edit data.' : 'Click to LOCK department data.'}"
+              >
+                <i data-lucide="${isLocked ? 'lock' : 'unlock'}" class="w-3.5 h-3.5 ${isLocked ? 'text-rose-600' : 'text-emerald-600'}"></i>
+                <span>${isLocked ? 'Locked (Click to Unlock)' : 'Unlocked'}</span>
+              </button>
+
               <button 
                 type="button" 
                 onclick="adminDashboard.exportDepartmentExcel('${dept.name.replace(/'/g, "\\'")}')" 
@@ -2701,23 +2756,46 @@ class AdminDashboard {
           </div>
         </div>
 
-        <!-- Department Cards Grid: Clean cards displaying ONLY department details -->
+        <!-- Department Cards Grid: Clean cards displaying department details, completion status & lock control -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          ${departments.map(dept => `
+          ${departments.map(dept => {
+            const statusObj = window.dataStore ? window.dataStore.getDepartmentSubmissionStatus(dept.name) : { status: 'draft', is_locked: false };
+            const isCompleted = statusObj.status === 'submitted' || dept.status === 'submitted';
+            const isLocked = Boolean(statusObj.is_locked || dept.is_locked);
+
+            return `
             <div 
               onclick="adminDashboard.selectDeptForAttributes('${dept.code}')"
-              class="bg-white rounded-2xl border border-slate-200 hover:border-[#26648E] hover:shadow-lg transition-all duration-200 p-6 flex flex-col justify-between cursor-pointer group shadow-2xs"
+              class="bg-white rounded-2xl border ${isCompleted ? 'border-emerald-200 hover:border-emerald-500' : 'border-slate-200 hover:border-[#26648E]'} hover:shadow-lg transition-all duration-200 p-6 flex flex-col justify-between cursor-pointer group shadow-2xs relative"
             >
               <div class="space-y-3">
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
                   <span class="px-2.5 py-0.5 rounded-lg font-mono text-[11px] font-black bg-blue-50 text-[#26648E] border border-blue-200">
                     ID: ${dept.code}
                   </span>
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    dept.status === 'submitted' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
-                  }">
-                    ${dept.status || 'Draft'}
-                  </span>
+
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs ${
+                      isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    }">
+                      <i data-lucide="${isCompleted ? 'check-circle-2' : 'clock'}" class="w-3 h-3 ${isCompleted ? 'text-emerald-600' : 'text-amber-700'}"></i>
+                      <span>${isCompleted ? 'Completed' : 'Draft'}</span>
+                    </span>
+
+                    <button 
+                      type="button" 
+                      onclick="event.stopPropagation(); adminDashboard.toggleDeptLockFromCard('${dept.code}')" 
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1 cursor-pointer shadow-2xs ${
+                        isLocked 
+                          ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300' 
+                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      }"
+                      title="${isLocked ? 'Department is Locked. Click to UNLOCK and allow department to edit data.' : 'Department is Open for editing. Click to LOCK.'}"
+                    >
+                      <i data-lucide="${isLocked ? 'lock' : 'unlock'}" class="w-3 h-3 ${isLocked ? 'text-rose-600' : 'text-emerald-600'}"></i>
+                      <span>${isLocked ? 'Locked' : 'Unlocked'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="pt-1">
@@ -2733,8 +2811,9 @@ class AdminDashboard {
               </div>
 
               <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400 group-hover:text-[#26648E] transition">
-                  11 Attributes (Part-A & 1-10)
+                <span class="text-xs font-bold text-slate-500 group-hover:text-[#26648E] transition flex items-center gap-1.5">
+                  <i data-lucide="${isLocked ? 'lock' : 'check-check'}" class="w-3.5 h-3.5 ${isLocked ? 'text-rose-600' : 'text-emerald-600'}"></i>
+                  <span>${isLocked ? 'Locked (Click Unlock to edit)' : 'Open for Department Edit'}</span>
                 </span>
                 <span class="text-xs font-black text-[#26648E] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                   <span>View Attributes</span>
@@ -2742,7 +2821,8 @@ class AdminDashboard {
                 </span>
               </div>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
 
       </div>

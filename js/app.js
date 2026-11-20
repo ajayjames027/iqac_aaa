@@ -130,6 +130,12 @@ class App {
   }
 
   switchView(viewName) {
+    const isAdmin = window.authManager && window.authManager.isAdmin();
+    // Restrict department users strictly to Attribute Forms and Department Info
+    if (!isAdmin && viewName !== 'form' && viewName !== 'dept-profile') {
+      viewName = 'form';
+    }
+
     this.currentView = viewName;
 
     // Hide all view containers
@@ -178,17 +184,61 @@ class App {
     if (!window.dataStore) return;
     const activeYear = window.dataStore.getActiveYear();
     const years = window.dataStore.getAcademicYearsList();
+    const isAdmin = window.authManager && window.authManager.isAdmin();
 
-    const optionsHtml = years.map(y => `
-      <option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>
-    `).join('') + '<option value="__NEW__">+ Add New Year...</option><option value="__DELETE__">🗑️ Delete Active Year...</option>';
+    const topContainer = document.getElementById('topbar-year-container');
+    if (topContainer) {
+      if (isAdmin) {
+        topContainer.innerHTML = `
+          <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-2.5 py-1 rounded-xl border border-[#fedba0] shadow-2xs">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
+            <span class="text-xs font-black text-[#26648E]">Year:</span>
+            <select 
+              id="topbar-active-year-select"
+              onchange="app.onGlobalYearChange(this.value)"
+              class="text-xs font-black text-[#26648E] bg-transparent outline-none cursor-pointer"
+              title="Switch Active Academic Year"
+            >
+              ${years.map(y => `<option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>`).join('')}
+              <option value="__NEW__">+ Add New Year...</option>
+              <option value="__DELETE__">🗑️ Delete Active Year...</option>
+            </select>
+            <button 
+              type="button" 
+              onclick="app.deleteActiveYear()" 
+              class="p-0.5 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+              title="Delete Active Academic Year and erase all its data"
+            >
+              <i data-lucide="trash-2" class="w-3 h-3 text-rose-500"></i>
+            </button>
+          </div>
+        `;
+      } else {
+        topContainer.innerHTML = `
+          <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-2.5 py-1 rounded-xl border border-[#fedba0] shadow-2xs select-none">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
+            <span class="text-xs font-black text-[#26648E]">Active Year: ${activeYear}</span>
+          </div>
+        `;
+      }
+      if (window.lucide) lucide.createIcons({ root: topContainer });
+    }
 
-    // Only inside the Attribute Forms page
-    const formSel = document.getElementById('form-active-year-selector');
-    if (formSel) formSel.innerHTML = optionsHtml;
+    // Inside Department Data page if open
+    const deptDataSel = document.getElementById('dept-data-active-year-selector');
+    if (deptDataSel) {
+      deptDataSel.innerHTML = years.map(y => `
+        <option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>
+      `).join('') + '<option value="__NEW__">+ Add New Year...</option><option value="__DELETE__">🗑️ Delete Active Year...</option>';
+    }
   }
 
   async onGlobalYearChange(val) {
+    if (window.authManager && !window.authManager.isAdmin()) {
+      window.showToast('Access Restricted: Only IQAC Administrators can change academic years.', 'error', 3500, 'Access Denied');
+      this.refreshYearSelectors();
+      return;
+    }
     if (val === '__NEW__') {
       const newYear = await window.showPromptDialog(
         'Enter New Academic Year in format YYYY - YYYY (e.g. 2027 - 2028):',

@@ -727,6 +727,11 @@ window.ALL_ATTRIBUTES_CARDS_SCHEMA = [
             "width": "w-48"
           },
           {
+            "key": "titleOfInternshipProject",
+            "label": "Title of Internship / Project",
+            "width": "w-56"
+          },
+          {
             "key": "agencyDetails",
             "label": "Name and Address of the Agency providing Internship/Project",
             "width": "w-64"

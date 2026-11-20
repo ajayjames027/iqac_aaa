@@ -376,6 +376,11 @@ class FormBuilder {
       return ['', 'NET', 'SET', 'GATE', 'CAT', 'UPSC', 'TNPSC', 'JAM', 'Others'];
     }
 
+    // 18. Internship / Project (Sheet 1.8)
+    if (k === 'activitytype' || lbl.includes('internship / project') || lbl.includes('internship/project')) {
+      return ['', 'Internship', 'Project', 'Both Internship & Project'];
+    }
+
     return null;
   }
 
@@ -681,34 +686,13 @@ class FormBuilder {
         <div class="bg-white/85 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-              <div class="flex items-center gap-1.5 bg-[#FFE3B3] px-3 py-1 rounded-xl border border-[#fedba0] shadow-2xs">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#26648E]"></i>
-                <span class="text-xs font-black text-[#26648E]">Active Year:</span>
-                <select 
-                  id="form-active-year-selector" 
-                  onchange="app.onGlobalYearChange(this.value)" 
-                  class="text-xs font-black text-[#26648E] bg-transparent outline-none cursor-pointer"
-                  title="Switch Active Academic Year"
-                >
-                  ${(window.dataStore ? window.dataStore.getAcademicYearsList() : ['2026 - 2027']).map(y => `
-                    <option value="${y}" ${y === this.academicYear ? 'selected' : ''}>${y}</option>
-                  `).join('')}
-                  <option value="__NEW__">+ Add New Year...</option>
-                  <option value="__DELETE__">🗑️ Delete Active Year...</option>
-                </select>
-                <button 
-                  type="button" 
-                  onclick="app.deleteActiveYear()" 
-                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200 cursor-pointer"
-                  title="Delete Active Academic Year and erase all its data"
-                >
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
-                </button>
-              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#26648E]/10 text-[#26648E] border border-[#26648E]/25 uppercase tracking-wide">
+                IQAC Academic Audit
+              </span>
             </div>
 
             <h1 class="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
-              Annual Academic Audit (AAA) ${this.academicYear}
+              Annual Academic Audit (AAA)
             </h1>
           </div>
 
@@ -844,15 +828,6 @@ class FormBuilder {
             <span class="card-save-indicator text-xs px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-medium flex items-center gap-1.5 shadow-2xs">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Auto-saved
             </span>
-            <button 
-              type="button" 
-              onclick="formBuilder.openReviewAndSaveModal('${card.id}')" 
-              class="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
-              title="Review full attribute print sheet and save all records"
-            >
-              <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
-              <span>Review & Save All</span>
-            </button>
           </div>
         </div>
 
@@ -896,20 +871,35 @@ class FormBuilder {
           ${activeSheet ? this.renderActiveSheetContent(activeSheet, cardData[activeSheet.key], isAdmin) : '<div class="text-slate-500">No sheet selected.</div>'}
         </div>
 
-        <!-- Minimal Navigation Footer -->
-        ${sheets.length > 1 ? `
-          <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-xs">
-            <button type="button" onclick="formBuilder.navigateSheet(-1)" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1 shadow-2xs">
-              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
-            </button>
-            <span class="text-slate-500 font-medium">
-              ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
-            </span>
-            <button type="button" onclick="formBuilder.navigateSheet(1)" class="px-3.5 py-1.5 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl transition flex items-center gap-1 shadow-2xs">
-              Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        <!-- Bottom Action Bar (Review & Save All Down Here) -->
+        <div class="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            ${sheets.length > 1 ? `
+              <button type="button" onclick="formBuilder.navigateSheet(-1)" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-300 rounded-xl transition flex items-center gap-1.5 shadow-2xs text-xs cursor-pointer">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Prev Sheet
+              </button>
+              <span class="text-xs text-slate-500 font-medium px-2">
+                ${activeSheet?.sheetName || ''} (${sheets.findIndex(s => s.key === activeSheet?.key) + 1} of ${sheets.length})
+              </span>
+              <button type="button" onclick="formBuilder.navigateSheet(1)" class="px-3.5 py-2 bg-[#26648E] hover:bg-[#1b4b6d] text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-2xs text-xs cursor-pointer">
+                Next Sheet <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Prominent Review & Save All Records Down Button -->
+          <div class="flex items-center gap-3">
+            <button 
+              type="button" 
+              onclick="formBuilder.openReviewAndSaveModal('${card.id}')" 
+              class="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white font-black rounded-xl text-xs transition shadow-md shadow-amber-500/25 flex items-center gap-2 cursor-pointer"
+              title="Review full attribute print sheet and save all records"
+            >
+              <i data-lucide="file-check" class="w-4 h-4"></i>
+              <span>Review & Save All Records</span>
             </button>
           </div>
-        ` : ''}
+        </div>
 
       </div>
     `;
@@ -2441,23 +2431,37 @@ class FormBuilder {
           </td>
         `;
       } else if (opts && Array.isArray(opts) && opts.length > 0) {
-        const listId = `dl-excel-${col.key}-${rIdx}`;
+        rowHtml += `
+          <td class="px-1 py-0.5 border-r border-slate-200">
+            <select 
+              data-row="${rIdx}" 
+              data-col="${col.key}" 
+              onchange="formBuilder.updateExcelGridCounter()"
+              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-white border border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition font-semibold"
+            >
+              ${opts.map(o => `
+                <option value="${o}" ${String(cellVal).trim().toLowerCase() === String(o).trim().toLowerCase() ? 'selected' : ''}>
+                  ${o === '' ? '-- Select --' : o}
+                </option>
+              `).join('')}
+            </select>
+          </td>
+        `;
+      } else if (this.isNumericColumn(col.label, col.key)) {
         rowHtml += `
           <td class="px-1 py-0.5 border-r border-slate-200">
             <input 
               type="text" 
-              list="${listId}" 
+              inputmode="numeric" 
+              pattern="[0-9.]*" 
               value="${cellVal}" 
               data-row="${rIdx}" 
               data-col="${col.key}" 
-              oninput="formBuilder.updateExcelGridCounter()"
+              onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46"
+              oninput="this.value = this.value.replace(/[^0-9.]/g, ''); formBuilder.updateExcelGridCounter()"
               onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
-              class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition font-medium" 
-              placeholder="${col.label}..."
+              class="excel-cell-input w-full px-2 py-1 text-xs text-right font-mono text-slate-800 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition" 
             />
-            <datalist id="${listId}">
-              ${opts.map(o => `<option value="${o}"></option>`).join('')}
-            </datalist>
           </td>
         `;
       } else {
@@ -2468,10 +2472,9 @@ class FormBuilder {
               value="${cellVal}" 
               data-row="${rIdx}" 
               data-col="${col.key}" 
-              oninput="formBuilder.updateExcelGridCounter()"
+              oninput="this.value = this.value ? (this.value.charAt(0).toUpperCase() + this.value.slice(1)) : ''; formBuilder.updateExcelGridCounter()"
               onkeydown="formBuilder.handleExcelCellKeyDown(event, ${rIdx}, '${col.key}')"
               class="excel-cell-input w-full px-2 py-1 text-xs text-slate-800 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500 rounded outline-none transition font-medium" 
-              placeholder="${col.label}..."
             />
           </td>
         `;
@@ -2568,8 +2571,11 @@ class FormBuilder {
     let filledCount = 0;
 
     trs.forEach(tr => {
-      const inputs = tr.querySelectorAll('input:not([readonly])');
-      const isFilled = Array.from(inputs).some(inp => (inp.value || '').trim() !== '');
+      const inputs = tr.querySelectorAll('[data-col]:not([readonly])');
+      const isFilled = Array.from(inputs).some(inp => {
+        const isSno = inp.getAttribute('data-col') === 'sno' || inp.getAttribute('data-col') === 's_no' || inp.getAttribute('data-col') === 'sl_no';
+        return !isSno && (inp.value || '').trim() !== '';
+      });
       if (isFilled) filledCount++;
     });
 
@@ -2709,7 +2715,7 @@ class FormBuilder {
       let hasData = false;
 
       cols.forEach(col => {
-        const input = tr.querySelector(`input[data-col="${col.key}"]`);
+        const input = tr.querySelector(`[data-col="${col.key}"]`);
         const val = input ? (input.value || '').trim() : '';
         rowObj[col.key] = val;
 
@@ -2784,6 +2790,137 @@ class FormBuilder {
     this.closeBulkImportModal();
     window.showToast(`Successfully imported ${rows.length} records into ${sheet.sheetName || sheetKey}!`, 'success', 4000, 'Import Complete');
     this.render(window.dataStore?.data);
+  }
+
+  closeBulkImportModal() {
+    const modal = document.getElementById('bulk-import-modal');
+    if (modal) modal.remove();
+    this._stagedImportData = null;
+    this._pendingBulkRows = null;
+  }
+
+  handleBulkFileDrop(event, sheetKey, targetId = null) {
+    const file = event.dataTransfer ? event.dataTransfer.files[0] : null;
+    if (file) {
+      this.processUploadedBulkFile(file, sheetKey, targetId);
+    }
+  }
+
+  handleBulkFileSelected(event, sheetKey, targetId = null) {
+    const file = event.target ? event.target.files[0] : null;
+    if (file) {
+      this.processUploadedBulkFile(file, sheetKey, targetId);
+    }
+  }
+
+  processUploadedBulkFile(file, sheetKey, targetId = null) {
+    const cols = this._currentBulkCols || this.getColumnsForImport(sheetKey, targetId);
+    const statusDiv = document.getElementById('bulk-file-status');
+    const statusText = document.getElementById('bulk-file-status-text');
+    const previewContainer = document.getElementById('bulk-import-preview-container');
+    const previewCountBadge = document.getElementById('bulk-preview-count-badge');
+    const previewTable = document.getElementById('bulk-import-preview-table');
+    const execBtn = document.getElementById('bulk-import-file-execute-btn');
+
+    if (!file) return;
+
+    if (statusDiv && statusText) {
+      statusDiv.classList.remove('hidden');
+      statusText.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        let parsedRows = [];
+
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(text);
+          parsedRows = Array.isArray(parsed) ? parsed : (parsed.rows || []);
+        } else {
+          // CSV / TSV / plain text parser
+          const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+          if (lines.length > 0) {
+            const delimiter = lines[0].includes('\t') ? '\t' : ',';
+            const firstTokens = lines[0].split(delimiter).map(t => t.trim().replace(/^["']|["']$/g, ''));
+            let rowStartIndex = 0;
+            const matchesHeader = firstTokens.some(tok => {
+              const lower = tok.toLowerCase();
+              return cols.some(c => (c.label || '').toLowerCase().includes(lower) || (c.key || '').toLowerCase() === lower);
+            });
+            if (matchesHeader) rowStartIndex = 1;
+
+            const dataLines = lines.slice(rowStartIndex);
+            dataLines.forEach((line, rIdx) => {
+              const tokens = line.split(delimiter).map(t => t.trim().replace(/^["']|["']$/g, ''));
+              let offset = 0;
+              if (tokens.length === cols.length - 1 && (cols[0].key === 'sno' || cols[0].key === 's_no' || cols[0].key === 'sl_no')) {
+                offset = 1;
+              }
+              const rowObj = {};
+              let hasData = false;
+              cols.forEach((col, cIdx) => {
+                const isSno = col.key === 'sno' || col.key === 's_no' || col.key === 'sl_no';
+                if (isSno) {
+                  rowObj[col.key] = String(rIdx + 1);
+                } else {
+                  const tokenIdx = cIdx - offset;
+                  const val = (tokenIdx >= 0 && tokens[tokenIdx] !== undefined) ? tokens[tokenIdx] : '';
+                  rowObj[col.key] = val;
+                  if (val !== '') hasData = true;
+                }
+              });
+              if (hasData) parsedRows.push(rowObj);
+            });
+          }
+        }
+
+        if (parsedRows.length === 0) {
+          window.showToast('No valid records found in the uploaded file.', 'warning', 3500, 'Empty File');
+          if (execBtn) execBtn.disabled = true;
+          return;
+        }
+
+        this._pendingBulkRows = parsedRows;
+
+        if (previewContainer && previewTable) {
+          previewContainer.classList.remove('hidden');
+          if (previewCountBadge) {
+            previewCountBadge.textContent = `${parsedRows.length} Rows Parsed`;
+          }
+
+          let tableHtml = `
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
+                ${cols.map(c => `<th class="p-2 border-r border-slate-200 ${c.width || ''}">${c.label}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${parsedRows.slice(0, 5).map(r => `
+                <tr class="hover:bg-slate-50">
+                  ${cols.map(c => `<td class="p-2 border-r border-slate-100 font-medium text-slate-800">${r[c.key] || ''}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          `;
+          previewTable.innerHTML = tableHtml;
+        }
+
+        if (execBtn) {
+          execBtn.disabled = false;
+          execBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-[#53D2DC]"></i><span>Import ${parsedRows.length} Uploaded Records</span>`;
+          if (window.lucide) lucide.createIcons({ root: execBtn });
+        }
+
+        window.showToast(`Parsed ${parsedRows.length} rows successfully from ${file.name}. Ready to import!`, 'success', 3500, 'File Parsed');
+      } catch (err) {
+        console.error('Error parsing file:', err);
+        window.showToast('Failed to parse uploaded file: ' + err.message, 'error', 4000, 'Parse Error');
+        if (execBtn) execBtn.disabled = true;
+      }
+    };
+    reader.readAsText(file);
   }
 
   // File Upload execute wrapper

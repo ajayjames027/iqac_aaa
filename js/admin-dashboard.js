@@ -328,6 +328,7 @@ class AdminDashboard {
 
   render() {
     if (!this.container) return;
+    const activeYear = window.dataStore ? window.dataStore.getActiveYear() : '2026 - 2027';
 
     this.container.innerHTML = `
       <div class="space-y-6">
@@ -339,6 +340,10 @@ class AdminDashboard {
                 IQAC Central Admin Console
               </span>
               <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-[#FFE3B3] text-[#26648E] border border-[#fedba0] shadow-2xs">Active Year: ${activeYear}</span>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Institutional Quality Assurance Cell (IQAC) Administration Hub</h1>
+            <p class="text-xs text-slate-500 font-medium">Configure institutional deadlines, academic audit lock/unlock states, department access, and track overall institutional compliance.</p>
+          </div>
         </div>
 
         <!-- Submission Deadline Controller Banner -->

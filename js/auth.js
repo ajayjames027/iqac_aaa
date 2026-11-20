@@ -270,6 +270,10 @@ class AuthManager {
       if (topDashBtn) topDashBtn.classList.toggle('hidden', !isAdmin);
       if (topProfileBtn) topProfileBtn.classList.toggle('hidden', !isDept);
       if (topFormBtn) topFormBtn.classList.remove('hidden');
+
+      if (window.app && typeof window.app.refreshYearSelectors === 'function') {
+        window.app.refreshYearSelectors();
+      }
     }
   }
 
